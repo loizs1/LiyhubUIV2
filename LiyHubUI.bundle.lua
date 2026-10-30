@@ -4709,7 +4709,7 @@ function Window:_initUniversalTabs(options)
 
     local commSec = infoTab:CreateSection("Community & Support")
     commSec:CreateButton({
-        Name = "🌐 Discord Community",
+        Name = "Discord Community",
         Desc = discordUrl,
         ButtonText = "Copy Invite",
         Callback = function()
@@ -4730,8 +4730,8 @@ function Window:_initUniversalTabs(options)
 
     local sysSec = infoTab:CreateSection("Script Information")
     sysSec:CreateParagraph({
-        Title = "✨ About Liyhub",
-        Content = "👑 Developers: Than & aeris\n⚡ Engine: LiyhubUI v2.2.0 (Pure B&W)\n🛡️ Security: Zero LogService telemetry & stealth hooks\n🌐 Community: " .. discordUrl .. "\n📐 Adaptive: Auto-scales across PC, Tablet & Android\n🔘 Shortcuts: [RightControl] to toggle • [-] to pin"
+        Title = "About Liyhub",
+        Content = "Developers: Than & aeris\nEngine: LiyhubUI v2.2.0 (Pure B&W)\nSecurity: Zero LogService telemetry & stealth hooks\nCommunity: " .. discordUrl .. "\nAdaptive: Auto-scales across PC, Tablet & Android\nShortcuts: [RightControl] to toggle | [-] to pin"
     })
 
     local settingsTab = univGroup:CreateTab({
