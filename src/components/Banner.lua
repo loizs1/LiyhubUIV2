@@ -1,9 +1,3 @@
---[[
-    LiyHub UI - Banner Component
-    A visual presentation card featuring an image header, title, and
-    collapsible explanatory text supporting Asset IDs and Web URLs.
-]]
-
 local TweenService = game:GetService("TweenService")
 
 local Banner = {}
@@ -11,10 +5,11 @@ Banner.__index = Banner
 
 function Banner.new(parent, options, theme, cleanup)
     options = options or {}
-    local title = options.Title or options.Name or "LiyHub Announcement"
-    local text = options.Text or options.Description or "Welcome to LiyHub v2.2 Pure B&W! This banner supports Discord CDN links, Google/Web image URLs, or Roblox Asset IDs, complete with collapsible text paragraphs."
-    local image = options.Image or options.AssetId or "rbxassetid://15634771265"
-    local imageHeight = options.ImageHeight or 105
+    local title = options.Title or options.Name
+    local showHeader = options.ShowHeader ~= false and (title ~= nil and title ~= "")
+    local titleText = title or "LiyHub Announcement"
+    local text = options.Text or options.Description or "Welcome to LiyHub v2.2 Pure B&W!"
+    local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxasset://textures/LiyhubBanner.png"
     local defaultCollapsed = options.Collapsed == true
     
     local container = Instance.new("Frame")
@@ -30,49 +25,64 @@ function Banner.new(parent, options, theme, cleanup)
     corner.CornerRadius = theme.CornerRadius
     corner.Parent = container
     
+    if theme.UseStrokes then
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "BorderStroke"
+        stroke.Color = theme.Border
+        stroke.Thickness = theme.StrokeThickness or 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = container
+    end
+    
     local list = Instance.new("UIListLayout")
     list.SortOrder = Enum.SortOrder.LayoutOrder
-    list.Padding = UDim.new(0, 6)
+    list.Padding = UDim.new(0, 0)
     list.Parent = container
     
-    -- Banner Header (Title & Collapse Arrow)
-    local header = Instance.new("TextButton")
-    header.Name = "Header"
-    header.Size = UDim2.new(1, 0, 0, 24)
-    header.BackgroundTransparency = 1
-    header.AutoButtonColor = false
-    header.Text = ""
-    header.Parent = container
+    local header = nil
+    local titleLabel = nil
+    local arrow = nil
     
-    local hPad = Instance.new("UIPadding")
-    hPad.PaddingLeft = UDim.new(0, 10)
-    hPad.PaddingRight = UDim.new(0, 10)
-    hPad.PaddingTop = UDim.new(0, 6)
-    hPad.Parent = header
+    if showHeader then
+        header = Instance.new("TextButton")
+        header.Name = "Header"
+        header.Size = UDim2.new(1, 0, 0, 28)
+        header.BackgroundTransparency = 1
+        header.AutoButtonColor = false
+        header.Text = ""
+        header.Active = true
+        header.Parent = container
+        
+        local hPad = Instance.new("UIPadding")
+        hPad.PaddingLeft = UDim.new(0, 10)
+        hPad.PaddingRight = UDim.new(0, 10)
+        hPad.PaddingTop = UDim.new(0, 6)
+        hPad.Parent = header
+        
+        titleLabel = Instance.new("TextLabel")
+        titleLabel.Name = "Title"
+        titleLabel.Size = UDim2.new(1, -24, 1, 0)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Text = titleText
+        titleLabel.TextColor3 = theme.TextPrimary
+        titleLabel.Font = theme.FontBold
+        titleLabel.TextSize = theme.FontSizeSection or 11
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.Active = false
+        titleLabel.Parent = header
+        
+        arrow = Instance.new("ImageLabel")
+        arrow.Name = "Arrow"
+        arrow.Size = UDim2.fromOffset(12, 12)
+        arrow.Position = UDim2.new(1, -20, 0.5, -6)
+        arrow.BackgroundTransparency = 1
+        arrow.Image = "rbxassetid://10709790948"
+        arrow.ImageColor3 = theme.TextMuted
+        arrow.Rotation = defaultCollapsed and 0 or 180
+        arrow.Active = false
+        arrow.Parent = header
+    end
     
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -24, 1, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = theme.TextPrimary
-    titleLabel.Font = theme.FontBold
-    titleLabel.TextSize = theme.FontSizeSection or 12
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = header
-    
-    local arrow = Instance.new("TextLabel")
-    arrow.Name = "Arrow"
-    arrow.Size = UDim2.new(0, 20, 1, 0)
-    arrow.Position = UDim2.new(1, -20, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.Text = defaultCollapsed and "v" or "^"
-    arrow.TextColor3 = theme.TextSecondary
-    arrow.Font = theme.FontBold
-    arrow.TextSize = 10
-    arrow.Parent = header
-    
-    -- Content Box (Image + Description)
     local contentBox = Instance.new("Frame")
     contentBox.Name = "ContentBox"
     contentBox.Size = UDim2.new(1, 0, 0, 0)
@@ -86,25 +96,52 @@ function Banner.new(parent, options, theme, cleanup)
     cbList.Padding = UDim.new(0, 6)
     cbList.Parent = contentBox
     
-    local cbPad = Instance.new("UIPadding")
-    cbPad.PaddingLeft = UDim.new(0, 8)
-    cbPad.PaddingRight = UDim.new(0, 8)
-    cbPad.PaddingBottom = UDim.new(0, 10)
-    cbPad.Parent = contentBox
+    local imageFrame = Instance.new("Frame")
+    imageFrame.Name = "ImageFrame"
+    imageFrame.Size = UDim2.new(1, 0, 0, 140)
+    imageFrame.BackgroundColor3 = theme.Header
+    imageFrame.BorderSizePixel = 0
+    imageFrame.ClipsDescendants = true
+    imageFrame.Parent = contentBox
     
-    -- Image container
+    local imgFrameCorner = Instance.new("UICorner")
+    imgFrameCorner.CornerRadius = showHeader and theme.SmallCornerRadius or theme.CornerRadius
+    imgFrameCorner.Parent = imageFrame
+    
     local imageLabel = Instance.new("ImageLabel")
     imageLabel.Name = "BannerImage"
-    imageLabel.Size = UDim2.new(1, 0, 0, imageHeight)
-    imageLabel.BackgroundColor3 = theme.Header
+    imageLabel.Size = UDim2.new(1, 0, 1, 0)
+    imageLabel.BackgroundTransparency = 1
     imageLabel.Image = image
-    imageLabel.ScaleType = Enum.ScaleType.Crop
+    imageLabel.ScaleType = Enum.ScaleType.Fit
     imageLabel.BorderSizePixel = 0
-    imageLabel.Parent = contentBox
+    imageLabel.Parent = imageFrame
     
-    local imgCorner = Instance.new("UICorner")
-    imgCorner.CornerRadius = theme.CornerRadius
-    imgCorner.Parent = imageLabel
+    local function updateBannerHeight()
+        local width = imageFrame.AbsoluteSize.X
+        if width > 40 then
+            local targetH = math.clamp(math.floor(width / (1108 / 432)), 60, 300)
+            if math.abs(imageFrame.Size.Y.Offset - targetH) > 1 then
+                imageFrame.Size = UDim2.new(1, 0, 0, targetH)
+            end
+        end
+    end
+    local absConn = imageFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateBannerHeight)
+    task.defer(updateBannerHeight)
+    
+    local textContainer = Instance.new("Frame")
+    textContainer.Name = "TextContainer"
+    textContainer.Size = UDim2.new(1, 0, 0, 0)
+    textContainer.AutomaticSize = Enum.AutomaticSize.Y
+    textContainer.BackgroundTransparency = 1
+    textContainer.Parent = contentBox
+    
+    local tPad = Instance.new("UIPadding")
+    tPad.PaddingLeft = UDim.new(0, 10)
+    tPad.PaddingRight = UDim.new(0, 10)
+    tPad.PaddingTop = UDim.new(0, 2)
+    tPad.PaddingBottom = UDim.new(0, 8)
+    tPad.Parent = textContainer
     
     local descLabel = Instance.new("TextLabel")
     descLabel.Name = "Description"
@@ -117,7 +154,8 @@ function Banner.new(parent, options, theme, cleanup)
     descLabel.TextSize = theme.FontSizeSmall
     descLabel.TextXAlignment = Enum.TextXAlignment.Left
     descLabel.TextWrapped = true
-    descLabel.Parent = contentBox
+    descLabel.Active = false
+    descLabel.Parent = textContainer
     
     local self = setmetatable({
         _container = container,
@@ -131,12 +169,22 @@ function Banner.new(parent, options, theme, cleanup)
         _collapsed = defaultCollapsed,
     }, Banner)
     
-    local toggleConn = header.Activated:Connect(function()
-        self:Toggle()
-    end)
-
+    if header then
+        local lastToggle = 0
+        local function doToggle()
+            local now = os.clock()
+            if now - lastToggle < 0.15 then return end
+            lastToggle = now
+            self:Toggle()
+        end
+        local toggleConn = header.Activated:Connect(doToggle)
+        if cleanup then
+            cleanup:Add(toggleConn)
+        end
+    end
+    
     if cleanup then
-        cleanup:Add(toggleConn)
+        cleanup:Add(absConn)
         cleanup:Add(container)
     end
     
@@ -146,25 +194,24 @@ end
 function Banner:Toggle()
     self._collapsed = not self._collapsed
     self._contentBox.Visible = not self._collapsed
-    self._arrow.Text = self._collapsed and "v" or "^"
+    if self._arrow then
+        TweenService:Create(self._arrow, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+            Rotation = self._collapsed and 0 or 180
+        }):Play()
+    end
 end
 
-function Banner:SetImage(imageId)
-    self._imageLabel.Image = tostring(imageId)
-end
-
-function Banner:SetTitle(title)
-    self._titleLabel.Text = tostring(title)
+function Banner:SetImage(assetId)
+    self._imageLabel.Image = assetId
 end
 
 function Banner:SetText(text)
-    self._descLabel.Text = tostring(text)
+    self._descLabel.Text = text
 end
 
 function Banner:Destroy()
     if self._container then
         self._container:Destroy()
-        self._container = nil
     end
 end
 

@@ -1,21 +1,14 @@
---[[
-    LiyHub UI - Progression Component
-    A visual step workflow with step nodes, connection lines, status badges,
-    step navigation buttons, and step-specific content containers.
-]]
-
 local TweenService = game:GetService("TweenService")
 
 local Progression = {}
 Progression.__index = Progression
 
--- Common Builder / Lucide icon asset IDs or symbol fallbacks
 local DEFAULT_STEP_ICONS = {
-    [1] = "rbxassetid://6031075931", -- Home
-    [2] = "rbxassetid://6031075929", -- User
-    [3] = "rbxassetid://6031094678", -- Check / Target
-    [4] = "rbxassetid://6031091004", -- Play / Swords
-    [5] = "rbxassetid://6031075936", -- Reward / Star
+    [1] = "rbxassetid://6031075931",
+    [2] = "rbxassetid://6031075929",
+    [3] = "rbxassetid://6031094678",
+    [4] = "rbxassetid://6031091004",
+    [5] = "rbxassetid://6031075936",
 }
 
 function Progression.new(parent, options, theme, cleanup)
@@ -23,9 +16,11 @@ function Progression.new(parent, options, theme, cleanup)
     local titleText = options.Title or options.Name or "Progression"
     local subtitleText = options.Subtitle or "Step workflow progression"
     local steps = options.Steps or {
-        { Label = "Step 1" },
-        { Label = "Step 2" },
-        { Label = "Step 3" },
+        { Label = "Accept" },
+        { Label = "Teleport" },
+        { Label = "Farm" },
+        { Label = "Boss" },
+        { Label = "Reward" },
     }
     local initialStep = math.clamp(options.CurrentStep or options.Default or 1, 1, #steps)
     local onStepChanged = options.OnStepChanged or options.Callback or function() end
@@ -36,306 +31,193 @@ function Progression.new(parent, options, theme, cleanup)
     container.AutomaticSize = Enum.AutomaticSize.Y
     container.BackgroundColor3 = theme.Card
     container.BorderSizePixel = 0
+    container.ClipsDescendants = true
     container.Parent = parent
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = theme.CornerRadius
     corner.Parent = container
     
+    if theme.UseStrokes then
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "BorderStroke"
+        stroke.Color = theme.Border
+        stroke.Thickness = 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = container
+    end
+    
     local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 12)
+    padding.PaddingTop = UDim.new(0, 10)
     padding.PaddingBottom = UDim.new(0, 12)
-    padding.PaddingLeft = UDim.new(0, 14)
-    padding.PaddingRight = UDim.new(0, 14)
+    padding.PaddingLeft = UDim.new(0, 12)
+    padding.PaddingRight = UDim.new(0, 12)
     padding.Parent = container
     
     local list = Instance.new("UIListLayout")
     list.SortOrder = Enum.SortOrder.LayoutOrder
-    list.Padding = UDim.new(0, 10)
+    list.Padding = UDim.new(0, 8)
     list.Parent = container
     
-    -- Title & Subtitle
     local headerFrame = Instance.new("Frame")
     headerFrame.Name = "Header"
-    headerFrame.Size = UDim2.new(1, 0, 0, 36)
+    headerFrame.Size = UDim2.new(1, 0, 0, 32)
     headerFrame.BackgroundTransparency = 1
     headerFrame.Parent = container
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, 0, 0, 20)
+    titleLabel.Size = UDim2.new(1, 0, 0, 16)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = titleText
     titleLabel.TextColor3 = theme.TextPrimary
     titleLabel.Font = theme.FontBold
     titleLabel.TextSize = theme.FontSizeRegular
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Active = false
     titleLabel.Parent = headerFrame
     
     local subLabel = Instance.new("TextLabel")
     subLabel.Name = "Subtitle"
-    subLabel.Size = UDim2.new(1, 0, 0, 16)
-    subLabel.Position = UDim2.new(0, 0, 0, 20)
+    subLabel.Size = UDim2.new(1, 0, 0, 14)
+    subLabel.Position = UDim2.new(0, 0, 0, 17)
     subLabel.BackgroundTransparency = 1
     subLabel.Text = subtitleText
-    subLabel.TextColor3 = theme.TextSecondary
+    subLabel.TextColor3 = theme.TextMuted
     subLabel.Font = theme.FontRegular
     subLabel.TextSize = theme.FontSizeSmall
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
+    subLabel.Active = false
     subLabel.Parent = headerFrame
     
-    -- Stepper Line Container
     local stepperFrame = Instance.new("Frame")
-    stepperFrame.Name = "StepperFrame"
-    stepperFrame.Size = UDim2.new(1, 0, 0, 56)
+    stepperFrame.Name = "Stepper"
+    stepperFrame.Size = UDim2.new(1, 0, 0, 52)
     stepperFrame.BackgroundTransparency = 1
     stepperFrame.Parent = container
     
-    -- Stepper Nodes and Connectors
-    local nodeElements = {}
-    local lineElements = {}
-    local stepCount = #steps
+    local margin = 32
+    local lineBg = Instance.new("Frame")
+    lineBg.Name = "LineBg"
+    lineBg.AnchorPoint = Vector2.new(0, 0.5)
+    lineBg.Size = UDim2.new(1, -margin * 2, 0, 2)
+    lineBg.Position = UDim2.new(0, margin, 0, 14)
+    lineBg.BackgroundColor3 = theme.SliderTrack
+    lineBg.BorderSizePixel = 0
+    lineBg.ZIndex = 1
+    lineBg.Parent = stepperFrame
     
-    -- Background track lines between nodes
-    for i = 1, stepCount - 1 do
-        local line = Instance.new("Frame")
-        line.Name = "Line_" .. i
-        line.BorderSizePixel = 0
-        line.BackgroundColor3 = theme.AccentStepInactive
-        line.Parent = stepperFrame
-        table.insert(lineElements, line)
-    end
+    local stepNodes = {}
+    local numSteps = #steps
     
-    -- Node circles and labels
-    for i, stepInfo in ipairs(steps) do
-        local stepLabelText = type(stepInfo) == "table" and (stepInfo.Label or stepInfo.Name) or tostring(stepInfo)
-        local stepIcon = type(stepInfo) == "table" and stepInfo.Icon or DEFAULT_STEP_ICONS[i]
+    for i, stepData in ipairs(steps) do
+        local t = numSteps > 1 and ((i - 1) / (numSteps - 1)) or 0.5
+        local xOffset = math.floor((1 - 2 * t) * margin)
         
-        local nodeFrame = Instance.new("Frame")
-        nodeFrame.Name = "Node_" .. i
-        nodeFrame.Size = UDim2.new(0, 32, 0, 32)
-        nodeFrame.BackgroundTransparency = 1
-        nodeFrame.Parent = stepperFrame
+        local nodeBtn = Instance.new("TextButton")
+        nodeBtn.Name = "Node_" .. tostring(i)
+        nodeBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+        nodeBtn.Size = UDim2.new(0, 28, 0, 28)
+        nodeBtn.Position = UDim2.new(t, xOffset, 0, 14)
+        nodeBtn.BackgroundColor3 = (i == initialStep) and theme.AccentStep or theme.SliderTrack
+        nodeBtn.AutoButtonColor = false
+        nodeBtn.Text = ""
+        nodeBtn.BorderSizePixel = 0
+        nodeBtn.Active = true
+        nodeBtn.ZIndex = 2
+        nodeBtn.Parent = stepperFrame
         
-        local circle = Instance.new("TextButton")
-        circle.Name = "Circle"
-        circle.Size = UDim2.new(0, 30, 0, 30)
-        circle.Position = UDim2.new(0.5, -15, 0, 0)
-        circle.BackgroundColor3 = theme.AccentStepInactive
-        circle.AutoButtonColor = false
-        circle.Text = ""
-        circle.BorderSizePixel = 0
-        circle.Parent = nodeFrame
-        
-        local cCorner = Instance.new("UICorner")
-        cCorner.CornerRadius = UDim.new(1, 0)
-        cCorner.Parent = circle
+        local nbCorner = Instance.new("UICorner")
+        nbCorner.CornerRadius = UDim.new(1, 0)
+        nbCorner.Parent = nodeBtn
         
         local icon = Instance.new("ImageLabel")
         icon.Name = "Icon"
-        icon.Size = UDim2.new(0, 16, 0, 16)
-        icon.Position = UDim2.new(0.5, -8, 0.5, -8)
+        icon.Size = UDim2.new(0, 14, 0, 14)
+        icon.Position = UDim2.new(0.5, -7, 0.5, -7)
         icon.BackgroundTransparency = 1
-        icon.Image = stepIcon or ""
-        icon.ImageColor3 = theme.TextPrimary
-        icon.Parent = circle
+        icon.Image = stepData.Icon or DEFAULT_STEP_ICONS[i] or DEFAULT_STEP_ICONS[1]
+        icon.ImageColor3 = (i == initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
+        icon.Active = false
+        icon.ZIndex = 3
+        icon.Parent = nodeBtn
         
-        -- Text fallback if image not loaded
-        local numText = Instance.new("TextLabel")
-        numText.Name = "Number"
-        numText.Size = UDim2.new(1, 0, 1, 0)
-        numText.BackgroundTransparency = 1
-        numText.Text = (stepIcon and #stepIcon > 0) and "" or tostring(i)
-        numText.TextColor3 = theme.TextPrimary
-        numText.Font = theme.FontBold
-        numText.TextSize = 12
-        numText.Parent = circle
+        local stepLbl = Instance.new("TextLabel")
+        stepLbl.Name = "Label"
+        stepLbl.AnchorPoint = Vector2.new(0.5, 0)
+        stepLbl.Size = UDim2.new(0, 60, 0, 14)
+        stepLbl.Position = UDim2.new(t, xOffset, 0, 32)
+        stepLbl.TextTruncate = Enum.TextTruncate.AtEnd
+        stepLbl.BackgroundTransparency = 1
+        stepLbl.Text = stepData.Label or ("Step " .. tostring(i))
+        stepLbl.TextColor3 = (i == initialStep) and theme.AccentStep or theme.TextMuted
+        stepLbl.Font = (i == initialStep) and theme.FontBold or theme.FontRegular
+        stepLbl.TextSize = 10
+        stepLbl.TextXAlignment = Enum.TextXAlignment.Center
+        stepLbl.Active = false
+        stepLbl.ZIndex = 2
+        stepLbl.Parent = stepperFrame
         
-        local label = Instance.new("TextLabel")
-        label.Name = "Label"
-        label.Size = UDim2.new(0, 70, 0, 16)
-        label.Position = UDim2.new(0.5, -35, 0, 34)
-        label.BackgroundTransparency = 1
-        label.Text = stepLabelText
-        label.TextColor3 = theme.TextMuted
-        label.Font = theme.FontRegular
-        label.TextSize = 10
-        label.TextXAlignment = Enum.TextXAlignment.Center
-        label.Parent = nodeFrame
-        
-        table.insert(nodeElements, {
-            Frame = nodeFrame,
-            Circle = circle,
+        stepNodes[i] = {
+            Button = nodeBtn,
             Icon = icon,
-            Label = label,
-        })
+            Label = stepLbl,
+        }
     end
-    
-    -- Buttons Frame: Next Step & Prev Step
-    local buttonRow = Instance.new("Frame")
-    buttonRow.Name = "ButtonRow"
-    buttonRow.Size = UDim2.new(1, 0, 0, 34)
-    buttonRow.BackgroundTransparency = 1
-    buttonRow.Parent = container
-    
-    local btnLayout = Instance.new("UIListLayout")
-    btnLayout.FillDirection = Enum.FillDirection.Horizontal
-    btnLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    btnLayout.Padding = UDim.new(0, 8)
-    btnLayout.Parent = buttonRow
-    
-    local nextBtn = Instance.new("TextButton")
-    nextBtn.Name = "NextStepButton"
-    nextBtn.Size = UDim2.new(0.5, -4, 1, 0)
-    nextBtn.BackgroundColor3 = theme.Element
-    nextBtn.AutoButtonColor = false
-    nextBtn.Text = options.NextText or "Next Step (Maju)"
-    nextBtn.TextColor3 = theme.TextPrimary
-    nextBtn.Font = theme.FontBold
-    nextBtn.TextSize = theme.FontSizeSmall
-    nextBtn.BorderSizePixel = 0
-    nextBtn.Parent = buttonRow
-    
-    local nextCorner = Instance.new("UICorner")
-    nextCorner.CornerRadius = theme.SmallCornerRadius
-    nextCorner.Parent = nextBtn
-    
-    local prevBtn = Instance.new("TextButton")
-    prevBtn.Name = "PrevStepButton"
-    prevBtn.Size = UDim2.new(0.5, -4, 1, 0)
-    prevBtn.BackgroundColor3 = theme.Element
-    prevBtn.AutoButtonColor = false
-    prevBtn.Text = options.PrevText or "Prev Step (Mundur)"
-    prevBtn.TextColor3 = theme.TextPrimary
-    prevBtn.Font = theme.FontBold
-    prevBtn.TextSize = theme.FontSizeSmall
-    prevBtn.BorderSizePixel = 0
-    prevBtn.Parent = buttonRow
-    
-    local prevCorner = Instance.new("UICorner")
-    prevCorner.CornerRadius = theme.SmallCornerRadius
-    prevCorner.Parent = prevBtn
     
     local self = setmetatable({
         _container = container,
-        _titleLabel = titleLabel,
-        _subLabel = subLabel,
-        _stepperFrame = stepperFrame,
-        _nodeElements = nodeElements,
-        _lineElements = lineElements,
-        _nextBtn = nextBtn,
-        _prevBtn = prevBtn,
-        _theme = theme,
-        _steps = steps,
+        _stepNodes = stepNodes,
         _currentStep = initialStep,
-        _onStepChanged = onStepChanged,
+        _steps = steps,
+        _theme = theme,
+        _callback = onStepChanged,
     }, Progression)
     
-    local function layoutNodes()
-        local count = #nodeElements
-        if count == 0 then return end
-        
-        for i, node in ipairs(nodeElements) do
-            local xRatio = (count == 1) and 0.5 or ((i - 1) / (count - 1))
-            node.Frame.Position = UDim2.new(xRatio, -16, 0, 0)
-            
-            -- Position connection line to next node
-            if i < count and lineElements[i] then
-                local nextXRatio = i / (count - 1)
-                lineElements[i].Position = UDim2.new(xRatio, 16, 0, 14)
-                lineElements[i].Size = UDim2.new(nextXRatio - xRatio, -32, 0, 3)
-            end
+    local lastStep = 0
+    for i, node in ipairs(stepNodes) do
+        local function clickStep()
+            local now = os.clock()
+            if now - lastStep < 0.1 then return end
+            lastStep = now
+            self:SetStep(i)
+        end
+        local conn = node.Button.Activated:Connect(clickStep)
+        if cleanup then
+            cleanup:Add(conn)
         end
     end
-    layoutNodes()
     
-    -- Node click handlers
-    for i, node in ipairs(nodeElements) do
-        local conn = node.Circle.Activated:Connect(function()
-            self:SetStep(i, true)
-        end)
-        if cleanup then cleanup:Add(conn) end
-    end
-    
-    -- Next / Prev button events
-    local nextConn = nextBtn.Activated:Connect(function()
-        self:NextStep()
-    end)
-    local prevConn = prevBtn.Activated:Connect(function()
-        self:PrevStep()
-    end)
-    
-    if cleanup then
-        cleanup:Add(nextConn)
-        cleanup:Add(prevConn)
-        cleanup:Add(container)
-    end
-    
-    self:SetStep(initialStep, false)
+    if cleanup then cleanup:Add(container) end
     return self
+end
+
+function Progression:SetStep(stepIndex)
+    self._currentStep = math.clamp(stepIndex, 1, #self._steps)
+    for i, node in ipairs(self._stepNodes) do
+        local isActive = (i == self._currentStep)
+        local targetColor = isActive and self._theme.AccentStep or self._theme.SliderTrack
+        local targetIconColor = isActive and Color3.fromRGB(255, 255, 255) or self._theme.TextMuted
+        local targetLabelColor = isActive and self._theme.AccentStep or self._theme.TextMuted
+        
+        TweenService:Create(node.Button, TweenInfo.new(self._theme.AnimationFast), {
+            BackgroundColor3 = targetColor
+        }):Play()
+        node.Icon.ImageColor3 = targetIconColor
+        node.Label.TextColor3 = targetLabelColor
+        node.Label.Font = isActive and self._theme.FontBold or self._theme.FontRegular
+    end
+    task.spawn(self._callback, self._currentStep)
 end
 
 function Progression:GetStep()
     return self._currentStep
 end
 
-function Progression:GetValue()
-    return self._currentStep
-end
-
-function Progression:SetStep(stepIndex, fireCallback)
-    stepIndex = math.clamp(stepIndex, 1, #self._steps)
-    self._currentStep = stepIndex
-    
-    for i, node in ipairs(self._nodeElements) do
-        if i <= stepIndex then
-            -- Active or Completed
-            node.Circle.BackgroundColor3 = self._theme.AccentStep
-            node.Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
-            node.Label.TextColor3 = (i == stepIndex) and self._theme.AccentStep or self._theme.TextPrimary
-        else
-            -- Inactive
-            node.Circle.BackgroundColor3 = self._theme.AccentStepInactive
-            node.Icon.ImageColor3 = self._theme.TextMuted
-            node.Label.TextColor3 = self._theme.TextMuted
-        end
-    end
-    
-    for i, line in ipairs(self._lineElements) do
-        if i < stepIndex then
-            line.BackgroundColor3 = self._theme.AccentStep
-        else
-            line.BackgroundColor3 = self._theme.AccentStepInactive
-        end
-    end
-    
-    if fireCallback ~= false then
-        task.spawn(self._onStepChanged, self._currentStep, self._steps[self._currentStep])
-    end
-end
-
-function Progression:SetValue(stepIndex, fireCallback)
-    self:SetStep(stepIndex, fireCallback)
-end
-
-function Progression:NextStep()
-    if self._currentStep < #self._steps then
-        self:SetStep(self._currentStep + 1, true)
-    end
-end
-
-function Progression:PrevStep()
-    if self._currentStep > 1 then
-        self:SetStep(self._currentStep - 1, true)
-    end
-end
-
 function Progression:Destroy()
     if self._container then
         self._container:Destroy()
-        self._container = nil
     end
 end
 
 return Progression
-

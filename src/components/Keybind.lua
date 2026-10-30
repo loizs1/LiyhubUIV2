@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Keybind Component
-    An interactive keybind component that listens for key presses and triggers callbacks.
-]]
-
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
@@ -34,12 +29,11 @@ function Keybind.new(parent, options, theme, cleanup)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = theme.TextPrimary
-    label.Font = theme.FontRegular
+    label.Font = theme.FontBold
     label.TextSize = theme.FontSizeRegular
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = container
     
-    -- Keybind Button Badge
     local keyButton = Instance.new("TextButton")
     keyButton.Name = "KeyButton"
     keyButton.Size = UDim2.new(0.4, -20, 0, 24)
@@ -133,4 +127,3 @@ function Keybind:Destroy()
 end
 
 return Keybind
-

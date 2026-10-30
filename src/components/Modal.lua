@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Modal & Notification Component
-    Provides interactive confirmation modals and floating toast notifications.
-]]
-
 local TweenService = game:GetService("TweenService")
 
 local Modal = {}
@@ -26,36 +21,79 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     overlay.ZIndex = 100
     overlay.Parent = parentScreenGui
     
+    local uiScaleVal = options.Scale
+    if not uiScaleVal then
+        local mf = parentScreenGui:FindFirstChild("MainFrame")
+        local ws = mf and mf:FindFirstChild("WindowScale")
+        if ws and ws:IsA("UIScale") then
+            uiScaleVal = ws.Scale
+        end
+    end
+    if uiScaleVal and uiScaleVal ~= 1 then
+        local oScale = Instance.new("UIScale")
+        oScale.Scale = uiScaleVal
+        oScale.Parent = overlay
+    end
+    
     local dialog = Instance.new("Frame")
     dialog.Name = "Dialog"
-    dialog.Size = UDim2.new(0, 320, 0, 160)
-    dialog.Position = UDim2.new(0.5, -160, 0.5, -80)
+    dialog.AnchorPoint = Vector2.new(0.5, 0.5)
+    dialog.Position = UDim2.new(0.5, 0, 0.5, 0)
+    dialog.Size = UDim2.new(0.85, 0, 0, 0)
+    dialog.AutomaticSize = Enum.AutomaticSize.Y
     dialog.BackgroundColor3 = theme.Header
     dialog.BorderSizePixel = 0
     dialog.ZIndex = 101
     dialog.Parent = overlay
     
+    local dConstraint = Instance.new("UISizeConstraint")
+    dConstraint.MinSize = Vector2.new(280, 130)
+    dConstraint.MaxSize = Vector2.new(420, 500)
+    dConstraint.Parent = dialog
+    
+    local dPad = Instance.new("UIPadding")
+    dPad.PaddingTop = UDim.new(0, 14)
+    dPad.PaddingBottom = UDim.new(0, 14)
+    dPad.PaddingLeft = UDim.new(0, 16)
+    dPad.PaddingRight = UDim.new(0, 16)
+    dPad.Parent = dialog
+    
+    local dList = Instance.new("UIListLayout")
+    dList.SortOrder = Enum.SortOrder.LayoutOrder
+    dList.Padding = UDim.new(0, 10)
+    dList.Parent = dialog
+    
     local corner = Instance.new("UICorner")
     corner.CornerRadius = theme.CornerRadius
     corner.Parent = dialog
     
+    if theme.UseStrokes then
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "DialogStroke"
+        stroke.Color = theme.BorderWindow or theme.Border
+        stroke.Thickness = 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = dialog
+    end
+    
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -24, 0, 24)
-    titleLabel.Position = UDim2.new(0, 12, 0, 12)
+    titleLabel.Size = UDim2.new(1, 0, 0, 22)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
     titleLabel.TextColor3 = theme.TextPrimary
     titleLabel.Font = theme.FontBold
     titleLabel.TextSize = theme.FontSizeTitle
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    titleLabel.LayoutOrder = 1
     titleLabel.ZIndex = 102
     titleLabel.Parent = dialog
     
     local msgLabel = Instance.new("TextLabel")
     msgLabel.Name = "Message"
-    msgLabel.Size = UDim2.new(1, -24, 0, 60)
-    msgLabel.Position = UDim2.new(0, 12, 0, 40)
+    msgLabel.Size = UDim2.new(1, 0, 0, 0)
+    msgLabel.AutomaticSize = Enum.AutomaticSize.Y
     msgLabel.BackgroundTransparency = 1
     msgLabel.Text = message
     msgLabel.TextColor3 = theme.TextSecondary
@@ -64,14 +102,15 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
     msgLabel.TextYAlignment = Enum.TextYAlignment.Top
     msgLabel.TextWrapped = true
+    msgLabel.LayoutOrder = 2
     msgLabel.ZIndex = 102
     msgLabel.Parent = dialog
     
     local btnRow = Instance.new("Frame")
     btnRow.Name = "Buttons"
-    btnRow.Size = UDim2.new(1, -24, 0, 32)
-    btnRow.Position = UDim2.new(0, 12, 1, -44)
+    btnRow.Size = UDim2.new(1, 0, 0, 32)
     btnRow.BackgroundTransparency = 1
+    btnRow.LayoutOrder = 3
     btnRow.ZIndex = 102
     btnRow.Parent = dialog
     
@@ -115,18 +154,22 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     cfCorner.CornerRadius = theme.SmallCornerRadius
     cfCorner.Parent = confirmBtn
     
-    -- Animate In
     TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
         BackgroundTransparency = 0.5
     }):Play()
     
+    local isClosing = false
     local function close(callback)
+        if isClosing then return end
+        isClosing = true
         local t = TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
             BackgroundTransparency = 1
         })
         t:Play()
         t.Completed:Connect(function()
-            overlay:Destroy()
+            if overlay and overlay.Parent then
+                overlay:Destroy()
+            end
             if callback then
                 task.spawn(callback)
             end
@@ -151,44 +194,53 @@ function Modal.Notify(parentScreenGui, options, theme, cleanup)
     options = options or {}
     local title = options.Title or "Notification"
     local message = options.Content or options.Message or ""
-    local duration = options.Duration or 3.5
+    local duration = options.Duration or 3.0
     
-    -- Notification Container Frame in bottom-right corner
     local holder = parentScreenGui:FindFirstChild("NotificationHolder")
     if not holder then
         holder = Instance.new("Frame")
         holder.Name = "NotificationHolder"
-        holder.Size = UDim2.new(0, 280, 1, -20)
-        holder.Position = UDim2.new(1, -290, 0, 10)
+        holder.Size = UDim2.new(0, 260, 1, -20)
+        holder.Position = UDim2.new(1, -270, 0, 10)
         holder.BackgroundTransparency = 1
         holder.ZIndex = 90
         holder.Parent = parentScreenGui
         
         local hList = Instance.new("UIListLayout")
         hList.VerticalAlignment = Enum.VerticalAlignment.Bottom
+        hList.HorizontalAlignment = Enum.HorizontalAlignment.Right
         hList.SortOrder = Enum.SortOrder.LayoutOrder
-        hList.Padding = UDim.new(0, 8)
+        hList.Padding = UDim.new(0, 6)
         hList.Parent = holder
     end
     
     local toast = Instance.new("Frame")
     toast.Name = "Toast"
-    toast.Size = UDim2.new(1, 0, 0, 60)
+    toast.Size = UDim2.new(1, 0, 0, 48)
     toast.Position = UDim2.new(1, 300, 0, 0)
     toast.BackgroundColor3 = theme.Header
     toast.BorderSizePixel = 0
+    toast.ClipsDescendants = true
     toast.ZIndex = 91
     toast.Parent = holder
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = theme.CornerRadius
+    corner.CornerRadius = theme.CornerRadius or UDim.new(0, 7)
     corner.Parent = toast
     
-    -- Accent line on the left edge
+    if theme.UseStrokes then
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "ToastStroke"
+        stroke.Color = theme.BorderWindow or theme.Border
+        stroke.Thickness = 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = toast
+    end
+    
     local bar = Instance.new("Frame")
     bar.Name = "Bar"
     bar.Size = UDim2.new(0, 3, 1, -12)
-    bar.Position = UDim2.new(0, 6, 0, 6)
+    bar.Position = UDim2.new(0, 5, 0, 6)
     bar.BackgroundColor3 = theme.Accent
     bar.BorderSizePixel = 0
     bar.ZIndex = 92
@@ -200,50 +252,52 @@ function Modal.Notify(parentScreenGui, options, theme, cleanup)
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -24, 0, 20)
-    titleLabel.Position = UDim2.new(0, 16, 0, 8)
+    titleLabel.Size = UDim2.new(1, -20, 0, 16)
+    titleLabel.Position = UDim2.new(0, 14, 0, 8)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
     titleLabel.TextColor3 = theme.TextPrimary
     titleLabel.Font = theme.FontBold
     titleLabel.TextSize = theme.FontSizeSmall
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     titleLabel.ZIndex = 92
     titleLabel.Parent = toast
     
     local msgLabel = Instance.new("TextLabel")
     msgLabel.Name = "Message"
-    msgLabel.Size = UDim2.new(1, -24, 0, 24)
-    msgLabel.Position = UDim2.new(0, 16, 0, 28)
+    msgLabel.Size = UDim2.new(1, -20, 0, 14)
+    msgLabel.Position = UDim2.new(0, 14, 0, 26)
     msgLabel.BackgroundTransparency = 1
     msgLabel.Text = message
     msgLabel.TextColor3 = theme.TextSecondary
     msgLabel.Font = theme.FontRegular
     msgLabel.TextSize = 10
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
-    msgLabel.TextWrapped = true
+    msgLabel.TextTruncate = Enum.TextTruncate.AtEnd
     msgLabel.ZIndex = 92
     msgLabel.Parent = toast
     
-    -- Slide In
-    toast.Position = UDim2.new(1, 0, 0, 0)
-    TweenService:Create(toast, TweenInfo.new(theme.AnimationMedium), {
+    TweenService:Create(toast, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
     
-    -- Auto Dismiss
+    local isDismissed = false
     task.delay(duration, function()
+        if isDismissed then return end
+        isDismissed = true
         if toast and toast.Parent then
-            local t = TweenService:Create(toast, TweenInfo.new(theme.AnimationFast), {
-                Position = UDim2.new(1, 50, 0, 0)
+            local t = TweenService:Create(toast, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(1, 300, 0, 0)
             })
             t:Play()
             t.Completed:Connect(function()
-                toast:Destroy()
+                if toast and toast.Parent then
+                    toast:Destroy()
+                end
             end)
         end
     end)
 end
 
 return Modal
-

@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Input Component
-    A text entry box with placeholder support, focus effects, GetValue, and SetValue.
-]]
-
 local TweenService = game:GetService("TweenService")
 
 local Input = {}
@@ -35,12 +30,11 @@ function Input.new(parent, options, theme, cleanup)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = theme.TextPrimary
-    label.Font = theme.FontRegular
+    label.Font = theme.FontBold
     label.TextSize = theme.FontSizeRegular
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = container
     
-    -- TextBox container
     local boxBg = Instance.new("Frame")
     boxBg.Name = "BoxBackground"
     boxBg.Size = UDim2.new(0.55, -20, 0, 26)
@@ -80,7 +74,6 @@ function Input.new(parent, options, theme, cleanup)
         _disabled = false,
     }, Input)
     
-    -- Focus in/out animations
     local focusInConn = textBox.Focused:Connect(function()
         if self._disabled then return end
         TweenService:Create(boxBg, TweenInfo.new(theme.AnimationFast), {
@@ -134,4 +127,3 @@ function Input:Destroy()
 end
 
 return Input
-

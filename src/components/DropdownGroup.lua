@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Dropdown Group Component
-    Groups multiple dropdowns with independent expansion, state, and callbacks.
-]]
-
 local Dropdown = nil
 pcall(function()
     Dropdown = require(script.Parent.Dropdown)
@@ -15,32 +10,21 @@ function DropdownGroup.new(parent, options, theme, cleanup, dropdownModule)
     options = options or {}
     local dropdownCtor = dropdownModule or Dropdown
     
-    local container = Instance.new("Frame")
-    container.Name = "DropdownGroup"
-    container.Size = UDim2.new(1, 0, 0, 0)
-    container.AutomaticSize = Enum.AutomaticSize.Y
-    container.BackgroundColor3 = theme.Card
-    container.BorderSizePixel = 0
-    container.Parent = parent
+    local row = Instance.new("Frame")
+    row.Name = "DropdownGroup"
+    row.Size = UDim2.new(1, 0, 0, 52)
+    row.BackgroundTransparency = 1
+    row.BorderSizePixel = 0
+    row.Parent = parent
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = theme.CornerRadius
-    corner.Parent = container
-    
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 6)
-    padding.PaddingBottom = UDim.new(0, 6)
-    padding.PaddingLeft = UDim.new(0, 6)
-    padding.PaddingRight = UDim.new(0, 6)
-    padding.Parent = container
-    
-    local list = Instance.new("UIListLayout")
-    list.SortOrder = Enum.SortOrder.LayoutOrder
-    list.Padding = UDim.new(0, 4)
-    list.Parent = container
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = row
     
     local self = setmetatable({
-        _container = container,
+        _container = row,
         _dropdowns = {},
         _theme = theme,
         _cleanup = cleanup,
@@ -48,7 +32,7 @@ function DropdownGroup.new(parent, options, theme, cleanup, dropdownModule)
     }, DropdownGroup)
     
     if cleanup then
-        cleanup:Add(container)
+        cleanup:Add(row)
     end
     
     if options.Dropdowns and type(options.Dropdowns) == "table" then
@@ -60,22 +44,27 @@ function DropdownGroup.new(parent, options, theme, cleanup, dropdownModule)
     return self
 end
 
+function DropdownGroup:_rebalanceSizes()
+    local count = #self._dropdowns
+    if count == 0 then return end
+    local gapTotal = (count - 1) * 8
+    local widthScale = 1 / count
+    for _, d in ipairs(self._dropdowns) do
+        d._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
+    end
+end
+
 function DropdownGroup:AddDropdown(options)
     local d = self._dropdownCtor.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._dropdowns, d)
+    self:_rebalanceSizes()
     return d
-end
-
-function DropdownGroup:GetDropdowns()
-    return self._dropdowns
 end
 
 function DropdownGroup:Destroy()
     if self._container then
         self._container:Destroy()
-        self._container = nil
     end
 end
 
 return DropdownGroup
-

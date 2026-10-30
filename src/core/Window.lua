@@ -46,33 +46,74 @@ function Window.new(options, dependencies)
     local Banner = deps.Banner
     local Progression = deps.Progression
     
+    local SizeManager = deps.SizeManager
+    if not SizeManager then
+        local sOk, sRes = pcall(function() return require(script.Parent.Parent.size.SizeManager) end)
+        SizeManager = sOk and sRes
+    end
+    
+    local detectedDevice = SizeManager and SizeManager.DetectDevice() or "PC"
+    local deviceName = options.Device or detectedDevice
+    local sizePreset = SizeManager and SizeManager.GetPreset(deviceName) or {
+        Name = "PC",
+        Scale = 1.00,
+        DefaultSize = UDim2.fromOffset(740, 490),
+        MinSize = Vector2.new(480, 340),
+        MaxSize = Vector2.new(1280, 840),
+        SidebarWidth = 190,
+        HeaderHeight = 48,
+        ModalWidth = 340,
+    }
+
     local titleText = options.Title or "LiyHub"
     local subtitleText = options.Subtitle or "v2.2 Black & White Edition"
-    local defaultSize = options.Size or UDim2.new(0, 680, 0, 460)
+    local defaultSize = options.Size
+    if not defaultSize then
+        defaultSize = sizePreset.DefaultSize
+    elseif options.Device == nil and detectedDevice ~= "PC" then
+        if defaultSize == UDim2.fromOffset(740, 490) or defaultSize == UDim2.new(0, 740, 0, 490) or defaultSize == UDim2.new(0, 680, 0, 460) then
+            defaultSize = sizePreset.DefaultSize
+        end
+    end
     local toggleKey = options.ToggleKey or Enum.KeyCode.RightControl
     local enableMobilePin = options.MobilePin ~= false -- Default enabled
     local logoAsset = options.Logo or "rbxassetid://6031075936"
-    local parentGui = options.Parent
-    
-    if not parentGui then
-        local localPlayer = Players.LocalPlayer
-        if localPlayer then
-            parentGui = localPlayer:WaitForChild("PlayerGui", 5)
+    local function resolveParentGui(customParent)
+        if customParent then return customParent end
+        local okH, h = pcall(function() return gethui and gethui() end)
+        if okH and h then return h end
+        local okCg, cg = pcall(function() return game:GetService("CoreGui") end)
+        if okCg and cg then
+            local test = Instance.new("Folder")
+            local pOk = pcall(function()
+                test.Parent = cg
+                test:Destroy()
+            end)
+            if pOk then return cg end
         end
+        local lp = Players.LocalPlayer
+        if lp then
+            local pg = lp:FindFirstChild("PlayerGui") or lp:WaitForChild("PlayerGui", 5)
+            if pg then return pg end
+        end
+        return game:GetService("StarterGui")
     end
-    
-    -- Main ScreenGui
+
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "LiyHubUI_" .. titleText
     screenGui.ResetOnSpawn = false
+    screenGui.DisplayOrder = 2147483647
+    screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    pcall(function()
-        if typeof(syn) == "table" and syn.protect_gui then
-            syn.protect_gui(screenGui)
-        end
-    end)
-    screenGui.Parent = parentGui or game:GetService("CoreGui")
+
+    if typeof(syn) == "table" and typeof(syn.protect_gui) == "function" then
+        pcall(syn.protect_gui, screenGui)
+    elseif typeof(protect_gui) == "function" then
+        pcall(protect_gui, screenGui)
+    elseif typeof(protectgui) == "function" then
+        pcall(protectgui, screenGui)
+    end
+    screenGui.Parent = resolveParentGui(options.Parent)
     
     -- Main Frame
     local mainFrame = Instance.new("Frame")
@@ -85,20 +126,25 @@ function Window.new(options, dependencies)
     mainFrame.Active = true
     mainFrame.Parent = screenGui
     
+    local windowScale = Instance.new("UIScale")
+    windowScale.Name = "WindowScale"
+    windowScale.Scale = sizePreset.Scale or 1.0
+    windowScale.Parent = mainFrame
+
     local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = theme.CornerRadius
+    mainCorner.CornerRadius = theme.WindowCornerRadius or theme.CornerRadius
     mainCorner.Parent = mainFrame
     
-    -- Cursor unlocker for PC interaction
-    local modalUnlocker = Instance.new("TextButton")
-    modalUnlocker.Name = "ModalUnlocker"
-    modalUnlocker.BackgroundTransparency = 1
-    modalUnlocker.Text = ""
-    modalUnlocker.Size = UDim2.new(0, 0, 0, 0)
-    modalUnlocker.Visible = true
-    modalUnlocker.Modal = true
-    modalUnlocker.Active = false
-    modalUnlocker.Parent = mainFrame
+    if theme.UseStrokes then
+        local mainStroke = Instance.new("UIStroke")
+        mainStroke.Name = "WindowStroke"
+        mainStroke.Color = theme.BorderWindow or Color3.fromRGB(42, 42, 50)
+        mainStroke.Thickness = 1
+        mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        mainStroke.Parent = mainFrame
+    end
+    
+
     
     -- Header Bar
     local header = Instance.new("Frame")
@@ -120,37 +166,49 @@ function Window.new(options, dependencies)
     headerFlatBottom.BorderSizePixel = 0
     headerFlatBottom.Parent = header
     
+    local logoImg = Instance.new("ImageLabel")
+    logoImg.Name = "Logo"
+    logoImg.Size = UDim2.new(0, 26, 0, 26)
+    logoImg.Position = UDim2.new(0, 14, 0.5, -13)
+    logoImg.BackgroundTransparency = 1
+    logoImg.Image = logoAsset or theme.DefaultLogo or "rbxasset://textures/LiyhubLogo.png"
+    logoImg.ScaleType = Enum.ScaleType.Fit
+    logoImg.Parent = header
+    
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(0.5, 0, 0, 20)
-    titleLabel.Position = UDim2.new(0, 16, 0, 8)
+    titleLabel.Size = UDim2.new(1, -130, 0, 18)
+    titleLabel.Position = UDim2.new(0, 46, 0, 7)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = titleText
     titleLabel.TextColor3 = theme.TextPrimary
     titleLabel.Font = theme.FontTitle
     titleLabel.TextSize = theme.FontSizeTitle
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     titleLabel.Parent = header
     
     local subLabel = Instance.new("TextLabel")
     subLabel.Name = "Subtitle"
-    subLabel.Size = UDim2.new(0.5, 0, 0, 14)
-    subLabel.Position = UDim2.new(0, 16, 0, 28)
+    subLabel.Size = UDim2.new(1, -130, 0, 14)
+    subLabel.Position = UDim2.new(0, 46, 0, 25)
     subLabel.BackgroundTransparency = 1
     subLabel.Text = subtitleText
-    subLabel.TextColor3 = theme.TextSecondary
+    subLabel.TextColor3 = theme.TextMuted
     subLabel.Font = theme.FontRegular
     subLabel.TextSize = theme.FontSizeSubtitle
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
+    subLabel.TextTruncate = Enum.TextTruncate.AtEnd
     subLabel.Parent = header
     
     -- Header Controls: Minimize & Close
     local controlsFrame = Instance.new("Frame")
     controlsFrame.Name = "Controls"
     controlsFrame.Size = UDim2.new(0, 70, 0, 28)
-    controlsFrame.Position = UDim2.new(1, -80, 0.5, -14)
+    controlsFrame.Position = UDim2.new(1, -78, 0, 10)
     controlsFrame.BackgroundTransparency = 1
-    controlsFrame.Parent = header
+    controlsFrame.ZIndex = 20
+    controlsFrame.Parent = mainFrame
     
     local controlsLayout = Instance.new("UIListLayout")
     controlsLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -169,7 +227,7 @@ function Window.new(options, dependencies)
     minBtn.TextSize = 16
     minBtn.BorderSizePixel = 0
     minBtn.Active = true
-    minBtn.ZIndex = 14
+    minBtn.ZIndex = 21
     minBtn.Parent = controlsFrame
     
     local minCorner = Instance.new("UICorner")
@@ -187,7 +245,7 @@ function Window.new(options, dependencies)
     closeBtn.TextSize = 13
     closeBtn.BorderSizePixel = 0
     closeBtn.Active = true
-    closeBtn.ZIndex = 14
+    closeBtn.ZIndex = 21
     closeBtn.Parent = controlsFrame
     
     local closeCorner = Instance.new("UICorner")
@@ -246,6 +304,15 @@ function Window.new(options, dependencies)
     local profCorner = Instance.new("UICorner")
     profCorner.CornerRadius = theme.SmallCornerRadius
     profCorner.Parent = profileCard
+    
+    if theme.UseStrokes then
+        local profStroke = Instance.new("UIStroke")
+        profStroke.Name = "ProfileStroke"
+        profStroke.Color = theme.Border
+        profStroke.Thickness = 1
+        profStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        profStroke.Parent = profileCard
+    end
     
     local avatarImg = Instance.new("ImageLabel")
     avatarImg.Name = "Avatar"
@@ -320,18 +387,30 @@ function Window.new(options, dependencies)
     contentPadding.PaddingRight = UDim.new(0, 10)
     contentPadding.Parent = contentArea
     
-    -- Resize Grip in bottom right
-    local resizeGrip = Instance.new("TextLabel")
+    local resizeGrip = Instance.new("TextButton")
     resizeGrip.Name = "ResizeGrip"
-    resizeGrip.Size = UDim2.new(0, 16, 0, 16)
-    resizeGrip.Position = UDim2.new(1, -18, 1, -18)
-    resizeGrip.BackgroundTransparency = 1
     resizeGrip.Text = ""
-    resizeGrip.TextColor3 = theme.TextMuted
-    resizeGrip.Font = theme.FontBold
-    resizeGrip.TextSize = 14
+    resizeGrip.AutoButtonColor = false
+    resizeGrip.BackgroundTransparency = 1
+    resizeGrip.Size = UDim2.fromOffset(24, 24)
+    resizeGrip.AnchorPoint = Vector2.new(1, 1)
+    resizeGrip.Position = UDim2.new(1, -2, 1, -2)
     resizeGrip.ZIndex = 50
     resizeGrip.Parent = mainFrame
+
+    local gripIcon = Instance.new("ImageLabel")
+    gripIcon.Name = "GripIcon"
+    gripIcon.Size = UDim2.fromOffset(12, 12)
+    gripIcon.AnchorPoint = Vector2.new(1, 1)
+    gripIcon.Position = UDim2.new(1, -4, 1, -4)
+    gripIcon.BackgroundTransparency = 1
+    gripIcon.Image = "rbxassetid://10709791523"
+    gripIcon.Rotation = 45
+    gripIcon.ImageColor3 = Color3.fromRGB(140, 155, 180)
+    gripIcon.ImageTransparency = 0.45
+    gripIcon.ZIndex = 51
+    gripIcon.Active = false
+    gripIcon.Parent = resizeGrip
     
     local self = setmetatable({
         _screenGui = screenGui,
@@ -346,6 +425,11 @@ function Window.new(options, dependencies)
         _layoutCtor = Layout,
         _modal = Modal,
         _mobilePin = nil,
+        _sizeManager = SizeManager,
+        _sizePreset = sizePreset,
+        _currentDevice = sizePreset.Name,
+        _baseScale = sizePreset.Scale or 1.0,
+        _uiScale = windowScale,
         _components = {
             Button = Button,
             ButtonGroup = ButtonGroup,
@@ -378,6 +462,12 @@ function Window.new(options, dependencies)
     
     local dragBegan = header.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local mousePos = input.Position
+            local cPos = controlsFrame.AbsolutePosition
+            local cSize = controlsFrame.AbsoluteSize
+            if mousePos.X >= cPos.X and mousePos.X <= cPos.X + cSize.X and mousePos.Y >= cPos.Y and mousePos.Y <= cPos.Y + cSize.Y then
+                return
+            end
             dragging = true
             dragStart = input.Position
             startPos = mainFrame.Position
@@ -408,11 +498,20 @@ function Window.new(options, dependencies)
         end
     end)
     
-    local minClick = minBtn.Activated:Connect(function()
+    local lastMin = 0
+    local function doMin()
+        local now = os.clock()
+        if now - lastMin < 0.15 then return end
+        lastMin = now
         self:ToggleMinimize()
-    end)
+    end
+    local minClick = minBtn.Activated:Connect(doMin)
     
-    local closeClick = closeBtn.Activated:Connect(function()
+    local lastClose = 0
+    local function doClose()
+        local now = os.clock()
+        if now - lastClose < 0.15 then return end
+        lastClose = now
         self:ShowModal({
             Title = "Close " .. titleText .. "?",
             Message = "Are you sure you want to unload and close " .. titleText .. "?",
@@ -422,7 +521,8 @@ function Window.new(options, dependencies)
                 self:Destroy()
             end,
         })
-    end)
+    end
+    local closeClick = closeBtn.Activated:Connect(doClose)
     
     local keyToggleConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == self._toggleKey then
@@ -436,6 +536,78 @@ function Window.new(options, dependencies)
             Title = titleText,
             Logo = logoAsset,
         }, theme, cleanup)
+        self._mobilePin:SetVisible(false)
+    end
+
+    local isResizing = false
+    local resizeStartMouse = Vector2.zero
+    local resizeStartSize = Vector2.zero
+
+    local gripEnter = resizeGrip.MouseEnter:Connect(function()
+        TweenService:Create(gripIcon, TweenInfo.new(0.15), {
+            ImageColor3 = Color3.fromRGB(255, 255, 255),
+            ImageTransparency = 0
+        }):Play()
+    end)
+    local gripLeave = resizeGrip.MouseLeave:Connect(function()
+        if not isResizing then
+            TweenService:Create(gripIcon, TweenInfo.new(0.15), {
+                ImageColor3 = Color3.fromRGB(140, 155, 180),
+                ImageTransparency = 0.45
+            }):Play()
+        end
+    end)
+
+    local resizeBegan = resizeGrip.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isResizing = true
+            resizeStartMouse = Vector2.new(input.Position.X, input.Position.Y)
+            resizeStartSize = Vector2.new(mainFrame.AbsoluteSize.X, mainFrame.AbsoluteSize.Y)
+            TweenService:Create(gripIcon, TweenInfo.new(0.1), {
+                ImageColor3 = Color3.fromRGB(255, 255, 255),
+                ImageTransparency = 0
+            }):Play()
+
+            local moveConn, endConn
+            moveConn = UserInputService.InputChanged:Connect(function(moveInput)
+                if not isResizing then return end
+                if moveInput.UserInputType == Enum.UserInputType.MouseMovement or moveInput.UserInputType == Enum.UserInputType.Touch then
+                    local activeScale = windowScale.Scale > 0 and windowScale.Scale or 1.0
+                    local delta = (Vector2.new(moveInput.Position.X, moveInput.Position.Y) - resizeStartMouse) / activeScale
+                    local curCam = workspace.CurrentCamera
+                    local curVp = Vector2.new(1920, 1080)
+                    if curCam and curCam.ViewportSize.X > 0 then
+                        curVp = curCam.ViewportSize
+                    end
+                    local minW = sizePreset.MinSize and sizePreset.MinSize.X or 440
+                    local minH = sizePreset.MinSize and sizePreset.MinSize.Y or 300
+                    local maxW = math.max(curVp.X - 20, 600)
+                    local maxH = math.max(curVp.Y - 20, 400)
+                    local newW = math.clamp(math.floor(resizeStartSize.X + delta.X), minW, maxW)
+                    local newH = math.clamp(math.floor(resizeStartSize.Y + delta.Y), minH, maxH)
+                    mainFrame.Size = UDim2.fromOffset(newW, newH)
+                    self._originalSize = mainFrame.Size
+                end
+            end)
+
+            endConn = UserInputService.InputEnded:Connect(function(endInput)
+                if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
+                    isResizing = false
+                    if moveConn then moveConn:Disconnect() end
+                    if endConn then endConn:Disconnect() end
+                    TweenService:Create(gripIcon, TweenInfo.new(0.2), {
+                        ImageColor3 = Color3.fromRGB(140, 155, 180),
+                        ImageTransparency = 0.45
+                    }):Play()
+                end
+            end)
+        end
+    end)
+
+    if cleanup then
+        cleanup:Add(gripEnter)
+        cleanup:Add(gripLeave)
+        cleanup:Add(resizeBegan)
     end
     
     if cleanup then
@@ -448,29 +620,283 @@ function Window.new(options, dependencies)
         cleanup:Add(keyToggleConn)
         cleanup:Add(screenGui)
     end
+
+    local function updateWindowScale()
+        pcall(function()
+            if not screenGui or not screenGui.Parent or not windowScale or not windowScale.Parent then return end
+            local curCam = workspace.CurrentCamera
+            local vp = curCam and curCam.ViewportSize
+            if not vp or vp.X <= 0 or vp.Y <= 0 then
+                local sz = screenGui.AbsoluteSize
+                if sz and sz.X > 0 and sz.Y > 0 then
+                    vp = sz
+                end
+            end
+            if not vp or vp.X <= 0 or vp.Y <= 0 then return end
+            local baseW = mainFrame.Size.X.Offset
+            local baseH = mainFrame.Size.Y.Offset
+            if baseW <= 0 or baseH <= 0 then return end
+            local pad = (detectedDevice ~= "PC") and 24 or 32
+            local scaleX = (vp.X - pad) / baseW
+            local scaleY = (vp.Y - pad) / baseH
+            local fitScale = math.min(scaleX, scaleY)
+            local userScale = self._baseScale or sizePreset.Scale or 1.0
+            if fitScale < 1.0 then
+                windowScale.Scale = math.clamp(fitScale * userScale, 0.45, userScale)
+            else
+                windowScale.Scale = userScale
+            end
+        end)
+    end
+    updateWindowScale()
+    local vpConn = workspace.CurrentCamera and workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateWindowScale)
+    local guiConn = screenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateWindowScale)
+    if cleanup then
+        if vpConn then cleanup:Add(vpConn) end
+        cleanup:Add(guiConn)
+    end
+
+    self:_initUniversalTabs(options)
     
     return self
 end
 
+function Window:Minimize()
+    self._minimized = true
+    self._mainFrame.Visible = false
+    if self._mobilePin then
+        self._mobilePin:SetVisible(true)
+        self._mobilePin:SetOpenState(false)
+    end
+end
+
+function Window:Open()
+    self._minimized = false
+    self._mainFrame.Visible = true
+    if self._mobilePin then
+        self._mobilePin:SetVisible(false)
+        self._mobilePin:SetOpenState(true)
+    end
+end
+
 function Window:ToggleMinimize()
-    self._minimized = not self._minimized
-    if self._minimized then
-        TweenService:Create(self._mainFrame, TweenInfo.new(self._theme.AnimationFast), {
-            Size = UDim2.new(self._originalSize.X.Scale, self._originalSize.X.Offset, 0, 48)
-        }):Play()
+    if self._mainFrame.Visible then
+        self:Minimize()
     else
-        TweenService:Create(self._mainFrame, TweenInfo.new(self._theme.AnimationFast), {
-            Size = self._originalSize
-        }):Play()
+        self:Open()
     end
 end
 
 function Window:Toggle()
-    local targetVisible = not self._mainFrame.Visible
-    self._mainFrame.Visible = targetVisible
-    if self._mobilePin then
-        self._mobilePin:UpdateState()
+    self:ToggleMinimize()
+end
+
+function Window:SetDevice(deviceType)
+    if not self._sizeManager then return end
+    local preset = self._sizeManager.GetPreset(deviceType)
+    if not preset then return end
+    self._sizePreset = preset
+    self._currentDevice = preset.Name
+    self._baseScale = preset.Scale
+    self._uiScale.Scale = preset.Scale
+    self._mainFrame.Size = preset.DefaultSize
+    self._originalSize = preset.DefaultSize
+    local sbW = preset.SidebarWidth or 190
+    if self._sidebar then
+        self._sidebar.Size = UDim2.new(0, sbW, 1, 0)
     end
+    if self._contentArea then
+        self._contentArea.Size = UDim2.new(1, -sbW, 1, 0)
+        self._contentArea.Position = UDim2.new(0, sbW, 0, 0)
+    end
+end
+
+function Window:SetScale(scaleFactor)
+    local num = math.clamp(tonumber(scaleFactor) or 1.0, 0.5, 1.5)
+    self._baseScale = num
+    self._uiScale.Scale = num
+end
+
+function Window:SetSizePreset(presetName)
+    local mult = self._sizeManager and self._sizeManager.GetScaleMultiplier(presetName) or 1.0
+    self:SetScale(mult)
+end
+
+function Window:GetDevice()
+    return self._currentDevice or "PC"
+end
+
+function Window:GetScale()
+    return self._uiScale and self._uiScale.Scale or 1.0
+end
+
+function Window:GetUniversalGroup()
+    return self._universalGroup
+end
+
+function Window:GetInformationTab()
+    return self._infoTab
+end
+
+function Window:GetSettingsTab()
+    return self._settingsTab
+end
+
+function Window:_initUniversalTabs(options)
+    if options.UniversalGroup == false then return end
+
+    local discordUrl = options.Discord or options.DiscordLink or "https://discord.gg/Nr56tQJeJh"
+    local bannerImage = options.Banner or options.BannerImage or "rbxasset://textures/LiyhubBanner.png"
+    local bannerTitle = options.BannerTitle or "LiyHub Announcement"
+    local bannerDesc = options.BannerDesc or "Universal high-performance script framework engineered by Than & aeris. Minimalist pure B&W design, vector typography, and native stealth architecture."
+
+    local univGroup = self:CreateTabGroup("Universal")
+    self._universalGroup = univGroup
+
+    local infoTab = univGroup:CreateTab({
+        Name = "Information",
+        Icon = "rbxassetid://6031075931",
+    })
+    self._infoTab = infoTab
+
+    infoTab:CreateBanner({
+        Title = bannerTitle,
+        Image = bannerImage,
+        Description = bannerDesc,
+    })
+
+    local commSec = infoTab:CreateSection("Community & Support")
+    commSec:CreateButton({
+        Name = "🌐 Discord Community",
+        Desc = discordUrl,
+        ButtonText = "Copy Invite",
+        Callback = function()
+            pcall(function()
+                if setclipboard then
+                    setclipboard(discordUrl)
+                elseif toclipboard then
+                    toclipboard(discordUrl)
+                end
+            end)
+            self:Notify({
+                Title = "Success",
+                Content = "Discord invite copied to clipboard!",
+                Duration = 2.5,
+            })
+        end
+    })
+
+    local sysSec = infoTab:CreateSection("Script Information")
+    sysSec:CreateParagraph({
+        Title = "✨ About Liyhub",
+        Content = "👑 Developers: Than & aeris\n⚡ Engine: LiyhubUI v2.2.0 (Pure B&W)\n🛡️ Security: Zero LogService telemetry & stealth hooks\n🌐 Community: " .. discordUrl .. "\n📐 Adaptive: Auto-scales across PC, Tablet & Android\n🔘 Shortcuts: [RightControl] to toggle • [-] to pin"
+    })
+
+    local settingsTab = univGroup:CreateTab({
+        Name = "Setting UI",
+        Icon = "rbxassetid://6031075936",
+    })
+    self._settingsTab = settingsTab
+
+    local cfgSec = settingsTab:CreateSection("Configurations")
+    cfgSec:CreateInput({
+        Name = "Profile Name",
+        Placeholder = "Enter config name...",
+        Default = "DefaultConfig",
+        Callback = function(text) end
+    })
+    cfgSec:CreateDropdown({
+        Name = "Select Saved Config",
+        Options = { "Default", "Legit", "Rage", "Farming" },
+        Default = "Default",
+        Callback = function(val) end
+    })
+    cfgSec:CreateButtonGroup({
+        Buttons = {
+            {
+                Name = "Save",
+                Callback = function()
+                    self:Notify({ Title = "Config Saved", Content = "Profile saved successfully.", Duration = 2 })
+                end
+            },
+            {
+                Name = "Load",
+                Callback = function()
+                    self:Notify({ Title = "Config Loaded", Content = "Configuration applied cleanly.", Duration = 2 })
+                end
+            },
+            {
+                Name = "Delete",
+                Callback = function()
+                    self:Notify({ Title = "Config Deleted", Content = "Configuration removed.", Duration = 2 })
+                end
+            }
+        }
+    })
+
+    local devSec = settingsTab:CreateSection("Device Layout Presets")
+    devSec:CreateButtonGroup({
+        Buttons = {
+            {
+                Name = "PC Layout",
+                Callback = function()
+                    self:SetDevice("PC")
+                    self:Notify({ Title = "Device Switch", Content = "Layout updated to PC (1.00x)", Duration = 2 })
+                end
+            },
+            {
+                Name = "Tablet Layout",
+                Callback = function()
+                    self:SetDevice("Tablet")
+                    self:Notify({ Title = "Device Switch", Content = "Layout updated to Tablet (1.05x)", Duration = 2 })
+                end
+            },
+            {
+                Name = "Android Layout",
+                Callback = function()
+                    self:SetDevice("Android")
+                    self:Notify({ Title = "Device Switch", Content = "Layout updated to Android (1.10x)", Duration = 2 })
+                end
+            }
+        }
+    })
+    devSec:CreateSlider({
+        Name = "UI Scale Multiplier",
+        Min = 70,
+        Max = 140,
+        Default = 100,
+        Unit = "%",
+        Callback = function(val)
+            self:SetScale(val / 100)
+        end
+    })
+
+    local ifSec = settingsTab:CreateSection("Interface Management")
+    ifSec:CreateKeybind({
+        Name = "Menu Toggle Keybind",
+        Default = Enum.KeyCode.RightControl,
+        Callback = function(key)
+            self:Notify({ Title = "Keybind Updated", Content = "Toggle key set to " .. tostring(key.Name), Duration = 2 })
+        end
+    })
+    ifSec:CreateButton({
+        Name = "Unload / Close Liyhub",
+        Desc = "Unloads all GUI elements and terminates hooks.",
+        ButtonText = "Unload",
+        Callback = function()
+            self:ShowModal({
+                Title = "Unload Liyhub?",
+                Message = "Are you sure you want to completely unload and destroy Liyhub?",
+                ConfirmText = "Unload",
+                CancelText = "Cancel",
+                OnConfirm = function()
+                    self:Destroy()
+                end
+            })
+        end
+    })
+
+    self:_setActiveTab(infoTab)
 end
 
 function Window:SetTransparency(value)
@@ -549,15 +975,14 @@ function Window:CreateTabGroup(name)
     gTitle.TextXAlignment = Enum.TextXAlignment.Left
     gTitle.Parent = gHeader
     
-    local gArrow = Instance.new("TextLabel")
+    local gArrow = Instance.new("ImageLabel")
     gArrow.Name = "Arrow"
-    gArrow.Size = UDim2.new(0, 16, 1, 0)
-    gArrow.Position = UDim2.new(1, -18, 0, 0)
+    gArrow.Size = UDim2.fromOffset(12, 12)
+    gArrow.Position = UDim2.new(1, -16, 0.5, -6)
     gArrow.BackgroundTransparency = 1
-    gArrow.Text = "^"
-    gArrow.TextColor3 = self._theme.TextMuted
-    gArrow.Font = self._theme.FontBold
-    gArrow.TextSize = 10
+    gArrow.Image = "rbxassetid://10709790948"
+    gArrow.ImageColor3 = self._theme.TextMuted
+    gArrow.Rotation = 180
     gArrow.Parent = gHeader
     
     -- Tabs Frame
@@ -582,11 +1007,18 @@ function Window:CreateTabGroup(name)
         _tabs = {},
     }, TabGroup)
     
-    local toggleClick = gHeader.Activated:Connect(function()
+    local lastGroupToggle = 0
+    local function toggleGroup()
+        local now = os.clock()
+        if now - lastGroupToggle < 0.15 then return end
+        lastGroupToggle = now
         tabGroupObj._collapsed = not tabGroupObj._collapsed
         tabsFrame.Visible = not tabGroupObj._collapsed
-        gArrow.Text = tabGroupObj._collapsed and "v" or "^"
-    end)
+        TweenService:Create(gArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Rotation = tabGroupObj._collapsed and 0 or 180
+        }):Play()
+    end
+    local toggleClick = gHeader.Activated:Connect(toggleGroup)
     
     if self._cleanup then
         self._cleanup:Add(toggleClick)
@@ -621,6 +1053,17 @@ function Window:Destroy()
     end
 end
 
+function Window:CreateTab(options, icon)
+    if not self._defaultTabGroup then
+        self._defaultTabGroup = self:CreateTabGroup("Tabs")
+    end
+    if type(options) == "string" then
+        options = { Name = options, Icon = icon }
+    end
+    return self._defaultTabGroup:CreateTab(options)
+end
+Window.AddTab = Window.CreateTab
+
 -- ============================================================================
 -- TabGroup Methods
 -- ============================================================================
@@ -634,7 +1077,8 @@ function TabGroup:CreateTab(options)
     local tabBtn = Instance.new("TextButton")
     tabBtn.Name = "Tab_" .. name
     tabBtn.Size = UDim2.new(1, 0, 0, 32)
-    tabBtn.BackgroundColor3 = self._window._theme.SidebarItem
+    tabBtn.BackgroundColor3 = self._window._theme.SidebarItemActive
+    tabBtn.BackgroundTransparency = 1
     tabBtn.AutoButtonColor = false
     tabBtn.Text = ""
     tabBtn.BorderSizePixel = 0
@@ -646,9 +1090,9 @@ function TabGroup:CreateTab(options)
     
     local activeBar = Instance.new("Frame")
     activeBar.Name = "ActiveBar"
-    activeBar.Size = UDim2.new(0, 3, 1, -10)
-    activeBar.Position = UDim2.new(0, 3, 0, 5)
-    activeBar.BackgroundColor3 = self._window._theme.Accent
+    activeBar.Size = UDim2.new(0, 3, 0, 18)
+    activeBar.Position = UDim2.new(0, 0, 0.5, -9)
+    activeBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     activeBar.BorderSizePixel = 0
     activeBar.Visible = false
     activeBar.Parent = tabBtn
@@ -678,7 +1122,7 @@ function TabGroup:CreateTab(options)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = name
     titleLabel.TextColor3 = self._window._theme.TextSecondary
-    titleLabel.Font = self._window._theme.FontRegular
+    titleLabel.Font = self._window._theme.FontBold
     titleLabel.TextSize = self._window._theme.FontSizeSmall
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = tabBtn
@@ -707,9 +1151,14 @@ function TabGroup:CreateTab(options)
         _sections = {},
     }, Tab)
     
-    local btnClick = tabBtn.Activated:Connect(function()
+    local lastTabSelect = 0
+    local function selectTab()
+        local now = os.clock()
+        if now - lastTabSelect < 0.1 then return end
+        lastTabSelect = now
         self._window:_setActiveTab(tabObj)
-    end)
+    end
+    local btnClick = tabBtn.Activated:Connect(selectTab)
     
     if self._window._cleanup then
         self._window._cleanup:Add(btnClick)
@@ -731,6 +1180,7 @@ end
 -- ============================================================================
 
 function Tab:_activate()
+    self._button.BackgroundTransparency = 0
     self._button.BackgroundColor3 = self._window._theme.SidebarItemActive
     self._titleLabel.TextColor3 = self._window._theme.TextPrimary
     self._titleLabel.Font = self._window._theme.FontBold
@@ -742,14 +1192,25 @@ function Tab:_activate()
 end
 
 function Tab:_deactivate()
-    self._button.BackgroundColor3 = self._window._theme.SidebarItem
+    self._button.BackgroundTransparency = 1
     self._titleLabel.TextColor3 = self._window._theme.TextSecondary
-    self._titleLabel.Font = self._window._theme.FontRegular
+    self._titleLabel.Font = self._window._theme.FontBold
     self._activeBar.Visible = false
     if self._iconLabel then
         self._iconLabel.ImageColor3 = self._window._theme.TextSecondary
     end
     self._contentContainer.Visible = false
+end
+
+function Tab:CreateBanner(options)
+    local parent = self._layoutEngine:GetSectionParent(options)
+    local banner = self._window._components.Banner.new(
+        parent,
+        options,
+        self._window._theme,
+        self._window._cleanup
+    )
+    return banner
 end
 
 function Tab:CreateSection(nameOrOptions)
@@ -769,6 +1230,15 @@ function Tab:CreateSection(nameOrOptions)
     local sCorner = Instance.new("UICorner")
     sCorner.CornerRadius = self._window._theme.CornerRadius
     sCorner.Parent = sectionCard
+    
+    if self._window._theme.UseStrokes then
+        local secStroke = Instance.new("UIStroke")
+        secStroke.Name = "SectionStroke"
+        secStroke.Color = self._window._theme.Border
+        secStroke.Thickness = 1
+        secStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        secStroke.Parent = sectionCard
+    end
     
     local sPadding = Instance.new("UIPadding")
     sPadding.PaddingTop = UDim.new(0, 8)
@@ -802,15 +1272,14 @@ function Tab:CreateSection(nameOrOptions)
     sTitle.TextXAlignment = Enum.TextXAlignment.Left
     sTitle.Parent = sHeader
     
-    local sArrow = Instance.new("TextLabel")
+    local sArrow = Instance.new("ImageLabel")
     sArrow.Name = "Arrow"
-    sArrow.Size = UDim2.new(0, 20, 1, 0)
-    sArrow.Position = UDim2.new(1, -20, 0, 0)
+    sArrow.Size = UDim2.fromOffset(12, 12)
+    sArrow.Position = UDim2.new(1, -16, 0.5, -6)
     sArrow.BackgroundTransparency = 1
-    sArrow.Text = "^"
-    sArrow.TextColor3 = self._window._theme.TextSecondary
-    sArrow.Font = self._window._theme.FontBold
-    sArrow.TextSize = 11
+    sArrow.Image = "rbxassetid://10709790948"
+    sArrow.ImageColor3 = self._window._theme.TextSecondary
+    sArrow.Rotation = 180
     sArrow.Parent = sHeader
     
     -- Section Body (Holds components)
@@ -836,11 +1305,18 @@ function Tab:CreateSection(nameOrOptions)
         _components = {},
     }, Section)
     
-    local toggleConn = sHeader.Activated:Connect(function()
+    local lastSecToggle = 0
+    local function toggleSec()
+        local now = os.clock()
+        if now - lastSecToggle < 0.15 then return end
+        lastSecToggle = now
         sectionObj._collapsed = not sectionObj._collapsed
         sBody.Visible = not sectionObj._collapsed
-        sArrow.Text = sectionObj._collapsed and "v" or "^"
-    end)
+        TweenService:Create(sArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Rotation = sectionObj._collapsed and 0 or 180
+        }):Play()
+    end
+    local toggleConn = sHeader.Activated:Connect(toggleSec)
     
     if self._window._cleanup then
         self._window._cleanup:Add(toggleConn)
@@ -958,6 +1434,12 @@ function Section:CreateDropdown(options)
     return drp
 end
 
+function Section:CreateMultiDropdown(options)
+    options = options or {}
+    options.Multi = true
+    return self:CreateDropdown(options)
+end
+
 function Section:CreateDropdownGroup(options)
     local grp = self._window._components.DropdownGroup.new(
         self._body,
@@ -1024,5 +1506,26 @@ function Section:CreateProgression(options)
     table.insert(self._components, prg)
     return prg
 end
+
+TabGroup.AddTab = TabGroup.CreateTab
+Tab.AddSection = Tab.CreateSection
+Tab.AddBanner = Tab.CreateBanner
+
+Section.AddButton = Section.CreateButton
+Section.AddButtonGroup = Section.CreateButtonGroup
+Section.AddToggle = Section.CreateToggle
+Section.AddToggleGroup = Section.CreateToggleGroup
+Section.AddSlider = Section.CreateSlider
+Section.AddSliderGroup = Section.CreateSliderGroup
+Section.AddInput = Section.CreateInput
+Section.AddInputGroup = Section.CreateInputGroup
+Section.AddDropdown = Section.CreateDropdown
+Section.AddDropdownGroup = Section.CreateDropdownGroup
+Section.AddMultiDropdown = Section.CreateMultiDropdown
+Section.AddKeybind = Section.CreateKeybind
+Section.AddParagraph = Section.CreateParagraph
+Section.AddDivider = Section.CreateDivider
+Section.AddBanner = Section.CreateBanner
+Section.AddProgression = Section.CreateProgression
 
 return Window

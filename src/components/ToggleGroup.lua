@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Toggle Group Component
-    Groups multiple toggles in a shared card with isolated states and callbacks.
-]]
-
 local Toggle = nil
 pcall(function()
     Toggle = require(script.Parent.Toggle)
@@ -15,32 +10,21 @@ function ToggleGroup.new(parent, options, theme, cleanup, toggleModule)
     options = options or {}
     local toggleCtor = toggleModule or Toggle
     
-    local container = Instance.new("Frame")
-    container.Name = "ToggleGroup"
-    container.Size = UDim2.new(1, 0, 0, 0)
-    container.AutomaticSize = Enum.AutomaticSize.Y
-    container.BackgroundColor3 = theme.Card
-    container.BorderSizePixel = 0
-    container.Parent = parent
+    local row = Instance.new("Frame")
+    row.Name = "ToggleGroup"
+    row.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
+    row.BackgroundTransparency = 1
+    row.BorderSizePixel = 0
+    row.Parent = parent
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = theme.CornerRadius
-    corner.Parent = container
-    
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 6)
-    padding.PaddingBottom = UDim.new(0, 6)
-    padding.PaddingLeft = UDim.new(0, 6)
-    padding.PaddingRight = UDim.new(0, 6)
-    padding.Parent = container
-    
-    local list = Instance.new("UIListLayout")
-    list.SortOrder = Enum.SortOrder.LayoutOrder
-    list.Padding = UDim.new(0, 4)
-    list.Parent = container
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 6)
+    layout.Parent = row
     
     local self = setmetatable({
-        _container = container,
+        _container = row,
         _toggles = {},
         _theme = theme,
         _cleanup = cleanup,
@@ -48,7 +32,7 @@ function ToggleGroup.new(parent, options, theme, cleanup, toggleModule)
     }, ToggleGroup)
     
     if cleanup then
-        cleanup:Add(container)
+        cleanup:Add(row)
     end
     
     if options.Toggles and type(options.Toggles) == "table" then
@@ -60,9 +44,20 @@ function ToggleGroup.new(parent, options, theme, cleanup, toggleModule)
     return self
 end
 
+function ToggleGroup:_rebalanceSizes()
+    local count = #self._toggles
+    if count == 0 then return end
+    local gapTotal = (count - 1) * 6
+    local widthScale = 1 / count
+    for _, t in ipairs(self._toggles) do
+        t._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
+    end
+end
+
 function ToggleGroup:AddToggle(options)
     local t = self._toggleCtor.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._toggles, t)
+    self:_rebalanceSizes()
     return t
 end
 
@@ -73,9 +68,7 @@ end
 function ToggleGroup:Destroy()
     if self._container then
         self._container:Destroy()
-        self._container = nil
     end
 end
 
 return ToggleGroup
-

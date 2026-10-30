@@ -1,11 +1,15 @@
 import os
 import json
 
-base_dir = r"c:\Users\User\Downloads\Liyhub Ui"
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
 files_to_bundle = [
     ("src/themes/PureBlackWhite", "src/themes/PureBlackWhite.lua"),
     ("src/themes/ThemeManager", "src/themes/ThemeManager.lua"),
+    ("src/size/PC", "src/size/PC.lua"),
+    ("src/size/Android", "src/size/Android.lua"),
+    ("src/size/Tablet", "src/size/Tablet.lua"),
+    ("src/size/SizeManager", "src/size/SizeManager.lua"),
     ("src/core/Signals", "src/core/Signals.lua"),
     ("src/core/Cleanup", "src/core/Cleanup.lua"),
     ("src/core/Tween", "src/core/Tween.lua"),
@@ -93,16 +97,30 @@ local Banner = _require("src/components/Banner")
 local Progression = _require("src/components/Progression")
 local Modal = _require("src/components/Modal")
 local MobilePin = _require("src/components/MobilePin")
+local PC = _require("src/size/PC")
+local Android = _require("src/size/Android")
+local Tablet = _require("src/size/Tablet")
+local SizeManager = _require("src/size/SizeManager")
 
 local LiyHubUI = {
     Version = "2.2.0",
     Name = "LiyHub UI",
     _activeWindows = {},
     _themeManager = ThemeManager,
+    _sizeManager = SizeManager,
+    Sizes = {
+        PC = PC,
+        Android = Android,
+        Tablet = Tablet,
+    },
     _require = _require,
 }
 
 function LiyHubUI:CreateWindow(options)
+    local hub = (type(self) == "table" and self._activeWindows and self) or LiyHubUI
+    if type(self) == "table" and not self._activeWindows and options == nil then
+        options = self
+    end
     options = options or {}
     local cleanup = Cleanup and Cleanup.new()
     local theme = options.Theme or (ThemeManager and ThemeManager:GetTheme())
@@ -128,10 +146,11 @@ function LiyHubUI:CreateWindow(options)
         Divider = Divider,
         Banner = Banner,
         Progression = Progression,
+        SizeManager = SizeManager,
     }
     
     local win = Window.new(options, deps)
-    table.insert(self._activeWindows, win)
+    table.insert(hub._activeWindows, win)
     return win
 end
 
