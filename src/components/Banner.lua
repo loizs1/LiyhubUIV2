@@ -3,6 +3,24 @@ local TweenService = game:GetService("TweenService")
 local Banner = {}
 Banner.__index = Banner
 
+local function resolveAsset(asset)
+    if not asset or asset == "" then
+        return "rbxasset://textures/LiyhubBanner.png"
+    end
+    if typeof(asset) == "number" or tonumber(asset) then
+        return "rbxassetid://" .. tostring(asset)
+    end
+    if string.find(asset, "rbxassetid://") or string.find(asset, "rbxasset://") or string.find(asset, "http://") or string.find(asset, "https://") then
+        return asset
+    end
+    local okG, getAsset = pcall(function() return getcustomasset or getsynasset end)
+    if okG and typeof(getAsset) == "function" then
+        local pOk, res = pcall(getAsset, asset)
+        if pOk and res then return res end
+    end
+    return asset
+end
+
 function Banner.new(parent, options, theme, cleanup)
     options = options or {}
     local title = options.Title or options.Name
@@ -112,15 +130,15 @@ function Banner.new(parent, options, theme, cleanup)
     imageLabel.Name = "BannerImage"
     imageLabel.Size = UDim2.new(1, 0, 1, 0)
     imageLabel.BackgroundTransparency = 1
-    imageLabel.Image = image
-    imageLabel.ScaleType = Enum.ScaleType.Fit
+    imageLabel.Image = resolveAsset(image)
+    imageLabel.ScaleType = Enum.ScaleType.Crop
     imageLabel.BorderSizePixel = 0
     imageLabel.Parent = imageFrame
     
     local function updateBannerHeight()
         local width = imageFrame.AbsoluteSize.X
         if width > 40 then
-            local targetH = math.clamp(math.floor(width / (1108 / 432)), 60, 300)
+            local targetH = math.clamp(math.floor(width / (2572 / 1012)), 60, 320)
             if math.abs(imageFrame.Size.Y.Offset - targetH) > 1 then
                 imageFrame.Size = UDim2.new(1, 0, 0, targetH)
             end
@@ -202,7 +220,7 @@ function Banner:Toggle()
 end
 
 function Banner:SetImage(assetId)
-    self._imageLabel.Image = assetId
+    self._imageLabel.Image = resolveAsset(assetId)
 end
 
 function Banner:SetText(text)
