@@ -786,12 +786,6 @@ function Window:_initUniversalTabs(options)
         end
     })
 
-    local sysSec = infoTab:CreateSection("Script Information")
-    sysSec:CreateParagraph({
-        Title = "About Liyhub",
-        Content = "Developers: Than & aeris\nEngine: LiyhubUI v2.2.0 (Pure B&W)\nSecurity: Zero LogService telemetry & stealth hooks\nCommunity: " .. discordUrl .. "\nAdaptive: Auto-scales across PC, Tablet & Android\nShortcuts: [RightControl] to toggle | [-] to pin"
-    })
-
     local settingsTab = univGroup:CreateTab({
         Name = "Setting UI",
         Icon = "rbxassetid://6031075936",
