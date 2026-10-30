@@ -8,7 +8,7 @@ else
     PureBlackWhite = {
         Name = "Pure Black & White",
         DefaultLogo = "rbxasset://textures/LiyhubLogo.png",
-        DefaultBanner = "rbxasset://textures/LiyhubBanner.png",
+        DefaultBanner = "rbxassetid://97436813723523",
         Background = Color3.fromRGB(13, 13, 15),
         Header = Color3.fromRGB(16, 16, 19),
         Sidebar = Color3.fromRGB(15, 15, 18),

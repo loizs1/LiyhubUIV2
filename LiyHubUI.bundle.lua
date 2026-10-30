@@ -25,9 +25,9 @@ local PureBlackWhite = {
     Name = "Pure Black & White",
     
     DefaultLogo = "rbxasset://textures/LiyhubLogo.png",
-    DefaultBanner = "rbxasset://textures/LiyhubBanner.png",
+    DefaultBanner = "rbxassetid://97436813723523",
     FallbackLogo = "rbxasset://textures/LiyhubLogo.png",
-    FallbackBanner = "rbxasset://textures/LiyhubBanner.png",
+    FallbackBanner = "rbxassetid://97436813723523",
     
     Background = Color3.fromRGB(13, 13, 15),
     Header = Color3.fromRGB(16, 16, 19),
@@ -116,7 +116,7 @@ else
     PureBlackWhite = {
         Name = "Pure Black & White",
         DefaultLogo = "rbxasset://textures/LiyhubLogo.png",
-        DefaultBanner = "rbxasset://textures/LiyhubBanner.png",
+        DefaultBanner = "rbxassetid://97436813723523",
         Background = Color3.fromRGB(13, 13, 15),
         Header = Color3.fromRGB(16, 16, 19),
         Sidebar = Color3.fromRGB(15, 15, 18),
@@ -3297,7 +3297,7 @@ Banner.__index = Banner
 
 local function resolveAsset(asset)
     if not asset or asset == "" then
-        return "rbxasset://textures/LiyhubBanner.png"
+        return "rbxassetid://97436813723523"
     end
     if typeof(asset) == "number" or tonumber(asset) then
         return "rbxassetid://" .. tostring(asset)
@@ -3319,7 +3319,7 @@ function Banner.new(parent, options, theme, cleanup)
     local showHeader = options.ShowHeader ~= false and (title ~= nil and title ~= "")
     local titleText = title or "LiyHub Announcement"
     local text = options.Text or options.Description or "Welcome to LiyHub v2.2 Pure B&W!"
-    local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxasset://textures/LiyhubBanner.png"
+    local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxassetid://97436813723523"
     local defaultCollapsed = options.Collapsed == true
     
     local container = Instance.new("Frame")
@@ -4706,7 +4706,7 @@ function Window:_initUniversalTabs(options)
     if options.UniversalGroup == false then return end
 
     local discordUrl = options.Discord or options.DiscordLink or "https://discord.gg/Nr56tQJeJh"
-    local bannerImage = options.Banner or options.BannerImage or "rbxasset://textures/LiyhubBanner.png"
+    local bannerImage = options.Banner or options.BannerImage or "rbxassetid://97436813723523"
     local bannerTitle = options.BannerTitle or "LiyHub Announcement"
     local bannerDesc = options.BannerDesc or "Universal high-performance script framework engineered by Than & aeris. Minimalist pure B&W design, vector typography, and native stealth architecture."
 
