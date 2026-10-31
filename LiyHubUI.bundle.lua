@@ -4065,7 +4065,11 @@ local function onProfileClicked()
 local now = os.clock()
 if now - lastProfClick < 0.2 then return end
 lastProfClick = now
+if self._userTab then
+self:_setActiveTab(self._userTab)
+else
 self:ShowProfileModal()
+end
 end
 local profConn = profileCard.Activated:Connect(onProfileClicked)
 if cleanup then
@@ -4470,6 +4474,10 @@ AccountAge = realPlayer.AccountAge,
 }
 end
 function Window:ShowProfileModal()
+if self._userTab then
+self:_setActiveTab(self._userTab)
+return
+end
 local realPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
 if not realPlayer then return end
 local dName = realPlayer.DisplayName
@@ -4495,6 +4503,12 @@ end
 function Window:GetUniversalGroup()
 return self._universalGroup
 end
+function Window:GetUserProfileTab()
+return self._userTab
+end
+function Window:GetUserTab()
+return self._userTab
+end
 function Window:GetInformationTab()
 return self._infoTab
 end
@@ -4509,6 +4523,159 @@ local bannerTitle = options.BannerTitle or "LiyHub Announcement"
 local bannerDesc = options.BannerDesc or "Universal high-performance script framework engineered by Than & aeris. Minimalist pure B&W design, vector typography, and native stealth architecture."
 local univGroup = self:CreateTabGroup("Universal")
 self._universalGroup = univGroup
+local userTab = univGroup:CreateTab({
+Name = "User Profile",
+Icon = "user",
+})
+self._userTab = userTab
+local realPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+local dispName = realPlayer and realPlayer.DisplayName or "Player"
+local rawName = realPlayer and ("@" .. realPlayer.Name) or "@Unknown"
+local userIdStr = realPlayer and tostring(realPlayer.UserId) or "0"
+local accountAgeStr = realPlayer and (tostring(realPlayer.AccountAge) .. " days") or "N/A"
+local isRobloxPremium = realPlayer and (realPlayer.MembershipType == Enum.MembershipType.Premium)
+local accountStatusStr = isRobloxPremium and "Roblox Premium" or "Standard Account"
+local genv = (getgenv and getgenv()) or {}
+local drmKey = genv.LiyHubKey or _G.LiyHubKey or shared.LiyHubKey or "FREE-FOR-ALL"
+local drmTier = genv.LiyHubTier or _G.LiyHubTier or shared.LiyHubTier or (genv.LiyHubIsPremium and "VIP" or "Freemium")
+local drmRemaining = genv.LiyHubRemainingTime or (genv.LiyHubRemainingSeconds and string.format("%dh %dm", math.floor(genv.LiyHubRemainingSeconds / 3600), math.floor((genv.LiyHubRemainingSeconds % 3600) / 60))) or "Lifetime"
+local isDrmPremium = (genv.LiyHubIsPremium == true) or (_G.LiyHubIsPremium == true) or string.find(string.lower(tostring(drmTier)), "premium") ~= nil or string.find(string.lower(tostring(drmTier)), "vip") ~= nil
+local drmStatusStr = isDrmPremium and "Premium Active" or "Freemium Active"
+local executionsCount = genv.LiyHubExecutionCount or _G.LiyHubExecutionCount
+if not executionsCount then
+local trackedCount = 1
+pcall(function()
+if isfile and readfile and isfile("liyhub_executions.txt") then
+local saved = tonumber(readfile("liyhub_executions.txt"))
+if saved then
+trackedCount = saved + 1
+end
+end
+if writefile then
+writefile("liyhub_executions.txt", tostring(trackedCount))
+end
+end)
+executionsCount = trackedCount
+end
+local function getActiveExecutorName()
+local detectedName = nil
+pcall(function()
+if identifyexecutor then
+detectedName = identifyexecutor()
+elseif getexecutorname then
+detectedName = getexecutorname()
+elseif identify_executor then
+detectedName = identify_executor()
+elseif get_executor_name then
+detectedName = get_executor_name()
+elseif syn and syn.request then
+detectedName = "Synapse X"
+elseif SENTINEL_LOADED then
+detectedName = "Sentinel"
+elseif KRNL_LOADED then
+detectedName = "Krnl"
+elseif is_sirhurt_closure then
+detectedName = "SirHurt"
+elseif fluxus then
+detectedName = "Fluxus"
+elseif delta then
+detectedName = "Delta"
+elseif arceus then
+detectedName = "Arceus X"
+elseif Codex then
+detectedName = "Codex"
+elseif is_electron_closure then
+detectedName = "Electron"
+elseif solara then
+detectedName = "Solara"
+elseif celery then
+detectedName = "Celery"
+elseif RunService:IsStudio() then
+detectedName = "Roblox Studio"
+end
+end)
+if not detectedName and genv.LiyHubExecutorName then
+detectedName = genv.LiyHubExecutorName
+end
+return detectedName or "Roblox Client"
+end
+local executorName = getActiveExecutorName()
+local activeGameName = "Experience"
+pcall(function()
+local productInfo = MarketplaceService:GetProductInfo(game.PlaceId)
+if productInfo and productInfo.Name then
+activeGameName = productInfo.Name
+end
+end)
+if activeGameName == "Experience" and game.Name and game.Name ~= "" then
+activeGameName = game.Name
+end
+local placeIdNum = tostring(game.PlaceId)
+local gameIdNum = tostring(game.GameId)
+local serverJobId = (game.JobId and game.JobId ~= "") and game.JobId or "Local Server / Studio"
+local accountSec = userTab:CreateSection("Account Identity")
+accountSec:CreateParagraph({
+Title = dispName .. " (" .. rawName .. ")",
+Content = string.format("User ID: %s\nAccount Age: %s\nRoblox Status: %s", userIdStr, accountAgeStr, accountStatusStr),
+})
+accountSec:CreateButton({
+Name = "Copy User ID",
+Desc = "Roblox Account Identifier: " .. userIdStr,
+ButtonText = "Copy",
+Callback = function()
+local copyFn = setclipboard or toclipboard or (Clipboard and Clipboard.set)
+if copyFn then
+copyFn(userIdStr)
+self:Notify({
+Title = "Copied",
+Content = "User ID copied to clipboard!",
+Duration = 2,
+})
+end
+end,
+})
+local drmSec = userTab:CreateSection("DRM License & Security")
+drmSec:CreateParagraph({
+Title = "Tier: " .. tostring(drmTier) .. " (" .. drmStatusStr .. ")",
+Content = string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s executions", tostring(drmKey), tostring(drmRemaining), tostring(executionsCount)),
+})
+drmSec:CreateButton({
+Name = "Copy License Key",
+Desc = tostring(drmKey),
+ButtonText = "Copy",
+Callback = function()
+local copyFn = setclipboard or toclipboard or (Clipboard and Clipboard.set)
+if copyFn then
+copyFn(tostring(drmKey))
+self:Notify({
+Title = "Copied",
+Content = "License key copied to clipboard!",
+Duration = 2,
+})
+end
+end,
+})
+local envSec = userTab:CreateSection("Game & Environment")
+envSec:CreateParagraph({
+Title = activeGameName,
+Content = string.format("Executor: %s\nPlace ID: %s\nUniverse ID: %s\nJob ID: %s", tostring(executorName), placeIdNum, gameIdNum, serverJobId),
+})
+envSec:CreateButton({
+Name = "Copy Server Job ID",
+Desc = serverJobId,
+ButtonText = "Copy",
+Callback = function()
+local copyFn = setclipboard or toclipboard or (Clipboard and Clipboard.set)
+if copyFn then
+copyFn(serverJobId)
+self:Notify({
+Title = "Copied",
+Content = "Server Job ID copied to clipboard!",
+Duration = 2,
+})
+end
+end,
+})
 local infoTab = univGroup:CreateTab({
 Name = "Information",
 Icon = "info",
