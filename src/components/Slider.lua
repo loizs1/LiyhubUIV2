@@ -75,7 +75,7 @@ function Slider.new(parent, options, theme, cleanup)
     track.Name = "Track"
     track.Size = UDim2.new(1, -20, 0, 24)
     track.Position = UDim2.new(0, 10, 0, 25)
-    track.BackgroundColor3 = Color3.fromRGB(24, 26, 38)
+    track.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
     track.AutoButtonColor = false
     track.Text = ""
     track.BorderSizePixel = 0
@@ -108,10 +108,12 @@ function Slider.new(parent, options, theme, cleanup)
     local fillGrad = Instance.new("UIGradient")
     fillGrad.Name = "FillGradient"
     fillGrad.Color = customGradient or ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(38, 46, 156)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 94, 238)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(215, 220, 235)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
     })
     fillGrad.Parent = fill
+    
+    local initRel = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
     
     local valueLabel = Instance.new("TextLabel")
     valueLabel.Name = "ValueLabel"
@@ -120,7 +122,7 @@ function Slider.new(parent, options, theme, cleanup)
     valueLabel.AnchorPoint = Vector2.new(1, 0.5)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = formatValue(defaultVal, stepVal, suffix, decimals)
-    valueLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
+    valueLabel.TextColor3 = (initRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
     valueLabel.Font = theme.FontBold
     valueLabel.TextSize = 12
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -159,10 +161,10 @@ function Slider.new(parent, options, theme, cleanup)
         local finalRel = (quantized - self._min) / (self._max - self._min)
         fill.Size = UDim2.new(finalRel, 0, 1, 0)
         valueLabel.Text = formatValue(quantized, self._step, self._suffix, self._decimals)
+        valueLabel.TextColor3 = (finalRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
         task.spawn(self._callback, quantized)
     end
     
-    local initRel = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
     fill.Size = UDim2.new(initRel, 0, 1, 0)
     
     local trackDown = track.MouseButton1Down:Connect(function()
@@ -202,6 +204,7 @@ function Slider:SetValue(val)
     local rel = (val - self._min) / (self._max - self._min)
     self._fill.Size = UDim2.new(rel, 0, 1, 0)
     self._valueLabel.Text = formatValue(val, self._step, self._suffix, self._decimals)
+    self._valueLabel.TextColor3 = (rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
     task.spawn(self._callback, val)
 end
 

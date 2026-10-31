@@ -5,7 +5,7 @@ Banner.__index = Banner
 
 local function resolveAsset(asset)
     if not asset or asset == "" then
-        return "rbxassetid://97436813723523"
+        return "rbxassetid://81803989983948"
     end
     if typeof(asset) == "number" or tonumber(asset) then
         return "rbxassetid://" .. tostring(asset)
@@ -27,7 +27,7 @@ function Banner.new(parent, options, theme, cleanup)
     local showHeader = options.ShowHeader ~= false and (title ~= nil and title ~= "")
     local titleText = title or "LiyHub Announcement"
     local text = options.Text or options.Description or "Welcome to LiyHub v2.2 Pure B&W!"
-    local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxassetid://97436813723523"
+    local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxassetid://81803989983948"
     local defaultCollapsed = options.Collapsed == true
     
     local container = Instance.new("Frame")
