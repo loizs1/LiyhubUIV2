@@ -449,6 +449,7 @@ function Window.new(options, dependencies)
             MobilePin = MobilePin,
         },
         _tabGroups = {},
+        _allTabs = {},
         _activeTab = nil,
         _toggleKey = toggleKey,
         _minimized = false,
@@ -668,6 +669,11 @@ function Window:Minimize()
         self._mobilePin:SetVisible(true)
         self._mobilePin:SetOpenState(false)
     end
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
+            tab._layoutEngine:UpdateForDevice(self._currentDevice, true)
+        end
+    end
 end
 
 function Window:Open()
@@ -676,6 +682,11 @@ function Window:Open()
     if self._mobilePin then
         self._mobilePin:SetVisible(false)
         self._mobilePin:SetOpenState(true)
+    end
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
+            tab._layoutEngine:UpdateForDevice(self._currentDevice, false)
+        end
     end
 end
 
@@ -689,6 +700,15 @@ end
 
 function Window:Toggle()
     self:ToggleMinimize()
+end
+
+function Window:SetTwoColumnsMode(enabled)
+    self._forceTwoColumns = enabled
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
+            tab._layoutEngine:SetTwoColumns(enabled)
+        end
+    end
 end
 
 function Window:SetDevice(deviceType)
@@ -708,6 +728,16 @@ function Window:SetDevice(deviceType)
     if self._contentArea then
         self._contentArea.Size = UDim2.new(1, -sbW, 1, 0)
         self._contentArea.Position = UDim2.new(0, sbW, 0, 0)
+    end
+    local dev = string.lower(preset.Name)
+    local isTwoCols = (dev == "pc" or dev == "tablet")
+    if self._forceTwoColumns ~= nil then
+        isTwoCols = self._forceTwoColumns
+    end
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
+            tab._layoutEngine:SetTwoColumns(isTwoCols)
+        end
     end
 end
 
@@ -829,6 +859,20 @@ function Window:_initUniversalTabs(options)
     })
 
     local devSec = settingsTab:CreateSection("Device Layout Presets")
+    devSec:CreateDropdown({
+        Name = "Layout Structure Mode",
+        Options = { "2 Column (Kiri & Kanan)", "1 Column (1 Baris Lurus)" },
+        Default = (self._currentDevice == "Android") and "1 Column (1 Baris Lurus)" or "2 Column (Kiri & Kanan)",
+        Callback = function(choice)
+            local isTwo = string.find(choice, "2") ~= nil
+            self:SetTwoColumnsMode(isTwo)
+            self:Notify({
+                Title = "Layout Mode",
+                Content = isTwo and "Struktur diubah ke 2 Kolom (Kiri & Kanan)" or "Struktur diubah ke 1 Kolom (1 Baris Lurus)",
+                Duration = 2,
+            })
+        end
+    })
     devSec:CreateButtonGroup({
         Buttons = {
             {
@@ -1065,7 +1109,12 @@ Window.AddTab = Window.CreateTab
 function TabGroup:CreateTab(options)
     local name = type(options) == "table" and (options.Name or options.Text) or tostring(options)
     local iconId = type(options) == "table" and (options.Icon or options.Image) or nil
-    local twoColumns = type(options) == "table" and options.TwoColumns == true or false
+    local devName = string.lower(self._window._currentDevice or "pc")
+    local defaultTwoCols = (devName == "pc" or devName == "tablet")
+    local twoColumns = defaultTwoCols
+    if type(options) == "table" and options.TwoColumns ~= nil then
+        twoColumns = options.TwoColumns
+    end
     
     -- Tab Sidebar Button
     local tabBtn = Instance.new("TextButton")
@@ -1161,6 +1210,9 @@ function TabGroup:CreateTab(options)
     end
     
     table.insert(self._tabs, tabObj)
+    if self._window._allTabs then
+        table.insert(self._window._allTabs, tabObj)
+    end
     
     if not self._window._activeTab then
         self._window:_setActiveTab(tabObj)
@@ -1220,6 +1272,9 @@ function Tab:CreateSection(nameOrOptions)
     sectionCard.BackgroundColor3 = self._window._theme.Card
     sectionCard.BorderSizePixel = 0
     sectionCard.Parent = sectionParent
+    if self._layoutEngine and self._layoutEngine.RegisterSectionInstance then
+        self._layoutEngine:RegisterSectionInstance(sectionCard)
+    end
     
     local sCorner = Instance.new("UICorner")
     sCorner.CornerRadius = self._window._theme.CornerRadius

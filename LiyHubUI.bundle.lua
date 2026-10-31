@@ -659,25 +659,25 @@ end
 
 -- Module: src/core/Layout
 _modules["src/core/Layout"] = function()
---[[
-    LiyHub UI - Layout System
-    Manages Single-column and Dual-column layouts for tabs and sections.
-]]
-
 local Layout = {}
 Layout.__index = Layout
 
 function Layout.new(container, options)
     options = options or {}
-    local isTwoColumns = options.TwoColumns == true
+    local initialTwoColumns = options.TwoColumns
+    if initialTwoColumns == nil then
+        initialTwoColumns = true
+    end
     
     local self = setmetatable({
         _container = container,
-        _twoColumns = isTwoColumns,
+        _twoColumns = initialTwoColumns,
+        _dualContainer = nil,
         _leftColumn = nil,
         _rightColumn = nil,
         _singleColumn = nil,
         _sections = {},
+        _sectionCount = 0,
     }, Layout)
     
     self:_initialize()
@@ -685,107 +685,145 @@ function Layout.new(container, options)
 end
 
 function Layout:_initialize()
-    if self._twoColumns then
-        -- Create dual-column layout containers
-        local columnContainer = Instance.new("Frame")
-        columnContainer.Name = "DualColumnContainer"
-        columnContainer.BackgroundTransparency = 1
-        columnContainer.Size = UDim2.new(1, 0, 1, 0)
-        columnContainer.Parent = self._container
-        
-        local leftCol = Instance.new("ScrollingFrame")
-        leftCol.Name = "LeftColumn"
-        leftCol.BackgroundTransparency = 1
-        leftCol.BorderSizePixel = 0
-        leftCol.Size = UDim2.new(0.5, -6, 1, 0)
-        leftCol.Position = UDim2.new(0, 0, 0, 0)
-        leftCol.ScrollBarThickness = 3
-        leftCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
-        leftCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        leftCol.CanvasSize = UDim2.new(0, 0, 0, 0)
-        leftCol.Parent = columnContainer
-        
-        local leftList = Instance.new("UIListLayout")
-        leftList.SortOrder = Enum.SortOrder.LayoutOrder
-        leftList.Padding = UDim.new(0, 8)
-        leftList.Parent = leftCol
-        
-        local leftPadding = Instance.new("UIPadding")
-        leftPadding.PaddingTop = UDim.new(0, 4)
-        leftPadding.PaddingBottom = UDim.new(0, 8)
-        leftPadding.PaddingLeft = UDim.new(0, 2)
-        leftPadding.PaddingRight = UDim.new(0, 4)
-        leftPadding.Parent = leftCol
-        
-        local rightCol = Instance.new("ScrollingFrame")
-        rightCol.Name = "RightColumn"
-        rightCol.BackgroundTransparency = 1
-        rightCol.BorderSizePixel = 0
-        rightCol.Size = UDim2.new(0.5, -6, 1, 0)
-        rightCol.Position = UDim2.new(0.5, 6, 0, 0)
-        rightCol.ScrollBarThickness = 3
-        rightCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
-        rightCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        rightCol.CanvasSize = UDim2.new(0, 0, 0, 0)
-        rightCol.Parent = columnContainer
-        
-        local rightList = Instance.new("UIListLayout")
-        rightList.SortOrder = Enum.SortOrder.LayoutOrder
-        rightList.Padding = UDim.new(0, 8)
-        rightList.Parent = rightCol
-        
-        local rightPadding = Instance.new("UIPadding")
-        rightPadding.PaddingTop = UDim.new(0, 4)
-        rightPadding.PaddingBottom = UDim.new(0, 8)
-        rightPadding.PaddingLeft = UDim.new(0, 4)
-        rightPadding.PaddingRight = UDim.new(0, 2)
-        rightPadding.Parent = rightCol
-        
-        self._leftColumn = leftCol
-        self._rightColumn = rightCol
-    else
-        -- Single-column layout container
-        local singleCol = Instance.new("ScrollingFrame")
-        singleCol.Name = "SingleColumn"
-        singleCol.BackgroundTransparency = 1
-        singleCol.BorderSizePixel = 0
-        singleCol.Size = UDim2.new(1, 0, 1, 0)
-        singleCol.ScrollBarThickness = 3
-        singleCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
-        singleCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        singleCol.CanvasSize = UDim2.new(0, 0, 0, 0)
-        singleCol.Parent = self._container
-        
-        local listLayout = Instance.new("UIListLayout")
-        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        listLayout.Padding = UDim.new(0, 8)
-        listLayout.Parent = singleCol
-        
-        local padding = Instance.new("UIPadding")
-        padding.PaddingTop = UDim.new(0, 4)
-        padding.PaddingBottom = UDim.new(0, 10)
-        padding.PaddingLeft = UDim.new(0, 2)
-        padding.PaddingRight = UDim.new(0, 6)
-        padding.Parent = singleCol
-        
-        self._singleColumn = singleCol
-    end
+    local dualContainer = Instance.new("Frame")
+    dualContainer.Name = "DualColumnContainer"
+    dualContainer.BackgroundTransparency = 1
+    dualContainer.Size = UDim2.new(1, 0, 1, 0)
+    dualContainer.Visible = self._twoColumns
+    dualContainer.Parent = self._container
+    
+    local leftCol = Instance.new("ScrollingFrame")
+    leftCol.Name = "LeftColumn"
+    leftCol.BackgroundTransparency = 1
+    leftCol.BorderSizePixel = 0
+    leftCol.Size = UDim2.new(0.5, -6, 1, 0)
+    leftCol.Position = UDim2.new(0, 0, 0, 0)
+    leftCol.ScrollBarThickness = 3
+    leftCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+    leftCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    leftCol.CanvasSize = UDim2.new(0, 0, 0, 0)
+    leftCol.Parent = dualContainer
+    
+    local leftList = Instance.new("UIListLayout")
+    leftList.SortOrder = Enum.SortOrder.LayoutOrder
+    leftList.Padding = UDim.new(0, 8)
+    leftList.Parent = leftCol
+    
+    local leftPadding = Instance.new("UIPadding")
+    leftPadding.PaddingTop = UDim.new(0, 4)
+    leftPadding.PaddingBottom = UDim.new(0, 8)
+    leftPadding.PaddingLeft = UDim.new(0, 2)
+    leftPadding.PaddingRight = UDim.new(0, 4)
+    leftPadding.Parent = leftCol
+    
+    local rightCol = Instance.new("ScrollingFrame")
+    rightCol.Name = "RightColumn"
+    rightCol.BackgroundTransparency = 1
+    rightCol.BorderSizePixel = 0
+    rightCol.Size = UDim2.new(0.5, -6, 1, 0)
+    rightCol.Position = UDim2.new(0.5, 6, 0, 0)
+    rightCol.ScrollBarThickness = 3
+    rightCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+    rightCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    rightCol.CanvasSize = UDim2.new(0, 0, 0, 0)
+    rightCol.Parent = dualContainer
+    
+    local rightList = Instance.new("UIListLayout")
+    rightList.SortOrder = Enum.SortOrder.LayoutOrder
+    rightList.Padding = UDim.new(0, 8)
+    rightList.Parent = rightCol
+    
+    local rightPadding = Instance.new("UIPadding")
+    rightPadding.PaddingTop = UDim.new(0, 4)
+    rightPadding.PaddingBottom = UDim.new(0, 8)
+    rightPadding.PaddingLeft = UDim.new(0, 4)
+    rightPadding.PaddingRight = UDim.new(0, 2)
+    rightPadding.Parent = rightCol
+    
+    local singleCol = Instance.new("ScrollingFrame")
+    singleCol.Name = "SingleColumn"
+    singleCol.BackgroundTransparency = 1
+    singleCol.BorderSizePixel = 0
+    singleCol.Size = UDim2.new(1, 0, 1, 0)
+    singleCol.ScrollBarThickness = 3
+    singleCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+    singleCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    singleCol.CanvasSize = UDim2.new(0, 0, 0, 0)
+    singleCol.Visible = not self._twoColumns
+    singleCol.Parent = self._container
+    
+    local singleList = Instance.new("UIListLayout")
+    singleList.SortOrder = Enum.SortOrder.LayoutOrder
+    singleList.Padding = UDim.new(0, 8)
+    singleList.Parent = singleCol
+    
+    local singlePadding = Instance.new("UIPadding")
+    singlePadding.PaddingTop = UDim.new(0, 4)
+    singlePadding.PaddingBottom = UDim.new(0, 10)
+    singlePadding.PaddingLeft = UDim.new(0, 2)
+    singlePadding.PaddingRight = UDim.new(0, 6)
+    singlePadding.Parent = singleCol
+    
+    self._dualContainer = dualContainer
+    self._leftColumn = leftCol
+    self._rightColumn = rightCol
+    self._singleColumn = singleCol
 end
 
 function Layout:GetSectionParent(sectionOptions)
-    if not self._twoColumns then
-        return self._singleColumn
-    end
-    
-    local side = "Left"
+    self._sectionCount = self._sectionCount + 1
+    local order = self._sectionCount
+    local side = nil
     if sectionOptions and sectionOptions.Side then
         side = sectionOptions.Side
     end
+    if not side then
+        side = (order % 2 == 1) and "Left" or "Right"
+    end
     
-    if string.lower(side) == "right" then
-        return self._rightColumn
+    local targetParent = nil
+    if self._twoColumns then
+        targetParent = (string.lower(side) == "right") and self._rightColumn or self._leftColumn
     else
-        return self._leftColumn
+        targetParent = self._singleColumn
+    end
+    
+    local sectionEntry = {
+        Side = side,
+        Order = order,
+        SectionCard = nil,
+    }
+    table.insert(self._sections, sectionEntry)
+    
+    return targetParent
+end
+
+function Layout:RegisterSectionInstance(sectionCard)
+    for _, sec in ipairs(self._sections) do
+        if sec.SectionCard == nil then
+            sec.SectionCard = sectionCard
+            break
+        end
+    end
+end
+
+function Layout:SetTwoColumns(enabled)
+    if self._twoColumns == enabled then return end
+    self._twoColumns = enabled
+    
+    self._dualContainer.Visible = enabled
+    self._singleColumn.Visible = not enabled
+    
+    for _, sec in ipairs(self._sections) do
+        local card = sec.SectionCard
+        if card and card.Parent then
+            if enabled then
+                local side = sec.Side or "Left"
+                card.Parent = (string.lower(side) == "right") and self._rightColumn or self._leftColumn
+            else
+                card.Parent = self._singleColumn
+            end
+        end
     end
 end
 
@@ -793,8 +831,20 @@ function Layout:IsTwoColumns()
     return self._twoColumns
 end
 
-return Layout
+function Layout:UpdateForDevice(deviceName, isMinimized)
+    local dev = string.lower(deviceName or "pc")
+    if dev == "pc" or dev == "tablet" then
+        self:SetTwoColumns(true)
+    elseif dev == "android" then
+        if isMinimized then
+            self:SetTwoColumns(true)
+        else
+            self:SetTwoColumns(false)
+        end
+    end
+end
 
+return Layout
 
 end
 
@@ -4383,6 +4433,7 @@ function Window.new(options, dependencies)
             MobilePin = MobilePin,
         },
         _tabGroups = {},
+        _allTabs = {},
         _activeTab = nil,
         _toggleKey = toggleKey,
         _minimized = false,
@@ -4602,6 +4653,11 @@ function Window:Minimize()
         self._mobilePin:SetVisible(true)
         self._mobilePin:SetOpenState(false)
     end
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
+            tab._layoutEngine:UpdateForDevice(self._currentDevice, true)
+        end
+    end
 end
 
 function Window:Open()
@@ -4610,6 +4666,11 @@ function Window:Open()
     if self._mobilePin then
         self._mobilePin:SetVisible(false)
         self._mobilePin:SetOpenState(true)
+    end
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
+            tab._layoutEngine:UpdateForDevice(self._currentDevice, false)
+        end
     end
 end
 
@@ -4623,6 +4684,15 @@ end
 
 function Window:Toggle()
     self:ToggleMinimize()
+end
+
+function Window:SetTwoColumnsMode(enabled)
+    self._forceTwoColumns = enabled
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
+            tab._layoutEngine:SetTwoColumns(enabled)
+        end
+    end
 end
 
 function Window:SetDevice(deviceType)
@@ -4642,6 +4712,16 @@ function Window:SetDevice(deviceType)
     if self._contentArea then
         self._contentArea.Size = UDim2.new(1, -sbW, 1, 0)
         self._contentArea.Position = UDim2.new(0, sbW, 0, 0)
+    end
+    local dev = string.lower(preset.Name)
+    local isTwoCols = (dev == "pc" or dev == "tablet")
+    if self._forceTwoColumns ~= nil then
+        isTwoCols = self._forceTwoColumns
+    end
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
+            tab._layoutEngine:SetTwoColumns(isTwoCols)
+        end
     end
 end
 
@@ -4763,6 +4843,20 @@ function Window:_initUniversalTabs(options)
     })
 
     local devSec = settingsTab:CreateSection("Device Layout Presets")
+    devSec:CreateDropdown({
+        Name = "Layout Structure Mode",
+        Options = { "2 Column (Kiri & Kanan)", "1 Column (1 Baris Lurus)" },
+        Default = (self._currentDevice == "Android") and "1 Column (1 Baris Lurus)" or "2 Column (Kiri & Kanan)",
+        Callback = function(choice)
+            local isTwo = string.find(choice, "2") ~= nil
+            self:SetTwoColumnsMode(isTwo)
+            self:Notify({
+                Title = "Layout Mode",
+                Content = isTwo and "Struktur diubah ke 2 Kolom (Kiri & Kanan)" or "Struktur diubah ke 1 Kolom (1 Baris Lurus)",
+                Duration = 2,
+            })
+        end
+    })
     devSec:CreateButtonGroup({
         Buttons = {
             {
@@ -4999,7 +5093,12 @@ Window.AddTab = Window.CreateTab
 function TabGroup:CreateTab(options)
     local name = type(options) == "table" and (options.Name or options.Text) or tostring(options)
     local iconId = type(options) == "table" and (options.Icon or options.Image) or nil
-    local twoColumns = type(options) == "table" and options.TwoColumns == true or false
+    local devName = string.lower(self._window._currentDevice or "pc")
+    local defaultTwoCols = (devName == "pc" or devName == "tablet")
+    local twoColumns = defaultTwoCols
+    if type(options) == "table" and options.TwoColumns ~= nil then
+        twoColumns = options.TwoColumns
+    end
     
     -- Tab Sidebar Button
     local tabBtn = Instance.new("TextButton")
@@ -5095,6 +5194,9 @@ function TabGroup:CreateTab(options)
     end
     
     table.insert(self._tabs, tabObj)
+    if self._window._allTabs then
+        table.insert(self._window._allTabs, tabObj)
+    end
     
     if not self._window._activeTab then
         self._window:_setActiveTab(tabObj)
@@ -5154,6 +5256,9 @@ function Tab:CreateSection(nameOrOptions)
     sectionCard.BackgroundColor3 = self._window._theme.Card
     sectionCard.BorderSizePixel = 0
     sectionCard.Parent = sectionParent
+    if self._layoutEngine and self._layoutEngine.RegisterSectionInstance then
+        self._layoutEngine:RegisterSectionInstance(sectionCard)
+    end
     
     local sCorner = Instance.new("UICorner")
     sCorner.CornerRadius = self._window._theme.CornerRadius
