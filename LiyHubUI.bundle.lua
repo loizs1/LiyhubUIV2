@@ -3882,12 +3882,22 @@ tabGroupsPadding.PaddingBottom = UDim.new(0, 8)
 tabGroupsPadding.PaddingLeft = UDim.new(0, 8)
 tabGroupsPadding.PaddingRight = UDim.new(0, 8)
 tabGroupsPadding.Parent = tabGroupsScroll
-local profileCard = Instance.new("Frame")
+local customUser = options.User or options.UserProfile or options.Profile
+local localUser = Players.LocalPlayer
+local dispNameText = (type(customUser) == "table" and (customUser.DisplayName or customUser.Name)) or options.DisplayName or (localUser and localUser.DisplayName or "User")
+local rawNameText = (type(customUser) == "table" and (customUser.Username or customUser.User)) or options.Username or (localUser and ("@" .. localUser.Name) or "@user")
+if string.sub(rawNameText, 1, 1) ~= "@" then
+rawNameText = "@" .. rawNameText
+end
+local profileCard = Instance.new("TextButton")
 profileCard.Name = "ProfileCard"
 profileCard.Size = UDim2.new(1, -16, 0, 46)
 profileCard.Position = UDim2.new(0, 8, 1, -52)
 profileCard.BackgroundColor3 = theme.SidebarItem
+profileCard.AutoButtonColor = false
+profileCard.Text = ""
 profileCard.BorderSizePixel = 0
+profileCard.Active = true
 profileCard.Parent = sidebar
 local profCorner = Instance.new("UICorner")
 profCorner.CornerRadius = theme.SmallCornerRadius
@@ -3910,6 +3920,14 @@ avatarImg.Parent = profileCard
 local avCorner = Instance.new("UICorner")
 avCorner.CornerRadius = UDim.new(1, 0)
 avCorner.Parent = avatarImg
+local customAv = (type(customUser) == "table" and customUser.Avatar) or options.Avatar
+if customAv then
+if IconService and IconService.Apply then
+IconService.Apply(avatarImg, customAv)
+else
+avatarImg.Image = tostring(customAv)
+end
+else
 task.spawn(function()
 local player = Players.LocalPlayer
 if player then
@@ -3923,9 +3941,7 @@ avatarImg.Image = thumb
 end
 end
 end)
-local localUser = Players.LocalPlayer
-local dispNameText = localUser and localUser.DisplayName or "User"
-local rawNameText = localUser and ("@" .. localUser.Name) or "@user"
+end
 local profDisplayName = Instance.new("TextLabel")
 profDisplayName.Name = "DisplayName"
 profDisplayName.Size = UDim2.new(1, -48, 0, 16)
@@ -4032,7 +4048,19 @@ _toggleKey = toggleKey,
 _minimized = false,
 _originalSize = defaultSize,
 _destroyed = false,
+_userProfileData = nil,
 }, Window)
+local lastProfClick = 0
+local function onProfileClicked()
+local now = os.clock()
+if now - lastProfClick < 0.2 then return end
+lastProfClick = now
+self:ShowProfileModal()
+end
+local profConn = profileCard.Activated:Connect(onProfileClicked)
+if cleanup then
+cleanup:Add(profConn)
+end
 local dragging = false
 local dragInput, dragStart, startPos
 local dragBegan = header.InputBegan:Connect(function(input)
@@ -4413,6 +4441,69 @@ return self._currentDevice or "PC"
 end
 function Window:GetScale()
 return self._uiScale and self._uiScale.Scale or 1.0
+end
+function Window:SetUserProfile(data)
+if not self._profileCard or type(data) ~= "table" then return end
+self._userProfileData = data
+if data.DisplayName then
+local dName = self._profileCard:FindFirstChild("DisplayName")
+if dName then dName.Text = tostring(data.DisplayName) end
+end
+if data.Username then
+local uName = self._profileCard:FindFirstChild("Username")
+if uName then
+local uStr = tostring(data.Username)
+if string.sub(uStr, 1, 1) ~= "@" then uStr = "@" .. uStr end
+uName.Text = uStr
+end
+end
+if data.Avatar then
+local av = self._profileCard:FindFirstChild("Avatar")
+if av then
+local iconService = self._iconService
+if iconService and iconService.Apply then
+iconService.Apply(av, data.Avatar)
+else
+av.Image = tostring(data.Avatar)
+end
+end
+end
+if self._mobilePin and self._mobilePin.SetUserText then
+self._mobilePin:SetUserText(data.DisplayName or data.Username or "")
+end
+end
+function Window:GetUserProfile()
+local localUser = Players.LocalPlayer
+local dName = (self._userProfileData and self._userProfileData.DisplayName) or (localUser and localUser.DisplayName or "User")
+local uName = (self._userProfileData and self._userProfileData.Username) or (localUser and ("@" .. localUser.Name) or "@user")
+return {
+DisplayName = dName,
+Username = uName,
+UserId = localUser and localUser.UserId or 0,
+AccountAge = localUser and localUser.AccountAge or 0,
+}
+end
+function Window:ShowProfileModal()
+local localUser = Players.LocalPlayer
+local dName = (self._userProfileData and self._userProfileData.DisplayName) or (localUser and localUser.DisplayName or "User")
+local uName = (self._userProfileData and self._userProfileData.Username) or (localUser and ("@" .. localUser.Name) or "@user")
+local uid = localUser and tostring(localUser.UserId) or "0"
+local age = localUser and (tostring(localUser.AccountAge) .. " days") or "N/A"
+local isPrem = localUser and (localUser.MembershipType == Enum.MembershipType.Premium)
+local status = isPrem and "Roblox Premium" or "Standard Account"
+self:ShowModal({
+Title = "User Profile",
+Message = string.format("Account: %s (%s)\nUser ID: %s\nAccount Age: %s\nStatus: %s", dName, uName, uid, age, status),
+ConfirmText = "Copy User ID",
+CancelText = "Close",
+OnConfirm = function()
+local setClip = setclipboard or toclipboard or (Clipboard and Clipboard.set)
+if setClip then
+setClip(uid)
+self:Notify({ Title = "Copied", Content = "User ID copied to clipboard!", Duration = 2 })
+end
+end
+})
 end
 function Window:GetUniversalGroup()
 return self._universalGroup
