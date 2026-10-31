@@ -5138,6 +5138,13 @@ end
 local dev = string.lower(preset.Name)
 local isTwoCols = (dev == "pc" or dev == "tablet")
 self:SetTwoColumnsMode(isTwoCols)
+if self._layoutModeDropdown and self._layoutModeDropdown.SetValue then
+self._layoutModeDropdown:SetValue(isTwoCols and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
+end
+if self._scaleSlider and self._scaleSlider.SetValue then
+local targetVal = math.floor((preset.Scale * 100) + 0.5)
+self._scaleSlider:SetValue(targetVal)
+end
 if self._mobilePin and self._mobilePin.SetScale then
 self._mobilePin:SetScale(preset.Scale)
 end
@@ -5149,10 +5156,16 @@ if dName then dName.TextSize = isSmall and 10 or 12 end
 if uName then uName.TextSize = isSmall and 9 or 10 end
 end
 end
-function Window:SetScale(scaleFactor)
+function Window:SetScale(scaleFactor, skipSlider)
 local num = math.clamp(tonumber(scaleFactor) or 1.0, 0.5, 1.5)
 self._baseScale = num
 self._uiScale.Scale = num
+if not skipSlider and self._scaleSlider and self._scaleSlider.SetValue then
+local targetVal = math.floor((num * 100) + 0.5)
+if self._scaleSlider:GetValue() ~= targetVal then
+self._scaleSlider:SetValue(targetVal)
+end
+end
 end
 function Window:SetSizePreset(presetName)
 local mult = self._sizeManager and self._sizeManager.GetScaleMultiplier(presetName) or 1.0
@@ -5496,16 +5509,17 @@ end
 }
 }
 })
-devSec:CreateSlider({
+local scaleSlider = devSec:CreateSlider({
 Name = "UI Scale Multiplier",
 Min = 70,
 Max = 140,
 Default = 100,
 Unit = "%",
 Callback = function(val)
-self:SetScale(val / 100)
+self:SetScale(val / 100, true)
 end
 })
+self._scaleSlider = scaleSlider
 local ifSec = settingsTab:CreateSection("Interface Management")
 ifSec:CreateKeybind({
 Name = "Menu Toggle Keybind",
