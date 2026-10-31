@@ -6213,6 +6213,81 @@ self:_applyThemeToBanner(banner, targetTheme, isDark)
 end
 end
 end
+function Window:_applyThemeToProgression(prg, targetTheme, isDark)
+if not prg or not prg._container then return end
+prg._theme = targetTheme
+prg._accentColor = targetTheme.AccentStep or (isDark and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 130, 220))
+prg._container.BackgroundColor3 = targetTheme.Card
+local stroke = prg._container:FindFirstChildOfClass("UIStroke")
+if stroke then
+stroke.Color = targetTheme.Border
+end
+local header = prg._container:FindFirstChild("Header")
+if header then
+local t = header:FindFirstChild("Title")
+if t then t.TextColor3 = targetTheme.TextPrimary end
+local s = header:FindFirstChild("Subtitle")
+if s then s.TextColor3 = targetTheme.TextMuted end
+end
+local stepper = prg._container:FindFirstChild("Stepper")
+if stepper then
+local lineBg = stepper:FindFirstChild("LineBg")
+if lineBg then lineBg.BackgroundColor3 = targetTheme.SliderTrack end
+local lineFill = stepper:FindFirstChild("LineFill")
+if lineFill then lineFill.BackgroundColor3 = prg._accentColor end
+end
+local controls = prg._container:FindFirstChild("Controls")
+if controls then
+local prevBtn = controls:FindFirstChild("PrevButton")
+local nextBtn = controls:FindFirstChild("NextButton")
+local btnBg = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+local btnTextCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+local strokeCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+if prevBtn then
+prevBtn.BackgroundColor3 = btnBg
+prevBtn.TextColor3 = btnTextCol
+local s = prevBtn:FindFirstChildOfClass("UIStroke")
+if s then s.Color = strokeCol end
+end
+if nextBtn then
+nextBtn.BackgroundColor3 = btnBg
+nextBtn.TextColor3 = btnTextCol
+local s = nextBtn:FindFirstChildOfClass("UIStroke")
+if s then s.Color = strokeCol end
+end
+end
+if prg._stepNodes then
+for i, node in ipairs(prg._stepNodes) do
+local isActive = (i == prg._currentStep)
+local isCompleted = (i < prg._currentStep)
+local targetColor = isActive and prg._accentColor or (isCompleted and (isDark and Color3.fromRGB(35, 75, 125) or Color3.fromRGB(180, 210, 245)) or targetTheme.SliderTrack)
+local targetIconColor = (isActive or isCompleted) and Color3.fromRGB(255, 255, 255) or targetTheme.TextMuted
+local targetLabelColor = isActive and prg._accentColor or (isCompleted and (isDark and Color3.fromRGB(180, 205, 235) or Color3.fromRGB(60, 100, 160)) or targetTheme.TextMuted)
+node.Button.BackgroundColor3 = targetColor
+local iconService = self._iconService
+if iconService and iconService.Apply then
+iconService.Apply(node.Icon, node.IconName or "check", targetIconColor)
+else
+node.Icon.ImageColor3 = targetIconColor
+end
+node.Label.TextColor3 = targetLabelColor
+end
+end
+local nested = prg._container:FindFirstChild("NestedContent")
+if nested then
+for _, child in ipairs(nested:GetChildren()) do
+if child:IsA("GuiObject") then
+if child.Name:find("Toggle_") or child.Name:find("Dropdown_") or child.Name:find("Slider_") or child.Name:find("Button_") or child.Name:find("Input_") then
+child.BackgroundColor3 = targetTheme.Element
+local st = child:FindFirstChildOfClass("UIStroke")
+if st then st.Color = targetTheme.Border end
+local t = child:FindFirstChild("Title") or child:FindFirstChild("Label") or child:FindFirstChild("Text")
+if t and t:IsA("TextLabel") then t.TextColor3 = targetTheme.TextPrimary end
+end
+end
+end
+end
+end
 function Window:_applyThemeToBanner(banner, targetTheme, isDark)
 if not banner or not banner._container then return end
 banner._container.BackgroundColor3 = targetTheme.Card
@@ -6276,6 +6351,10 @@ if not comp or type(comp) ~= "table" then return end
 comp._theme = targetTheme
 if comp._container and comp._container.Name == "Banner" then
 self:_applyThemeToBanner(comp, targetTheme, isDark)
+return
+end
+if comp._container and comp._container.Name:find("Progression") then
+self:_applyThemeToProgression(comp, targetTheme, isDark)
 return
 end
 if comp._container then
