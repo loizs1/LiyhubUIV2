@@ -65,80 +65,15 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     ibCorner.CornerRadius = UDim.new(1, 0)
     ibCorner.Parent = iconBg
     
-    if options.Logo and options.Logo ~= "" and not string.find(options.Logo, "LiyhubLogo") then
-        local iconImg = Instance.new("ImageLabel")
-        iconImg.Name = "Logo"
-        iconImg.Size = UDim2.new(1, 0, 1, 0)
-        iconImg.BackgroundTransparency = 1
-        iconImg.Image = options.Logo
-        iconImg.ScaleType = Enum.ScaleType.Fit
-        iconImg.Active = false
-        iconImg.ZIndex = 1000001
-        iconImg.Parent = iconBg
-    else
-        local stem = Instance.new("Frame")
-        stem.Name = "Stem"
-        stem.Size = UDim2.fromOffset(3, 12)
-        stem.Position = UDim2.fromOffset(6, 5)
-        stem.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        stem.BorderSizePixel = 0
-        stem.Active = false
-        stem.ZIndex = 1000001
-        stem.Parent = iconBg
-
-        local stemCorner = Instance.new("UICorner")
-        stemCorner.CornerRadius = UDim.new(1, 0)
-        stemCorner.Parent = stem
-
-        local stemGrad = Instance.new("UIGradient")
-        stemGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 225, 255)),
-        })
-        stemGrad.Rotation = 90
-        stemGrad.Parent = stem
-
-        local base = Instance.new("Frame")
-        base.Name = "Base"
-        base.Size = UDim2.fromOffset(11, 3)
-        base.Position = UDim2.fromOffset(6, 14)
-        base.BackgroundColor3 = Color3.fromRGB(0, 225, 255)
-        base.BorderSizePixel = 0
-        base.Active = false
-        base.ZIndex = 1000001
-        base.Parent = iconBg
-
-        local baseCorner = Instance.new("UICorner")
-        baseCorner.CornerRadius = UDim.new(1, 0)
-        baseCorner.Parent = base
-
-        local baseGrad = Instance.new("UIGradient")
-        baseGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 225, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 145, 255)),
-        })
-        baseGrad.Parent = base
-
-        local orb = Instance.new("Frame")
-        orb.Name = "CelestialOrb"
-        orb.Size = UDim2.fromOffset(4, 4)
-        orb.AnchorPoint = Vector2.new(0.5, 0.5)
-        orb.Position = UDim2.fromOffset(13, 9.5)
-        orb.BackgroundColor3 = Color3.fromRGB(235, 250, 255)
-        orb.BorderSizePixel = 0
-        orb.Active = false
-        orb.ZIndex = 1000002
-        orb.Parent = iconBg
-
-        local oc = Instance.new("UICorner")
-        oc.CornerRadius = UDim.new(1, 0)
-        oc.Parent = orb
-
-        local ost = Instance.new("UIStroke")
-        ost.Color = Color3.fromRGB(0, 229, 255)
-        ost.Thickness = 1
-        ost.Parent = orb
-    end
+    local iconImg = Instance.new("ImageLabel")
+    iconImg.Name = "Logo"
+    iconImg.Size = UDim2.new(1, 0, 1, 0)
+    iconImg.BackgroundTransparency = 1
+    iconImg.Image = options.Logo or theme.DefaultLogo or "rbxassetid://126257104774952"
+    iconImg.ScaleType = Enum.ScaleType.Fit
+    iconImg.Active = false
+    iconImg.ZIndex = 1000001
+    iconImg.Parent = iconBg
     
     local textContainer = Instance.new("Frame")
     textContainer.Name = "TextContainer"

@@ -192,101 +192,20 @@ function Window.new(options, dependencies)
     logoBtn.Text = ""
     logoBtn.Parent = header
     
-    local logoBadge = Instance.new("Frame")
-    logoBadge.Name = "LogoBadge"
-    logoBadge.Size = UDim2.fromOffset(26, 26)
-    logoBadge.AnchorPoint = Vector2.new(0.5, 0.5)
-    logoBadge.Position = UDim2.new(0.5, 0, 0.5, 0)
-    logoBadge.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
-    logoBadge.BorderSizePixel = 0
-    logoBadge.Active = false
-    logoBadge.Parent = logoBtn
+    local logoAsset = options.Logo or theme.DefaultLogo or "rbxassetid://126257104774952"
+    local logoCorner = Instance.new("UICorner")
+    logoCorner.CornerRadius = UDim.new(0, 6)
+    logoCorner.Parent = logoBtn
 
-    local lbCorner = Instance.new("UICorner")
-    lbCorner.CornerRadius = UDim.new(0, 7)
-    lbCorner.Parent = logoBadge
-
-    local lbStroke = Instance.new("UIStroke")
-    lbStroke.Name = "LogoStroke"
-    lbStroke.Color = Color3.fromRGB(36, 40, 50)
-    lbStroke.Thickness = 1
-    lbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    lbStroke.Parent = logoBadge
-
-    local lbStem = Instance.new("Frame")
-    lbStem.Name = "Stem"
-    lbStem.Size = UDim2.fromOffset(3.5, 14)
-    lbStem.Position = UDim2.fromOffset(6.5, 5)
-    lbStem.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    lbStem.BorderSizePixel = 0
-    lbStem.Active = false
-    lbStem.Parent = logoBadge
-
-    local lbStemCorner = Instance.new("UICorner")
-    lbStemCorner.CornerRadius = UDim.new(1, 0)
-    lbStemCorner.Parent = lbStem
-
-    local lbStemGrad = Instance.new("UIGradient")
-    lbStemGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 225, 255)),
-    })
-    lbStemGrad.Rotation = 90
-    lbStemGrad.Parent = lbStem
-
-    local lbBase = Instance.new("Frame")
-    lbBase.Name = "Base"
-    lbBase.Size = UDim2.fromOffset(13, 3.5)
-    lbBase.Position = UDim2.fromOffset(6.5, 15.5)
-    lbBase.BackgroundColor3 = Color3.fromRGB(0, 225, 255)
-    lbBase.BorderSizePixel = 0
-    lbBase.Active = false
-    lbBase.Parent = logoBadge
-
-    local lbBaseCorner = Instance.new("UICorner")
-    lbBaseCorner.CornerRadius = UDim.new(1, 0)
-    lbBaseCorner.Parent = lbBase
-
-    local lbBaseGrad = Instance.new("UIGradient")
-    lbBaseGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 225, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 145, 255)),
-    })
-    lbBaseGrad.Parent = lbBase
-
-    local lbOrbGlow = Instance.new("Frame")
-    lbOrbGlow.Name = "OrbGlow"
-    lbOrbGlow.Size = UDim2.fromOffset(8, 8)
-    lbOrbGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-    lbOrbGlow.Position = UDim2.fromOffset(14, 10.5)
-    lbOrbGlow.BackgroundColor3 = Color3.fromRGB(0, 229, 255)
-    lbOrbGlow.BackgroundTransparency = 0.5
-    lbOrbGlow.BorderSizePixel = 0
-    lbOrbGlow.Active = false
-    lbOrbGlow.Parent = logoBadge
-
-    local lbOgc = Instance.new("UICorner")
-    lbOgc.CornerRadius = UDim.new(1, 0)
-    lbOgc.Parent = lbOrbGlow
-
-    local lbOrb = Instance.new("Frame")
-    lbOrb.Name = "CelestialOrb"
-    lbOrb.Size = UDim2.fromOffset(4.5, 4.5)
-    lbOrb.AnchorPoint = Vector2.new(0.5, 0.5)
-    lbOrb.Position = UDim2.fromOffset(14, 10.5)
-    lbOrb.BackgroundColor3 = Color3.fromRGB(235, 250, 255)
-    lbOrb.BorderSizePixel = 0
-    lbOrb.Active = false
-    lbOrb.Parent = logoBadge
-
-    local lbOc = Instance.new("UICorner")
-    lbOc.CornerRadius = UDim.new(1, 0)
-    lbOc.Parent = lbOrb
-
-    local lbOst = Instance.new("UIStroke")
-    lbOst.Color = Color3.fromRGB(0, 229, 255)
-    lbOst.Thickness = 1
-    lbOst.Parent = lbOrb
+    local logoImg = Instance.new("ImageLabel")
+    logoImg.Name = "LogoImage"
+    logoImg.Size = UDim2.new(1, 0, 1, 0)
+    logoImg.BackgroundTransparency = 1
+    logoImg.Image = logoAsset
+    logoImg.ScaleType = Enum.ScaleType.Fit
+    logoImg.BorderSizePixel = 0
+    logoImg.Active = false
+    logoImg.Parent = logoBtn
     
     local logoToggleConn = logoBtn.Activated:Connect(function()
         self:ToggleSidebar()
@@ -1947,6 +1866,43 @@ function Window:SetTheme(themeNameOrTable)
         for _, section in ipairs(tab._sections or {}) do
             self:_applyThemeToSection(section, targetTheme, isDark)
         end
+        for _, banner in ipairs(tab._banners or {}) do
+            self:_applyThemeToBanner(banner, targetTheme, isDark)
+        end
+    end
+end
+
+function Window:_applyThemeToBanner(banner, targetTheme, isDark)
+    if not banner or not banner._container then return end
+    banner._container.BackgroundColor3 = targetTheme.Card
+    local stroke = banner._container:FindFirstChildOfClass("UIStroke")
+    if stroke then
+        stroke.Color = targetTheme.Border
+    end
+    local header = banner._container:FindFirstChild("Header")
+    if header then
+        local title = header:FindFirstChild("Title")
+        if title then
+            title.TextColor3 = targetTheme.TextPrimary
+        end
+        local arrow = header:FindFirstChild("Arrow")
+        if arrow then
+            arrow.ImageColor3 = targetTheme.TextMuted
+        end
+    end
+    local contentBox = banner._container:FindFirstChild("ContentBox")
+    if contentBox then
+        local imgFrame = contentBox:FindFirstChild("ImageFrame")
+        if imgFrame then
+            imgFrame.BackgroundColor3 = targetTheme.Header
+        end
+        local textContainer = contentBox:FindFirstChild("TextContainer")
+        if textContainer then
+            local desc = textContainer:FindFirstChild("Description")
+            if desc then
+                desc.TextColor3 = targetTheme.TextSecondary
+            end
+        end
     end
 end
 
@@ -1980,6 +1936,10 @@ function Window:_applyThemeToComponent(comp, targetTheme, isDark)
     if not comp or type(comp) ~= "table" then return end
     comp._theme = targetTheme
     
+    if comp._container and comp._container.Name == "Banner" then
+        self:_applyThemeToBanner(comp, targetTheme, isDark)
+        return
+    end
     if comp._container then
         local c = comp._container
         if c:IsA("GuiObject") then
@@ -2093,6 +2053,11 @@ end
 function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
     if not rootInstance then return end
     for _, desc in ipairs(rootInstance:GetDescendants()) do
+        if desc.Name == "Banner" and desc:IsA("Frame") then
+            desc.BackgroundColor3 = targetTheme.Card
+            local s = desc:FindFirstChildOfClass("UIStroke")
+            if s then s.Color = targetTheme.Border end
+        end
         if desc:IsA("UIStroke") then
             if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" then
                 desc.Color = targetTheme.Border
@@ -2234,6 +2199,7 @@ function TabGroup:CreateTab(options)
         _contentContainer = contentContainer,
         _layoutEngine = layoutEngine,
         _sections = {},
+        _banners = {},
     }, Tab)
     
     local lastTabSelect = 0
@@ -2312,6 +2278,9 @@ function Tab:CreateBanner(options)
         if self._layoutEngine and self._layoutEngine.RegisterSectionInstance then
             self._layoutEngine:RegisterSectionInstance(banner._container)
         end
+    end
+    if self._banners then
+        table.insert(self._banners, banner)
     end
     return banner
 end

@@ -1,9 +1,9 @@
 local PureBlackWhite = {
     Name = "Pure Black & White",
     
-    DefaultLogo = "rbxasset://textures/LiyhubLogo.png",
+    DefaultLogo = "rbxassetid://126257104774952",
     DefaultBanner = "rbxassetid://108339444679489",
-    FallbackLogo = "rbxasset://textures/LiyhubLogo.png",
+    FallbackLogo = "rbxassetid://126257104774952",
     FallbackBanner = "rbxassetid://108339444679489",
     
     Background = Color3.fromRGB(13, 13, 15),
