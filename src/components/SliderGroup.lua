@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Slider Group Component
-    Groups multiple sliders in a shared card with isolated states and callbacks.
-]]
-
 local Slider = nil
 pcall(function()
     Slider = require(script.Parent.Slider)
@@ -78,4 +73,3 @@ function SliderGroup:Destroy()
 end
 
 return SliderGroup
-

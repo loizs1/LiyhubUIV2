@@ -117,13 +117,51 @@ AimSection:CreateToggle({
 })
 
 AimSection:CreateSlider({
-    Name = "Aim Field of View (FOV)",
+    Name = "Aim Field of View",
     Min = 30,
     Max = 360,
-    Default = 90,
-    Unit = "px",
-    Callback = function(val)
-    end
+    Default = 220,
+    Suffix = "px",
+    Callback = function(val) end
+})
+
+AimSection:CreateSlider({
+    Name = "Hit Chance",
+    Min = 0,
+    Max = 100,
+    Default = 100,
+    Suffix = "%",
+    Callback = function(val) end
+})
+
+AimSection:CreateSlider({
+    Name = "Reaction Delay",
+    Min = 0.01,
+    Max = 1.00,
+    Default = 0.08,
+    Step = 0.01,
+    Suffix = "s",
+    Callback = function(val) end
+})
+
+AimSection:CreateSlider({
+    Name = "Prediction Distance",
+    Min = 0.0,
+    Max = 50.0,
+    Default = 0.0,
+    Step = 0.1,
+    Suffix = "studs",
+    Callback = function(val) end
+})
+
+AimSection:CreateSlider({
+    Name = "Camera Smoothing",
+    Min = 0.0,
+    Max = 20.0,
+    Default = 0.0,
+    Step = 0.1,
+    Suffix = "studs",
+    Callback = function(val) end
 })
 
 AimSection:CreateDropdown({

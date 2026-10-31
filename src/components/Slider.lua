@@ -4,6 +4,25 @@ local TweenService = game:GetService("TweenService")
 local Slider = {}
 Slider.__index = Slider
 
+local function formatValue(val, step, suffix, decimals)
+    local dec = decimals
+    if not dec then
+        local stepStr = tostring(step)
+        local dot = string.find(stepStr, "%.")
+        if dot then
+            dec = #stepStr - dot
+        else
+            dec = 0
+        end
+    end
+    local formatted = (dec > 0) and string.format("%." .. dec .. "f", val) or tostring(math.floor(val + 0.5))
+    local sfx = suffix or ""
+    if sfx ~= "" and string.sub(sfx, 1, 1) ~= "%" and string.sub(sfx, 1, 1) ~= " " then
+        sfx = " " .. sfx
+    end
+    return formatted .. sfx
+end
+
 function Slider.new(parent, options, theme, cleanup)
     options = options or {}
     local text = options.Text or options.Name or "Slider"
@@ -14,19 +33,21 @@ function Slider.new(parent, options, theme, cleanup)
     end
     local stepVal = options.Step or 1
     local defaultVal = options.Default or minVal
-    local suffix = options.Suffix or ""
+    local suffix = options.Suffix or options.Unit or ""
+    local decimals = options.Decimals
     local callback = options.Callback or options.OnChange or function() end
+    local customGradient = options.Gradient
     
     local container = Instance.new("Frame")
     container.Name = "Slider_" .. text
-    container.Size = UDim2.new(1, 0, 0, 48)
+    container.Size = UDim2.new(1, 0, 0, 56)
     container.BackgroundColor3 = theme.Element
     container.BorderSizePixel = 0
     container.ClipsDescendants = false
     container.Parent = parent
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
+    corner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 6)
     corner.Parent = container
     
     if theme.UseStrokes then
@@ -40,109 +61,71 @@ function Slider.new(parent, options, theme, cleanup)
     
     local label = Instance.new("TextLabel")
     label.Name = "Label"
-    label.Size = UDim2.new(0.65, 0, 0, 18)
-    label.Position = UDim2.new(0, 10, 0, 7)
+    label.Size = UDim2.new(1, -20, 0, 16)
+    label.Position = UDim2.new(0, 10, 0, 5)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = theme.TextPrimary
     label.Font = theme.FontBold
-    label.TextSize = theme.FontSizeRegular
+    label.TextSize = theme.FontSizeSmall or 12
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = container
     
-    local valueBadge = Instance.new("Frame")
-    valueBadge.Name = "ValueBadge"
-    valueBadge.Size = UDim2.new(0, 36, 0, 18)
-    valueBadge.Position = UDim2.new(1, -46, 0, 7)
-    valueBadge.BackgroundColor3 = theme.Card
-    valueBadge.BorderSizePixel = 0
-    valueBadge.Parent = container
-    
-    local vbCorner = Instance.new("UICorner")
-    vbCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 4)
-    vbCorner.Parent = valueBadge
-    
-    if theme.UseStrokes then
-        local vbStroke = Instance.new("UIStroke")
-        vbStroke.Color = theme.BorderSubtle
-        vbStroke.Thickness = 1
-        vbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        vbStroke.Parent = valueBadge
-    end
-    
-    local valueLabel = Instance.new("TextLabel")
-    valueLabel.Name = "ValueLabel"
-    valueLabel.Size = UDim2.new(1, 0, 1, 0)
-    valueLabel.BackgroundTransparency = 1
-    valueLabel.Text = tostring(defaultVal) .. suffix
-    valueLabel.TextColor3 = theme.TextPrimary
-    valueLabel.Font = theme.FontBold
-    valueLabel.TextSize = theme.FontSizeSmall
-    valueLabel.TextXAlignment = Enum.TextXAlignment.Center
-    valueLabel.Parent = valueBadge
-    
     local track = Instance.new("TextButton")
     track.Name = "Track"
-    track.Size = UDim2.new(1, -20, 0, 5)
-    track.Position = UDim2.new(0, 10, 0, 32)
-    track.BackgroundColor3 = theme.SliderTrack
+    track.Size = UDim2.new(1, -20, 0, 24)
+    track.Position = UDim2.new(0, 10, 0, 25)
+    track.BackgroundColor3 = Color3.fromRGB(24, 26, 38)
     track.AutoButtonColor = false
     track.Text = ""
     track.BorderSizePixel = 0
+    track.ClipsDescendants = true
     track.Parent = container
     
     local trackCorner = Instance.new("UICorner")
-    trackCorner.CornerRadius = UDim.new(1, 0)
+    trackCorner.CornerRadius = UDim.new(0, 6)
     trackCorner.Parent = track
+    
+    local trackStroke = Instance.new("UIStroke")
+    trackStroke.Name = "TrackStroke"
+    trackStroke.Color = Color3.fromRGB(36, 40, 56)
+    trackStroke.Thickness = 1
+    trackStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    trackStroke.Parent = track
     
     local fill = Instance.new("Frame")
     fill.Name = "Fill"
     fill.Size = UDim2.new(0, 0, 1, 0)
-    fill.BackgroundColor3 = theme.SliderFill
+    fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     fill.BorderSizePixel = 0
+    fill.ZIndex = 2
     fill.Parent = track
     
     local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.CornerRadius = UDim.new(0, 6)
     fillCorner.Parent = fill
     
-    local knob = Instance.new("Frame")
-    knob.Name = "Knob"
-    knob.Size = UDim2.new(0, 14, 0, 14)
-    knob.Position = UDim2.new(1, -7, 0.5, -7)
-    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    knob.BorderSizePixel = 0
-    knob.ZIndex = 5
-    knob.Parent = fill
+    local fillGrad = Instance.new("UIGradient")
+    fillGrad.Name = "FillGradient"
+    fillGrad.Color = customGradient or ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(38, 46, 156)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 94, 238)),
+    })
+    fillGrad.Parent = fill
     
-    local knobCorner = Instance.new("UICorner")
-    knobCorner.CornerRadius = UDim.new(1, 0)
-    knobCorner.Parent = knob
-    
-    local tooltip = Instance.new("Frame")
-    tooltip.Name = "Tooltip"
-    tooltip.Size = UDim2.new(0, 30, 0, 18)
-    tooltip.Position = UDim2.new(0.5, -15, 0, -22)
-    tooltip.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    tooltip.BorderSizePixel = 0
-    tooltip.Visible = false
-    tooltip.ZIndex = 15
-    tooltip.Parent = knob
-    
-    local ttCorner = Instance.new("UICorner")
-    ttCorner.CornerRadius = UDim.new(0, 4)
-    ttCorner.Parent = tooltip
-    
-    local ttText = Instance.new("TextLabel")
-    ttText.Name = "Text"
-    ttText.Size = UDim2.new(1, 0, 1, 0)
-    ttText.BackgroundTransparency = 1
-    ttText.Text = tostring(defaultVal)
-    ttText.TextColor3 = Color3.fromRGB(14, 14, 16)
-    ttText.Font = theme.FontBold
-    ttText.TextSize = 10
-    ttText.ZIndex = 16
-    ttText.Parent = tooltip
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Name = "ValueLabel"
+    valueLabel.Size = UDim2.new(0, 100, 1, 0)
+    valueLabel.Position = UDim2.new(1, -12, 0.5, 0)
+    valueLabel.AnchorPoint = Vector2.new(1, 0.5)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = formatValue(defaultVal, stepVal, suffix, decimals)
+    valueLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
+    valueLabel.Font = theme.FontBold
+    valueLabel.TextSize = 12
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.ZIndex = 10
+    valueLabel.Parent = track
     
     local self = setmetatable({
         _container = container,
@@ -150,14 +133,12 @@ function Slider.new(parent, options, theme, cleanup)
         _valueLabel = valueLabel,
         _track = track,
         _fill = fill,
-        _knob = knob,
-        _tooltip = tooltip,
-        _ttText = ttText,
         _theme = theme,
         _min = minVal,
         _max = maxVal,
         _step = stepVal,
         _suffix = suffix,
+        _decimals = decimals,
         _value = defaultVal,
         _callback = callback,
         _dragging = false,
@@ -177,8 +158,7 @@ function Slider.new(parent, options, theme, cleanup)
         self._value = quantized
         local finalRel = (quantized - self._min) / (self._max - self._min)
         fill.Size = UDim2.new(finalRel, 0, 1, 0)
-        valueLabel.Text = tostring(quantized) .. self._suffix
-        ttText.Text = tostring(quantized)
+        valueLabel.Text = formatValue(quantized, self._step, self._suffix, self._decimals)
         task.spawn(self._callback, quantized)
     end
     
@@ -188,7 +168,6 @@ function Slider.new(parent, options, theme, cleanup)
     local trackDown = track.MouseButton1Down:Connect(function()
         if self._disabled then return end
         self._dragging = true
-        tooltip.Visible = true
         local mousePos = UserInputService:GetMouseLocation()
         updateFromInput(mousePos.X)
     end)
@@ -203,7 +182,6 @@ function Slider.new(parent, options, theme, cleanup)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if self._dragging then
                 self._dragging = false
-                tooltip.Visible = false
             end
         end
     end)
@@ -223,8 +201,7 @@ function Slider:SetValue(val)
     self._value = val
     local rel = (val - self._min) / (self._max - self._min)
     self._fill.Size = UDim2.new(rel, 0, 1, 0)
-    self._valueLabel.Text = tostring(val) .. self._suffix
-    self._ttText.Text = tostring(val)
+    self._valueLabel.Text = formatValue(val, self._step, self._suffix, self._decimals)
     task.spawn(self._callback, val)
 end
 
