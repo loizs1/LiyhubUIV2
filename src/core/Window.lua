@@ -220,11 +220,10 @@ function Window.new(options, dependencies)
     subLabel.TextTruncate = Enum.TextTruncate.AtEnd
     subLabel.Parent = header
     
-    -- Header Controls: Minimize & Close
     local controlsFrame = Instance.new("Frame")
     controlsFrame.Name = "Controls"
-    controlsFrame.Size = UDim2.new(0, 70, 0, 28)
-    controlsFrame.Position = UDim2.new(1, -78, 0, 10)
+    controlsFrame.Size = UDim2.new(0, 66, 0, 30)
+    controlsFrame.Position = UDim2.new(1, -76, 0, 9)
     controlsFrame.BackgroundTransparency = 1
     controlsFrame.ZIndex = 20
     controlsFrame.Parent = mainFrame
@@ -235,41 +234,119 @@ function Window.new(options, dependencies)
     controlsLayout.Padding = UDim.new(0, 6)
     controlsLayout.Parent = controlsFrame
     
+    local controlBtnBg = Color3.fromRGB(24, 25, 32)
+    local controlBtnHover = Color3.fromRGB(36, 38, 48)
+    local controlIconColor = Color3.fromRGB(200, 205, 215)
+    
     local minBtn = Instance.new("TextButton")
     minBtn.Name = "Minimize"
-    minBtn.Size = UDim2.new(0, 28, 0, 28)
-    minBtn.BackgroundColor3 = theme.Element
-    minBtn.AutoButtonColor = true
-    minBtn.Text = "-"
-    minBtn.TextColor3 = theme.TextPrimary
-    minBtn.Font = Enum.Font.GothamBold
-    minBtn.TextSize = 16
+    minBtn.Size = UDim2.new(0, 30, 0, 30)
+    minBtn.BackgroundColor3 = controlBtnBg
+    minBtn.AutoButtonColor = false
+    minBtn.Text = ""
     minBtn.BorderSizePixel = 0
     minBtn.Active = true
     minBtn.ZIndex = 21
     minBtn.Parent = controlsFrame
     
     local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = theme.SmallCornerRadius
+    minCorner.CornerRadius = UDim.new(0, 8)
     minCorner.Parent = minBtn
+    
+    local minLine = Instance.new("Frame")
+    minLine.Name = "IconLine"
+    minLine.Size = UDim2.fromOffset(13, 2.5)
+    minLine.AnchorPoint = Vector2.new(0.5, 0.5)
+    minLine.Position = UDim2.new(0.5, 0, 0.5, 0)
+    minLine.BackgroundColor3 = controlIconColor
+    minLine.BorderSizePixel = 0
+    minLine.ZIndex = 22
+    minLine.Active = false
+    minLine.Parent = minBtn
+    
+    local minLineCorner = Instance.new("UICorner")
+    minLineCorner.CornerRadius = UDim.new(1, 0)
+    minLineCorner.Parent = minLine
     
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "Close"
-    closeBtn.Size = UDim2.new(0, 28, 0, 28)
-    closeBtn.BackgroundColor3 = theme.Element
-    closeBtn.AutoButtonColor = true
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = theme.TextPrimary
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 13
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.BackgroundColor3 = controlBtnBg
+    closeBtn.AutoButtonColor = false
+    closeBtn.Text = ""
     closeBtn.BorderSizePixel = 0
     closeBtn.Active = true
     closeBtn.ZIndex = 21
     closeBtn.Parent = controlsFrame
     
     local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = theme.SmallCornerRadius
+    closeCorner.CornerRadius = UDim.new(0, 8)
     closeCorner.Parent = closeBtn
+    
+    local closeCrossContainer = Instance.new("Frame")
+    closeCrossContainer.Name = "IconCross"
+    closeCrossContainer.Size = UDim2.fromOffset(14, 14)
+    closeCrossContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+    closeCrossContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+    closeCrossContainer.BackgroundTransparency = 1
+    closeCrossContainer.ZIndex = 22
+    closeCrossContainer.Active = false
+    closeCrossContainer.Parent = closeBtn
+    
+    local closeBar1 = Instance.new("Frame")
+    closeBar1.Name = "Bar1"
+    closeBar1.Size = UDim2.fromOffset(14, 2.5)
+    closeBar1.AnchorPoint = Vector2.new(0.5, 0.5)
+    closeBar1.Position = UDim2.new(0.5, 0, 0.5, 0)
+    closeBar1.Rotation = 45
+    closeBar1.BackgroundColor3 = controlIconColor
+    closeBar1.BorderSizePixel = 0
+    closeBar1.ZIndex = 22
+    closeBar1.Active = false
+    closeBar1.Parent = closeCrossContainer
+    
+    local closeBar1Corner = Instance.new("UICorner")
+    closeBar1Corner.CornerRadius = UDim.new(1, 0)
+    closeBar1Corner.Parent = closeBar1
+    
+    local closeBar2 = Instance.new("Frame")
+    closeBar2.Name = "Bar2"
+    closeBar2.Size = UDim2.fromOffset(14, 2.5)
+    closeBar2.AnchorPoint = Vector2.new(0.5, 0.5)
+    closeBar2.Position = UDim2.new(0.5, 0, 0.5, 0)
+    closeBar2.Rotation = -45
+    closeBar2.BackgroundColor3 = controlIconColor
+    closeBar2.BorderSizePixel = 0
+    closeBar2.ZIndex = 22
+    closeBar2.Active = false
+    closeBar2.Parent = closeCrossContainer
+    
+    local closeBar2Corner = Instance.new("UICorner")
+    closeBar2Corner.CornerRadius = UDim.new(1, 0)
+    closeBar2Corner.Parent = closeBar2
+    
+    local minHovIn = minBtn.MouseEnter:Connect(function()
+        TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+    end)
+    local minHovOut = minBtn.MouseLeave:Connect(function()
+        TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+    end)
+    local closeHovIn = closeBtn.MouseEnter:Connect(function()
+        TweenService:Create(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(50, 24, 30) }):Play()
+        closeBar1.BackgroundColor3 = Color3.fromRGB(240, 100, 110)
+        closeBar2.BackgroundColor3 = Color3.fromRGB(240, 100, 110)
+    end)
+    local closeHovOut = closeBtn.MouseLeave:Connect(function()
+        TweenService:Create(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+        closeBar1.BackgroundColor3 = controlIconColor
+        closeBar2.BackgroundColor3 = controlIconColor
+    end)
+    if cleanup then
+        cleanup:Add(minHovIn)
+        cleanup:Add(minHovOut)
+        cleanup:Add(closeHovIn)
+        cleanup:Add(closeHovOut)
+    end
     
     -- Body container
     local body = Instance.new("Frame")
