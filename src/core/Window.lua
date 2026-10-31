@@ -1190,7 +1190,7 @@ function Window:SetTwoColumnsMode(enabled)
         end
     end
     if self._layoutModeDropdown then
-        self._layoutModeDropdown:SetValue(enabled and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
+        self._layoutModeDropdown:SetValue(enabled and "2 Columns (Split View)" or "1 Column (Single Flow)")
     end
 end
 
@@ -1216,7 +1216,7 @@ function Window:SetDevice(deviceType)
     local isTwoCols = (dev == "pc" or dev == "tablet")
     self:SetTwoColumnsMode(isTwoCols)
     if self._layoutModeDropdown and self._layoutModeDropdown.SetValue then
-        self._layoutModeDropdown:SetValue(isTwoCols and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
+        self._layoutModeDropdown:SetValue(isTwoCols and "2 Columns (Split View)" or "1 Column (Single Flow)")
     end
     if self._scaleSlider and self._scaleSlider.SetValue then
         local targetVal = math.floor((preset.Scale * 100) + 0.5)
@@ -1579,14 +1579,14 @@ function Window:_initUniversalTabs(options)
     local devSec = settingsTab:CreateSection("Device Layout Presets")
     local layoutModeDropdown = devSec:CreateDropdown({
         Name = "Layout Structure Mode",
-        Options = { "2 Column (Kiri & Kanan)", "1 Column (1 Baris Lurus)" },
-        Default = (self._currentDevice == "Android") and "1 Column (1 Baris Lurus)" or "2 Column (Kiri & Kanan)",
+        Options = { "2 Columns (Split View)", "1 Column (Single Flow)" },
+        Default = (self._currentDevice == "Android") and "1 Column (Single Flow)" or "2 Columns (Split View)",
         Callback = function(choice)
             local isTwo = string.find(choice, "2") ~= nil
             self:SetTwoColumnsMode(isTwo)
             self:Notify({
                 Title = "Layout Mode",
-                Content = isTwo and "Struktur diubah ke 2 Kolom (Kiri & Kanan)" or "Struktur diubah ke 1 Kolom (1 Baris Lurus)",
+                Content = isTwo and "Layout structure switched to 2 Columns (Split View)" or "Layout structure switched to 1 Column (Single Flow)",
                 Duration = 2,
             })
         end
