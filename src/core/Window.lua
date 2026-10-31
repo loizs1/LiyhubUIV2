@@ -746,7 +746,7 @@ function Window:_initUniversalTabs(options)
     if options.UniversalGroup == false then return end
 
     local discordUrl = options.Discord or options.DiscordLink or "https://discord.gg/Nr56tQJeJh"
-    local bannerImage = options.Banner or options.BannerImage or "rbxassetid://81803989983948"
+    local bannerImage = options.Banner or options.BannerImage or "rbxassetid://108339444679489"
     local bannerTitle = options.BannerTitle or "LiyHub Announcement"
     local bannerDesc = options.BannerDesc or "Universal high-performance script framework engineered by Than & aeris. Minimalist pure B&W design, vector typography, and native stealth architecture."
 

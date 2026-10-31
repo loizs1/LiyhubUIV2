@@ -5,7 +5,7 @@ Banner.__index = Banner
 
 local function resolveAsset(asset)
     if not asset or asset == "" then
-        return "rbxassetid://81803989983948"
+        return "rbxassetid://108339444679489"
     end
     if typeof(asset) == "number" or tonumber(asset) then
         return "rbxassetid://" .. tostring(asset)
@@ -27,7 +27,7 @@ function Banner.new(parent, options, theme, cleanup)
     local showHeader = options.ShowHeader ~= false and (title ~= nil and title ~= "")
     local titleText = title or "LiyHub Announcement"
     local text = options.Text or options.Description or "Welcome to LiyHub v2.2 Pure B&W!"
-    local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxassetid://81803989983948"
+    local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxassetid://108339444679489"
     local defaultCollapsed = options.Collapsed == true
     
     local container = Instance.new("Frame")
@@ -131,14 +131,14 @@ function Banner.new(parent, options, theme, cleanup)
     imageLabel.Size = UDim2.new(1, 0, 1, 0)
     imageLabel.BackgroundTransparency = 1
     imageLabel.Image = resolveAsset(image)
-    imageLabel.ScaleType = Enum.ScaleType.Crop
+    imageLabel.ScaleType = Enum.ScaleType.Fit
     imageLabel.BorderSizePixel = 0
     imageLabel.Parent = imageFrame
     
     local function updateBannerHeight()
         local width = imageFrame.AbsoluteSize.X
         if width > 40 then
-            local targetH = math.clamp(math.floor(width / (2572 / 1012)), 60, 320)
+            local targetH = math.clamp(math.floor(width / (643 / 253)), 60, 320)
             if math.abs(imageFrame.Size.Y.Offset - targetH) > 1 then
                 imageFrame.Size = UDim2.new(1, 0, 0, targetH)
             end
