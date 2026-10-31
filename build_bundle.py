@@ -6,6 +6,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 files_to_bundle = [
     ("src/themes/PureBlackWhite", "src/themes/PureBlackWhite.lua"),
+    ("src/themes/PureWhite", "src/themes/PureWhite.lua"),
     ("src/themes/ThemeManager", "src/themes/ThemeManager.lua"),
     ("src/size/PC", "src/size/PC.lua"),
     ("src/size/Android", "src/size/Android.lua"),
@@ -71,6 +72,7 @@ for mod_name, rel_path in files_to_bundle:
 
 bundle_code += """
 local PureBlackWhite = _require("src/themes/PureBlackWhite")
+local PureWhite = _require("src/themes/PureWhite")
 local ThemeManager = _require("src/themes/ThemeManager")
 local Cleanup = _require("src/core/Cleanup")
 local Signals = _require("src/core/Signals")
@@ -131,6 +133,7 @@ function LiyHubUI:CreateWindow(options)
     
     local deps = {
         Theme = theme,
+        ThemeManager = ThemeManager,
         Cleanup = cleanup,
         Layout = Layout,
         Modal = Modal,

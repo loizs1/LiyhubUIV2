@@ -232,8 +232,8 @@ function Window.new(options, dependencies)
     
     local controlsFrame = Instance.new("Frame")
     controlsFrame.Name = "Controls"
-    controlsFrame.Size = UDim2.new(0, 66, 0, 30)
-    controlsFrame.Position = UDim2.new(1, -76, 0, 9)
+    controlsFrame.Size = UDim2.new(0, 102, 0, 30)
+    controlsFrame.Position = UDim2.new(1, -112, 0, 9)
     controlsFrame.BackgroundTransparency = 1
     controlsFrame.ZIndex = 20
     controlsFrame.Parent = mainFrame
@@ -248,8 +248,105 @@ function Window.new(options, dependencies)
     local controlBtnHover = Color3.fromRGB(36, 38, 48)
     local controlIconColor = Color3.fromRGB(200, 205, 215)
     
+    local themeBtn = Instance.new("TextButton")
+    themeBtn.Name = "ThemeToggle"
+    themeBtn.Size = UDim2.new(0, 30, 0, 30)
+    themeBtn.BackgroundColor3 = controlBtnBg
+    themeBtn.AutoButtonColor = false
+    themeBtn.Text = ""
+    themeBtn.BorderSizePixel = 0
+    themeBtn.Active = true
+    themeBtn.LayoutOrder = 1
+    themeBtn.ZIndex = 21
+    themeBtn.Parent = controlsFrame
+
+    local themeCorner = Instance.new("UICorner")
+    themeCorner.CornerRadius = UDim.new(0, 8)
+    themeCorner.Parent = themeBtn
+
+    local themeIconContainer = Instance.new("Frame")
+    themeIconContainer.Name = "ThemeIcon"
+    themeIconContainer.Size = UDim2.fromOffset(16, 16)
+    themeIconContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+    themeIconContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+    themeIconContainer.BackgroundTransparency = 1
+    themeIconContainer.Active = false
+    themeIconContainer.ZIndex = 22
+    themeIconContainer.Parent = themeBtn
+
+    local function renderThemeIcon(isDark)
+        themeIconContainer:ClearAllChildren()
+        if isDark then
+            local moonBody = Instance.new("Frame")
+            moonBody.Name = "MoonBody"
+            moonBody.Size = UDim2.fromOffset(13, 13)
+            moonBody.AnchorPoint = Vector2.new(0.5, 0.5)
+            moonBody.Position = UDim2.new(0.5, 0, 0.5, 0)
+            moonBody.BackgroundColor3 = controlIconColor
+            moonBody.BorderSizePixel = 0
+            moonBody.ZIndex = 22
+            moonBody.Active = false
+            moonBody.Parent = themeIconContainer
+
+            local mbc = Instance.new("UICorner")
+            mbc.CornerRadius = UDim.new(1, 0)
+            mbc.Parent = moonBody
+
+            local moonCutout = Instance.new("Frame")
+            moonCutout.Name = "MoonCutout"
+            moonCutout.Size = UDim2.fromOffset(12, 12)
+            moonCutout.AnchorPoint = Vector2.new(0.5, 0.5)
+            moonCutout.Position = UDim2.new(0.5, -3.5, 0.5, -2.5)
+            moonCutout.BackgroundColor3 = themeBtn.BackgroundColor3
+            moonCutout.BorderSizePixel = 0
+            moonCutout.ZIndex = 23
+            moonCutout.Active = false
+            moonCutout.Parent = themeIconContainer
+
+            local mcc = Instance.new("UICorner")
+            mcc.CornerRadius = UDim.new(1, 0)
+            mcc.Parent = moonCutout
+        else
+            local sunCore = Instance.new("Frame")
+            sunCore.Name = "SunCore"
+            sunCore.Size = UDim2.fromOffset(7, 7)
+            sunCore.AnchorPoint = Vector2.new(0.5, 0.5)
+            sunCore.Position = UDim2.new(0.5, 0, 0.5, 0)
+            sunCore.BackgroundColor3 = Color3.fromRGB(255, 175, 20)
+            sunCore.BorderSizePixel = 0
+            sunCore.ZIndex = 24
+            sunCore.Active = false
+            sunCore.Parent = themeIconContainer
+
+            local scc = Instance.new("UICorner")
+            scc.CornerRadius = UDim.new(1, 0)
+            scc.Parent = sunCore
+
+            local sunAngles = { 0, 45, 90, 135 }
+            for _, ang in ipairs(sunAngles) do
+                local ray = Instance.new("Frame")
+                ray.Name = "Ray"
+                ray.Size = UDim2.fromOffset(15, 1.8)
+                ray.AnchorPoint = Vector2.new(0.5, 0.5)
+                ray.Position = UDim2.new(0.5, 0, 0.5, 0)
+                ray.Rotation = ang
+                ray.BackgroundColor3 = Color3.fromRGB(255, 175, 20)
+                ray.BorderSizePixel = 0
+                ray.ZIndex = 23
+                ray.Active = false
+                ray.Parent = themeIconContainer
+
+                local rc = Instance.new("UICorner")
+                rc.CornerRadius = UDim.new(1, 0)
+                rc.Parent = ray
+            end
+        end
+    end
+    renderThemeIcon(true)
+
     local minBtn = Instance.new("TextButton")
     minBtn.Name = "Minimize"
+    minBtn.LayoutOrder = 2
     minBtn.Size = UDim2.new(0, 30, 0, 30)
     minBtn.BackgroundColor3 = controlBtnBg
     minBtn.AutoButtonColor = false
@@ -281,6 +378,7 @@ function Window.new(options, dependencies)
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "Close"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.LayoutOrder = 3
     closeBtn.BackgroundColor3 = controlBtnBg
     closeBtn.AutoButtonColor = false
     closeBtn.Text = ""
@@ -335,6 +433,21 @@ function Window.new(options, dependencies)
     closeBar2Corner.CornerRadius = UDim.new(1, 0)
     closeBar2Corner.Parent = closeBar2
     
+    local themeHovIn = themeBtn.MouseEnter:Connect(function()
+        TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+        local mc = themeIconContainer:FindFirstChild("MoonCutout")
+        if mc then
+            TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+        end
+    end)
+    local themeHovOut = themeBtn.MouseLeave:Connect(function()
+        TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+        local mc = themeIconContainer:FindFirstChild("MoonCutout")
+        if mc then
+            TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+        end
+    end)
+    
     local minHovIn = minBtn.MouseEnter:Connect(function()
         TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
     end)
@@ -352,6 +465,8 @@ function Window.new(options, dependencies)
         closeBar2.BackgroundColor3 = controlIconColor
     end)
     if cleanup then
+        cleanup:Add(themeHovIn)
+        cleanup:Add(themeHovOut)
         cleanup:Add(minHovIn)
         cleanup:Add(minHovOut)
         cleanup:Add(closeHovIn)
@@ -576,6 +691,13 @@ function Window.new(options, dependencies)
         _minimized = false,
         _originalSize = defaultSize,
         _destroyed = false,
+        _themeBtn = themeBtn,
+        _minBtn = minBtn,
+        _closeBtn = closeBtn,
+        _themeIconContainer = themeIconContainer,
+        _renderThemeIcon = renderThemeIcon,
+        _currentThemeMode = "Dark",
+        _themeManager = deps.ThemeManager,
         _userProfileData = nil,
     }, Window)
 
@@ -637,6 +759,15 @@ function Window.new(options, dependencies)
         end
     end)
     
+    local lastTheme = 0
+    local function doThemeToggle()
+        local now = os.clock()
+        if now - lastTheme < 0.2 then return end
+        lastTheme = now
+        self:ToggleTheme()
+    end
+    local themeClick = themeBtn.Activated:Connect(doThemeToggle)
+
     local lastMin = 0
     local function doMin()
         local now = os.clock()
@@ -792,6 +923,7 @@ function Window.new(options, dependencies)
         cleanup:Add(dragChanged)
         cleanup:Add(dragUpdate)
         cleanup:Add(dragEnded)
+        cleanup:Add(themeClick)
         cleanup:Add(minClick)
         cleanup:Add(closeClick)
         cleanup:Add(keyToggleConn)
@@ -1555,6 +1687,125 @@ function Window:_setActiveTab(tab)
     self._activeTab = tab
     if self._activeTab then
         self._activeTab:_activate()
+    end
+end
+
+function Window:ToggleTheme()
+    if self._currentThemeMode == "Light" then
+        self:SetTheme("Dark")
+    else
+        self:SetTheme("Light")
+    end
+end
+
+function Window:SetTheme(themeNameOrTable)
+    local ThemeManager = self._themeManager
+    if not ThemeManager then
+        local okTM, resTM = pcall(function() return require(script.Parent.Parent.themes.ThemeManager) end)
+        ThemeManager = okTM and resTM
+    end
+
+    local targetTheme = nil
+    local targetMode = "Dark"
+
+    if type(themeNameOrTable) == "string" then
+        local lower = string.lower(themeNameOrTable)
+        if lower == "light" or lower == "white" or string.find(lower, "white") then
+            targetMode = "Light"
+            targetTheme = ThemeManager and ThemeManager.Themes["Pure White"]
+        else
+            targetMode = "Dark"
+            targetTheme = ThemeManager and ThemeManager.Themes["Pure Black & White"]
+        end
+    elseif type(themeNameOrTable) == "table" then
+        targetTheme = themeNameOrTable
+        targetMode = (targetTheme.Name and string.find(string.lower(targetTheme.Name), "white")) and "Light" or "Dark"
+    end
+
+    if not targetTheme and ThemeManager then
+        targetTheme = ThemeManager:GetTheme()
+    end
+    if not targetTheme then return end
+
+    self._theme = targetTheme
+    self._currentThemeMode = targetMode
+
+    local isDark = (targetMode == "Dark")
+    local btnBg = isDark and Color3.fromRGB(24, 25, 32) or Color3.fromRGB(235, 238, 244)
+    local btnHov = isDark and Color3.fromRGB(36, 38, 48) or Color3.fromRGB(222, 226, 234)
+    local iconCol = isDark and Color3.fromRGB(200, 205, 215) or Color3.fromRGB(45, 50, 60)
+
+    self._controlBtnBg = btnBg
+    self._controlBtnHover = btnHov
+    self._controlIconColor = iconCol
+
+    TweenService:Create(self._mainFrame, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Background }):Play()
+    if self._mainStroke then
+        TweenService:Create(self._mainStroke, TweenInfo.new(0.2), { Color = targetTheme.BorderWindow }):Play()
+    end
+    if self._header then
+        TweenService:Create(self._header, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Header }):Play()
+    end
+    if self._headerStroke then
+        TweenService:Create(self._headerStroke, TweenInfo.new(0.2), { Color = targetTheme.Border }):Play()
+    end
+    if self._titleLabel then
+        self._titleLabel.TextColor3 = targetTheme.TextPrimary
+    end
+    if self._subLabel then
+        self._subLabel.TextColor3 = targetTheme.TextMuted
+    end
+    if self._sidebar then
+        TweenService:Create(self._sidebar, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Sidebar }):Play()
+    end
+    if self._sidebarStroke then
+        TweenService:Create(self._sidebarStroke, TweenInfo.new(0.2), { Color = targetTheme.Border }):Play()
+    end
+    if self._contentContainer then
+        self._contentContainer.BackgroundColor3 = targetTheme.Background
+    end
+    if self._profileCard then
+        TweenService:Create(self._profileCard, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.SidebarItem }):Play()
+        local dName = self._profileCard:FindFirstChild("DisplayName")
+        local uName = self._profileCard:FindFirstChild("Username")
+        if dName then dName.TextColor3 = targetTheme.TextPrimary end
+        if uName then uName.TextColor3 = targetTheme.TextMuted end
+    end
+
+    if self._themeBtn then
+        self._themeBtn.BackgroundColor3 = btnBg
+    end
+    if self._minBtn then
+        self._minBtn.BackgroundColor3 = btnBg
+        local line = self._minBtn:FindFirstChild("IconLine")
+        if line then line.BackgroundColor3 = iconCol end
+    end
+    if self._closeBtn then
+        self._closeBtn.BackgroundColor3 = btnBg
+        local cross = self._closeBtn:FindFirstChild("IconCross")
+        if cross then
+            local b1 = cross:FindFirstChild("Bar1")
+            local b2 = cross:FindFirstChild("Bar2")
+            if b1 then b1.BackgroundColor3 = iconCol end
+            if b2 then b2.BackgroundColor3 = iconCol end
+        end
+    end
+
+    if self._renderThemeIcon then
+        self._renderThemeIcon(isDark)
+    end
+
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._btn then
+            local isActive = (self._activeTab == tab)
+            tab._btn.BackgroundColor3 = isActive and targetTheme.SidebarItemActive or targetTheme.SidebarItem
+            if tab._label then
+                tab._label.TextColor3 = isActive and targetTheme.TextPrimary or targetTheme.TextMuted
+            end
+        end
+        if tab._contentContainer then
+            tab._contentContainer.BackgroundColor3 = targetTheme.Background
+        end
     end
 end
 

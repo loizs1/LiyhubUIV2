@@ -81,84 +81,76 @@ EasingDirection = Enum.EasingDirection.Out,
 }
 return PureBlackWhite
 end
+_modules["src/themes/PureWhite"] = function()
+local PureBlackWhite = nil
+pcall(function()
+PureBlackWhite = _require("src/themes/PureBlackWhite")
+end)
+if not PureBlackWhite then
+pcall(function()
+PureBlackWhite = require(script.Parent.PureBlackWhite)
+end)
+end
+local PureWhite = table.clone(PureBlackWhite or {})
+PureWhite.Name = "Pure White"
+PureWhite.Background = Color3.fromRGB(244, 245, 248)
+PureWhite.Header = Color3.fromRGB(255, 255, 255)
+PureWhite.Sidebar = Color3.fromRGB(238, 240, 244)
+PureWhite.SidebarItem = Color3.fromRGB(228, 231, 237)
+PureWhite.SidebarItemActive = Color3.fromRGB(255, 255, 255)
+PureWhite.SectionHeader = Color3.fromRGB(255, 255, 255)
+PureWhite.Card = Color3.fromRGB(255, 255, 255)
+PureWhite.CardHover = Color3.fromRGB(248, 249, 252)
+PureWhite.Element = Color3.fromRGB(236, 238, 243)
+PureWhite.ElementHover = Color3.fromRGB(226, 229, 236)
+PureWhite.ElementActive = Color3.fromRGB(216, 220, 228)
+PureWhite.Scrollbar = Color3.fromRGB(195, 200, 210)
+PureWhite.Border = Color3.fromRGB(218, 222, 230)
+PureWhite.BorderSubtle = Color3.fromRGB(228, 231, 238)
+PureWhite.BorderFocus = Color3.fromRGB(140, 145, 160)
+PureWhite.BorderWindow = Color3.fromRGB(210, 215, 224)
+PureWhite.TextPrimary = Color3.fromRGB(18, 20, 24)
+PureWhite.TextSecondary = Color3.fromRGB(80, 85, 96)
+PureWhite.TextMuted = Color3.fromRGB(130, 136, 148)
+PureWhite.TextDisabled = Color3.fromRGB(180, 185, 195)
+PureWhite.Accent = Color3.fromRGB(20, 22, 26)
+PureWhite.AccentStep = Color3.fromRGB(0, 130, 220)
+PureWhite.AccentStepInactive = Color3.fromRGB(215, 220, 228)
+PureWhite.ToggleActive = Color3.fromRGB(20, 22, 26)
+PureWhite.ToggleInactive = Color3.fromRGB(215, 218, 225)
+PureWhite.ToggleBorderInactive = Color3.fromRGB(190, 195, 205)
+PureWhite.SliderTrack = Color3.fromRGB(220, 224, 232)
+PureWhite.SliderFill = Color3.fromRGB(20, 22, 26)
+return PureWhite
+end
 _modules["src/themes/ThemeManager"] = function()
 local PureBlackWhite = nil
-local success, result = pcall(function()
-return require(script.Parent.PureBlackWhite)
+pcall(function()
+PureBlackWhite = _require("src/themes/PureBlackWhite")
 end)
-if success then
-PureBlackWhite = result
-else
-PureBlackWhite = {
-Name = "Pure Black & White",
-DefaultLogo = "rbxasset://textures/LiyhubLogo.png",
-DefaultBanner = "rbxassetid://108339444679489",
-Background = Color3.fromRGB(13, 13, 15),
-Header = Color3.fromRGB(16, 16, 19),
-Sidebar = Color3.fromRGB(15, 15, 18),
-SidebarItem = Color3.fromRGB(20, 20, 24),
-SidebarItemActive = Color3.fromRGB(28, 28, 34),
-SectionHeader = Color3.fromRGB(18, 18, 22),
-Card = Color3.fromRGB(18, 18, 22),
-CardHover = Color3.fromRGB(24, 24, 29),
-Element = Color3.fromRGB(22, 22, 27),
-ElementHover = Color3.fromRGB(28, 28, 35),
-ElementActive = Color3.fromRGB(36, 36, 44),
-Scrollbar = Color3.fromRGB(50, 50, 60),
-Overlay = Color3.fromRGB(0, 0, 0),
-Border = Color3.fromRGB(34, 34, 40),
-BorderSubtle = Color3.fromRGB(28, 28, 34),
-BorderFocus = Color3.fromRGB(75, 75, 90),
-BorderWindow = Color3.fromRGB(42, 42, 50),
-TextPrimary = Color3.fromRGB(255, 255, 255),
-TextSecondary = Color3.fromRGB(160, 160, 172),
-TextMuted = Color3.fromRGB(110, 110, 122),
-TextDisabled = Color3.fromRGB(65, 65, 75),
-Accent = Color3.fromRGB(255, 255, 255),
-AccentStep = Color3.fromRGB(0, 174, 255),
-AccentStepInactive = Color3.fromRGB(38, 38, 46),
-ToggleActive = Color3.fromRGB(255, 255, 255),
-ToggleInactive = Color3.fromRGB(22, 22, 28),
-ToggleBorderInactive = Color3.fromRGB(55, 55, 66),
-ToggleKnob = Color3.fromRGB(14, 14, 16),
-ToggleKnobInactive = Color3.fromRGB(190, 190, 200),
-SliderTrack = Color3.fromRGB(34, 34, 42),
-SliderFill = Color3.fromRGB(255, 255, 255),
-Success = Color3.fromRGB(46, 204, 113),
-Warning = Color3.fromRGB(241, 196, 15),
-Error = Color3.fromRGB(231, 76, 60),
-Info = Color3.fromRGB(52, 152, 219),
-WindowCornerRadius = UDim.new(0, 10),
-CornerRadius = UDim.new(0, 7),
-SmallCornerRadius = UDim.new(0, 5),
-PillCornerRadius = UDim.new(1, 0),
-CardPadding = 10,
-ElementPadding = 8,
-ElementHeight = 36,
-SmallElementHeight = 30,
-FontTitle = Enum.Font.GothamBold,
-FontHeader = Enum.Font.GothamBold,
-FontRegular = Enum.Font.GothamMedium,
-FontBold = Enum.Font.GothamBold,
-FontSizeTitle = 15,
-FontSizeSubtitle = 11,
-FontSizeSection = 11,
-FontSizeRegular = 12,
-FontSizeSmall = 10,
-UseStrokes = true,
-StrokeThickness = 1,
-AnimationFast = 0.15,
-AnimationMedium = 0.25,
-AnimationSlow = 0.35,
-EasingStyle = Enum.EasingStyle.Quad,
-EasingDirection = Enum.EasingDirection.Out,
-}
+if not PureBlackWhite then
+pcall(function()
+PureBlackWhite = require(script.Parent.PureBlackWhite)
+end)
+end
+local PureWhite = nil
+pcall(function()
+PureWhite = _require("src/themes/PureWhite")
+end)
+if not PureWhite then
+pcall(function()
+PureWhite = require(script.Parent.PureWhite)
+end)
 end
 local ThemeManager = {
 CurrentTheme = PureBlackWhite,
 Themes = {
 ["Pure Black & White"] = PureBlackWhite,
 ["Default"] = PureBlackWhite,
+["Dark"] = PureBlackWhite,
+["Pure White"] = PureWhite,
+["Light"] = PureWhite,
+["White"] = PureWhite,
 },
 _subscribers = {},
 }
@@ -3781,103 +3773,71 @@ local Icons = {
 focus = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
 target = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(225, 0) },
 crosshair = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(725, 75) },
-aim = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
 combat = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(125, 25) },
 binoculars = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(375, 75) },
-spectate = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(375, 75) },
 palette = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
-theme = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
-visuals = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
 globe = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
-universal = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
-network = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
-server = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
-world = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
 user = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
-player = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
-profile = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
 zap = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
-speed = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
-lightning = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
 shield = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
-defense = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
-parry = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
 settings = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
-gear = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
-config = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
 swords = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(125, 25) },
 sword = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(150, 0) },
 eye = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 675) },
-esp = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 675) },
 home = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
-main = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
 pin = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
-teleport = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
-["map-pin"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
 map = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
 skull = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(875, 700) },
 star = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(950, 925) },
 flame = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(850, 75) },
-fire = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(850, 75) },
 gem = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 775) },
 diamond = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 775) },
 package = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(550, 700) },
 gamepad = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(300, 650) },
 scroll = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(800, 675) },
 cart = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(975, 575) },
-["shopping-cart"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(975, 575) },
 wrench = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
-tools = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
-tool = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
 search = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 825) },
 info = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(150, 875) },
-information = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(150, 875) },
 bell = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(100, 325) },
 lock = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(300, 800) },
 check = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 450) },
-["chevron-down"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
 chevron = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
-arrow = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
 sliders = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(875, 475) },
-layers = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+moon = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+sun = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
 }
 local Aliases = {
-["target"] = "target",
-["aim"] = "focus",
-["focus"] = "focus",
-["binoculars"] = "binoculars",
-["palette"] = "palette",
-["theme"] = "palette",
-["visuals"] = "palette",
-["globe"] = "globe",
-["world"] = "globe",
-["user"] = "user",
-["player"] = "user",
-["profile"] = "user",
-["zap"] = "zap",
-["speed"] = "zap",
-["shield"] = "shield",
-["defense"] = "shield",
-["parry"] = "shield",
-["settings"] = "settings",
-["gear"] = "settings",
-["crosshair"] = "crosshair",
-["swords"] = "swords",
-["eye"] = "eye",
-["home"] = "home",
-["info"] = "info",
-["star"] = "star",
-["flame"] = "flame",
-["diamond"] = "diamond",
-["package"] = "package",
-["gamepad"] = "gamepad",
-["scroll"] = "scroll",
-["cart"] = "cart",
-["tools"] = "tools",
-["search"] = "search",
-["bell"] = "bell",
-["lock"] = "lock",
-["check"] = "check",
+aim = "focus",
+theme = "palette",
+visuals = "palette",
+spectate = "binoculars",
+world = "globe",
+universal = "globe",
+network = "globe",
+server = "globe",
+player = "user",
+profile = "user",
+speed = "zap",
+lightning = "zap",
+defense = "shield",
+parry = "shield",
+gear = "settings",
+config = "settings",
+esp = "eye",
+main = "home",
+teleport = "pin",
+["map-pin"] = "pin",
+fire = "flame",
+["shopping-cart"] = "cart",
+tools = "wrench",
+tool = "wrench",
+information = "info",
+["chevron-down"] = "chevron",
+arrow = "chevron",
+layers = "focus",
+dark = "moon",
+light = "sun",
 }
 IconService.Icons = Icons
 IconService.Sheet1 = Sheet1
@@ -3955,13 +3915,8 @@ end
 if tonumber(input) then
 return "rbxassetid://" .. tostring(input)
 end
-local s = tostring(input)
-if string.find(s, "rbxasset") or string.find(s, "http") then
-return s
+return input
 end
-return "rbxassetid://" .. Sheet1
-end
-IconService.Preload()
 return IconService
 end
 _modules["src/services/ProfileService"] = function()
@@ -4236,8 +4191,8 @@ subLabel.TextTruncate = Enum.TextTruncate.AtEnd
 subLabel.Parent = header
 local controlsFrame = Instance.new("Frame")
 controlsFrame.Name = "Controls"
-controlsFrame.Size = UDim2.new(0, 66, 0, 30)
-controlsFrame.Position = UDim2.new(1, -76, 0, 9)
+controlsFrame.Size = UDim2.new(0, 102, 0, 30)
+controlsFrame.Position = UDim2.new(1, -112, 0, 9)
 controlsFrame.BackgroundTransparency = 1
 controlsFrame.ZIndex = 20
 controlsFrame.Parent = mainFrame
@@ -4249,8 +4204,95 @@ controlsLayout.Parent = controlsFrame
 local controlBtnBg = Color3.fromRGB(24, 25, 32)
 local controlBtnHover = Color3.fromRGB(36, 38, 48)
 local controlIconColor = Color3.fromRGB(200, 205, 215)
+local themeBtn = Instance.new("TextButton")
+themeBtn.Name = "ThemeToggle"
+themeBtn.Size = UDim2.new(0, 30, 0, 30)
+themeBtn.BackgroundColor3 = controlBtnBg
+themeBtn.AutoButtonColor = false
+themeBtn.Text = ""
+themeBtn.BorderSizePixel = 0
+themeBtn.Active = true
+themeBtn.LayoutOrder = 1
+themeBtn.ZIndex = 21
+themeBtn.Parent = controlsFrame
+local themeCorner = Instance.new("UICorner")
+themeCorner.CornerRadius = UDim.new(0, 8)
+themeCorner.Parent = themeBtn
+local themeIconContainer = Instance.new("Frame")
+themeIconContainer.Name = "ThemeIcon"
+themeIconContainer.Size = UDim2.fromOffset(16, 16)
+themeIconContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+themeIconContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+themeIconContainer.BackgroundTransparency = 1
+themeIconContainer.Active = false
+themeIconContainer.ZIndex = 22
+themeIconContainer.Parent = themeBtn
+local function renderThemeIcon(isDark)
+themeIconContainer:ClearAllChildren()
+if isDark then
+local moonBody = Instance.new("Frame")
+moonBody.Name = "MoonBody"
+moonBody.Size = UDim2.fromOffset(13, 13)
+moonBody.AnchorPoint = Vector2.new(0.5, 0.5)
+moonBody.Position = UDim2.new(0.5, 0, 0.5, 0)
+moonBody.BackgroundColor3 = controlIconColor
+moonBody.BorderSizePixel = 0
+moonBody.ZIndex = 22
+moonBody.Active = false
+moonBody.Parent = themeIconContainer
+local mbc = Instance.new("UICorner")
+mbc.CornerRadius = UDim.new(1, 0)
+mbc.Parent = moonBody
+local moonCutout = Instance.new("Frame")
+moonCutout.Name = "MoonCutout"
+moonCutout.Size = UDim2.fromOffset(12, 12)
+moonCutout.AnchorPoint = Vector2.new(0.5, 0.5)
+moonCutout.Position = UDim2.new(0.5, -3.5, 0.5, -2.5)
+moonCutout.BackgroundColor3 = themeBtn.BackgroundColor3
+moonCutout.BorderSizePixel = 0
+moonCutout.ZIndex = 23
+moonCutout.Active = false
+moonCutout.Parent = themeIconContainer
+local mcc = Instance.new("UICorner")
+mcc.CornerRadius = UDim.new(1, 0)
+mcc.Parent = moonCutout
+else
+local sunCore = Instance.new("Frame")
+sunCore.Name = "SunCore"
+sunCore.Size = UDim2.fromOffset(7, 7)
+sunCore.AnchorPoint = Vector2.new(0.5, 0.5)
+sunCore.Position = UDim2.new(0.5, 0, 0.5, 0)
+sunCore.BackgroundColor3 = Color3.fromRGB(255, 175, 20)
+sunCore.BorderSizePixel = 0
+sunCore.ZIndex = 24
+sunCore.Active = false
+sunCore.Parent = themeIconContainer
+local scc = Instance.new("UICorner")
+scc.CornerRadius = UDim.new(1, 0)
+scc.Parent = sunCore
+local sunAngles = { 0, 45, 90, 135 }
+for _, ang in ipairs(sunAngles) do
+local ray = Instance.new("Frame")
+ray.Name = "Ray"
+ray.Size = UDim2.fromOffset(15, 1.8)
+ray.AnchorPoint = Vector2.new(0.5, 0.5)
+ray.Position = UDim2.new(0.5, 0, 0.5, 0)
+ray.Rotation = ang
+ray.BackgroundColor3 = Color3.fromRGB(255, 175, 20)
+ray.BorderSizePixel = 0
+ray.ZIndex = 23
+ray.Active = false
+ray.Parent = themeIconContainer
+local rc = Instance.new("UICorner")
+rc.CornerRadius = UDim.new(1, 0)
+rc.Parent = ray
+end
+end
+end
+renderThemeIcon(true)
 local minBtn = Instance.new("TextButton")
 minBtn.Name = "Minimize"
+minBtn.LayoutOrder = 2
 minBtn.Size = UDim2.new(0, 30, 0, 30)
 minBtn.BackgroundColor3 = controlBtnBg
 minBtn.AutoButtonColor = false
@@ -4278,6 +4320,7 @@ minLineCorner.Parent = minLine
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "Close"
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.LayoutOrder = 3
 closeBtn.BackgroundColor3 = controlBtnBg
 closeBtn.AutoButtonColor = false
 closeBtn.Text = ""
@@ -4325,6 +4368,20 @@ closeBar2.Parent = closeCrossContainer
 local closeBar2Corner = Instance.new("UICorner")
 closeBar2Corner.CornerRadius = UDim.new(1, 0)
 closeBar2Corner.Parent = closeBar2
+local themeHovIn = themeBtn.MouseEnter:Connect(function()
+TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+local mc = themeIconContainer:FindFirstChild("MoonCutout")
+if mc then
+TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+end
+end)
+local themeHovOut = themeBtn.MouseLeave:Connect(function()
+TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+local mc = themeIconContainer:FindFirstChild("MoonCutout")
+if mc then
+TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+end
+end)
 local minHovIn = minBtn.MouseEnter:Connect(function()
 TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
 end)
@@ -4342,6 +4399,8 @@ closeBar1.BackgroundColor3 = controlIconColor
 closeBar2.BackgroundColor3 = controlIconColor
 end)
 if cleanup then
+cleanup:Add(themeHovIn)
+cleanup:Add(themeHovOut)
 cleanup:Add(minHovIn)
 cleanup:Add(minHovOut)
 cleanup:Add(closeHovIn)
@@ -4547,6 +4606,13 @@ _toggleKey = toggleKey,
 _minimized = false,
 _originalSize = defaultSize,
 _destroyed = false,
+_themeBtn = themeBtn,
+_minBtn = minBtn,
+_closeBtn = closeBtn,
+_themeIconContainer = themeIconContainer,
+_renderThemeIcon = renderThemeIcon,
+_currentThemeMode = "Dark",
+_themeManager = deps.ThemeManager,
 _userProfileData = nil,
 }, Window)
 local lastProfClick = 0
@@ -4601,6 +4667,14 @@ if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType
 dragging = false
 end
 end)
+local lastTheme = 0
+local function doThemeToggle()
+local now = os.clock()
+if now - lastTheme < 0.2 then return end
+lastTheme = now
+self:ToggleTheme()
+end
+local themeClick = themeBtn.Activated:Connect(doThemeToggle)
 local lastMin = 0
 local function doMin()
 local now = os.clock()
@@ -4746,6 +4820,7 @@ cleanup:Add(dragBegan)
 cleanup:Add(dragChanged)
 cleanup:Add(dragUpdate)
 cleanup:Add(dragEnded)
+cleanup:Add(themeClick)
 cleanup:Add(minClick)
 cleanup:Add(closeClick)
 cleanup:Add(keyToggleConn)
@@ -5443,6 +5518,113 @@ if self._activeTab then
 self._activeTab:_activate()
 end
 end
+function Window:ToggleTheme()
+if self._currentThemeMode == "Light" then
+self:SetTheme("Dark")
+else
+self:SetTheme("Light")
+end
+end
+function Window:SetTheme(themeNameOrTable)
+local ThemeManager = self._themeManager
+if not ThemeManager then
+local okTM, resTM = pcall(function() return require(script.Parent.Parent.themes.ThemeManager) end)
+ThemeManager = okTM and resTM
+end
+local targetTheme = nil
+local targetMode = "Dark"
+if type(themeNameOrTable) == "string" then
+local lower = string.lower(themeNameOrTable)
+if lower == "light" or lower == "white" or string.find(lower, "white") then
+targetMode = "Light"
+targetTheme = ThemeManager and ThemeManager.Themes["Pure White"]
+else
+targetMode = "Dark"
+targetTheme = ThemeManager and ThemeManager.Themes["Pure Black & White"]
+end
+elseif type(themeNameOrTable) == "table" then
+targetTheme = themeNameOrTable
+targetMode = (targetTheme.Name and string.find(string.lower(targetTheme.Name), "white")) and "Light" or "Dark"
+end
+if not targetTheme and ThemeManager then
+targetTheme = ThemeManager:GetTheme()
+end
+if not targetTheme then return end
+self._theme = targetTheme
+self._currentThemeMode = targetMode
+local isDark = (targetMode == "Dark")
+local btnBg = isDark and Color3.fromRGB(24, 25, 32) or Color3.fromRGB(235, 238, 244)
+local btnHov = isDark and Color3.fromRGB(36, 38, 48) or Color3.fromRGB(222, 226, 234)
+local iconCol = isDark and Color3.fromRGB(200, 205, 215) or Color3.fromRGB(45, 50, 60)
+self._controlBtnBg = btnBg
+self._controlBtnHover = btnHov
+self._controlIconColor = iconCol
+TweenService:Create(self._mainFrame, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Background }):Play()
+if self._mainStroke then
+TweenService:Create(self._mainStroke, TweenInfo.new(0.2), { Color = targetTheme.BorderWindow }):Play()
+end
+if self._header then
+TweenService:Create(self._header, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Header }):Play()
+end
+if self._headerStroke then
+TweenService:Create(self._headerStroke, TweenInfo.new(0.2), { Color = targetTheme.Border }):Play()
+end
+if self._titleLabel then
+self._titleLabel.TextColor3 = targetTheme.TextPrimary
+end
+if self._subLabel then
+self._subLabel.TextColor3 = targetTheme.TextMuted
+end
+if self._sidebar then
+TweenService:Create(self._sidebar, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Sidebar }):Play()
+end
+if self._sidebarStroke then
+TweenService:Create(self._sidebarStroke, TweenInfo.new(0.2), { Color = targetTheme.Border }):Play()
+end
+if self._contentContainer then
+self._contentContainer.BackgroundColor3 = targetTheme.Background
+end
+if self._profileCard then
+TweenService:Create(self._profileCard, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.SidebarItem }):Play()
+local dName = self._profileCard:FindFirstChild("DisplayName")
+local uName = self._profileCard:FindFirstChild("Username")
+if dName then dName.TextColor3 = targetTheme.TextPrimary end
+if uName then uName.TextColor3 = targetTheme.TextMuted end
+end
+if self._themeBtn then
+self._themeBtn.BackgroundColor3 = btnBg
+end
+if self._minBtn then
+self._minBtn.BackgroundColor3 = btnBg
+local line = self._minBtn:FindFirstChild("IconLine")
+if line then line.BackgroundColor3 = iconCol end
+end
+if self._closeBtn then
+self._closeBtn.BackgroundColor3 = btnBg
+local cross = self._closeBtn:FindFirstChild("IconCross")
+if cross then
+local b1 = cross:FindFirstChild("Bar1")
+local b2 = cross:FindFirstChild("Bar2")
+if b1 then b1.BackgroundColor3 = iconCol end
+if b2 then b2.BackgroundColor3 = iconCol end
+end
+end
+if self._renderThemeIcon then
+self._renderThemeIcon(isDark)
+end
+for _, tab in ipairs(self._allTabs or {}) do
+if tab._btn then
+local isActive = (self._activeTab == tab)
+tab._btn.BackgroundColor3 = isActive and targetTheme.SidebarItemActive or targetTheme.SidebarItem
+if tab._label then
+tab._label.TextColor3 = isActive and targetTheme.TextPrimary or targetTheme.TextMuted
+end
+end
+if tab._contentContainer then
+tab._contentContainer.BackgroundColor3 = targetTheme.Background
+end
+end
+end
 function Window:Destroy()
 if self._destroyed then return end
 self._destroyed = true
@@ -6110,6 +6292,7 @@ Section.CreateTextbox = Section.CreateInput
 return Window
 end
 local PureBlackWhite = _require("src/themes/PureBlackWhite")
+local PureWhite = _require("src/themes/PureWhite")
 local ThemeManager = _require("src/themes/ThemeManager")
 local Cleanup = _require("src/core/Cleanup")
 local Signals = _require("src/core/Signals")
@@ -6166,6 +6349,7 @@ local cleanup = Cleanup and Cleanup.new()
 local theme = options.Theme or (ThemeManager and ThemeManager:GetTheme())
 local deps = {
 Theme = theme,
+ThemeManager = ThemeManager,
 Cleanup = cleanup,
 Layout = Layout,
 Modal = Modal,
