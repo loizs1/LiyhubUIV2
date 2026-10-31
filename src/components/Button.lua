@@ -4,6 +4,7 @@ local Button = {}
 Button.__index = Button
 
 function Button.new(parent, options, theme, cleanup)
+    local self
     options = options or {}
     local isActionRow = (options.ButtonText ~= nil) or (options.Description ~= nil and options.Title ~= nil)
     local callback = options.Callback or options.OnClick or function() end
@@ -63,14 +64,18 @@ function Button.new(parent, options, theme, cleanup)
             descLabel.Parent = rowContainer
         end
         
+        local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
+        local btnBg = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        local btnTextCol = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
+
         local actionBtn = Instance.new("TextButton")
         actionBtn.Name = "ActionButton"
         actionBtn.Size = UDim2.new(0, 68, 0, 26)
         actionBtn.Position = UDim2.new(1, -78, 0.5, -13)
-        actionBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        actionBtn.BackgroundColor3 = btnBg
         actionBtn.AutoButtonColor = false
         actionBtn.Text = btnText
-        actionBtn.TextColor3 = Color3.fromRGB(14, 14, 16)
+        actionBtn.TextColor3 = btnTextCol
         actionBtn.Font = theme.FontBold
         actionBtn.TextSize = theme.FontSizeSmall
         actionBtn.BorderSizePixel = 0
@@ -92,10 +97,18 @@ function Button.new(parent, options, theme, cleanup)
         local clickConn = actionBtn.Activated:Connect(trigger)
         
         local hConn = actionBtn.MouseEnter:Connect(function()
-            TweenService:Create(actionBtn, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = Color3.fromRGB(230, 230, 235) }):Play()
+            local curDark = (self and self._theme and (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White"))
+            if curDark == nil then curDark = isDark end
+            local curHov = curDark and Color3.fromRGB(230, 230, 235) or Color3.fromRGB(36, 40, 48)
+            local anim = (self and self._theme and self._theme.AnimationFast) or theme.AnimationFast
+            TweenService:Create(actionBtn, TweenInfo.new(anim), { BackgroundColor3 = curHov }):Play()
         end)
         local lConn = actionBtn.MouseLeave:Connect(function()
-            TweenService:Create(actionBtn, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+            local curDark = (self and self._theme and (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White"))
+            if curDark == nil then curDark = isDark end
+            local curBg = curDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+            local anim = (self and self._theme and self._theme.AnimationFast) or theme.AnimationFast
+            TweenService:Create(actionBtn, TweenInfo.new(anim), { BackgroundColor3 = curBg }):Play()
         end)
         
         if cleanup then
@@ -105,21 +118,35 @@ function Button.new(parent, options, theme, cleanup)
             cleanup:Add(rowContainer)
         end
         
-        return setmetatable({
+        self = setmetatable({
             _container = rowContainer,
             _actionBtn = actionBtn,
             _theme = theme,
             _callback = callback,
             _conns = { clickConn, hConn, lConn },
         }, Button)
+        return self
     end
     
     local text = options.Text or options.Name or "Button"
+    local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
+    local defaultBg, hoverBg, activeBg, txtColor
+    if not isDark then
+        defaultBg = Color3.fromRGB(18, 20, 24)
+        hoverBg = Color3.fromRGB(36, 40, 48)
+        activeBg = Color3.fromRGB(50, 56, 68)
+        txtColor = Color3.fromRGB(255, 255, 255)
+    else
+        defaultBg = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
+        hoverBg = isPrimary and Color3.fromRGB(235, 235, 240) or theme.ElementHover
+        activeBg = isPrimary and Color3.fromRGB(215, 215, 225) or theme.ElementActive
+        txtColor = isPrimary and Color3.fromRGB(14, 14, 16) or theme.TextPrimary
+    end
     
     local container = Instance.new("TextButton")
     container.Name = "Button_" .. text
     container.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 32)
-    container.BackgroundColor3 = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
+    container.BackgroundColor3 = defaultBg
     container.AutoButtonColor = false
     container.Text = ""
     container.BorderSizePixel = 0
@@ -130,7 +157,7 @@ function Button.new(parent, options, theme, cleanup)
     corner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
     corner.Parent = container
     
-    if theme.UseStrokes and not isPrimary then
+    if theme.UseStrokes and isDark and not isPrimary then
         local stroke = Instance.new("UIStroke")
         stroke.Name = "BorderStroke"
         stroke.Color = theme.Border
@@ -145,14 +172,14 @@ function Button.new(parent, options, theme, cleanup)
     label.Position = UDim2.new(0, 8, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
-    label.TextColor3 = isPrimary and Color3.fromRGB(14, 14, 16) or theme.TextPrimary
+    label.TextColor3 = txtColor
     label.Font = theme.FontBold
     label.TextSize = theme.FontSizeRegular
     label.TextXAlignment = Enum.TextXAlignment.Center
     label.Active = false
     label.Parent = container
     
-    local self = setmetatable({
+    self = setmetatable({
         _container = container,
         _label = label,
         _theme = theme,
@@ -162,25 +189,29 @@ function Button.new(parent, options, theme, cleanup)
         _conns = {},
     }, Button)
     
-    local defaultBg = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
-    local hoverBg = isPrimary and Color3.fromRGB(235, 235, 240) or theme.ElementHover
-    local activeBg = isPrimary and Color3.fromRGB(215, 215, 225) or theme.ElementActive
-    
     local hoverConn = container.MouseEnter:Connect(function()
         if self._disabled then return end
-        TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = hoverBg }):Play()
+        local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+        local curHover = not curDark and Color3.fromRGB(36, 40, 48) or (self._isPrimary and Color3.fromRGB(235, 235, 240) or self._theme.ElementHover)
+        TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curHover }):Play()
     end)
     local leaveConn = container.MouseLeave:Connect(function()
         if self._disabled then return end
-        TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = defaultBg }):Play()
+        local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+        local curBg = not curDark and Color3.fromRGB(18, 20, 24) or (self._isPrimary and Color3.fromRGB(255, 255, 255) or self._theme.Element)
+        TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curBg }):Play()
     end)
     local downConn = container.MouseButton1Down:Connect(function()
         if self._disabled then return end
-        TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = activeBg }):Play()
+        local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+        local curActive = not curDark and Color3.fromRGB(50, 56, 68) or (self._isPrimary and Color3.fromRGB(215, 215, 225) or self._theme.ElementActive)
+        TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curActive }):Play()
     end)
     local upConn = container.MouseButton1Up:Connect(function()
         if self._disabled then return end
-        TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = hoverBg }):Play()
+        local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+        local curHover = not curDark and Color3.fromRGB(36, 40, 48) or (self._isPrimary and Color3.fromRGB(235, 235, 240) or self._theme.ElementHover)
+        TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curHover }):Play()
     end)
     
     local lastBtn = 0

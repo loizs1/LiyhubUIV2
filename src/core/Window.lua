@@ -1743,7 +1743,7 @@ function Window:SetTheme(themeNameOrTable)
 
     if type(themeNameOrTable) == "string" then
         local lower = string.lower(themeNameOrTable)
-        if lower == "light" or lower == "white" or string.find(lower, "white") then
+        if lower == "light" or lower == "pure white" or (string.find(lower, "white") and not string.find(lower, "black")) then
             targetMode = "Light"
             targetTheme = ThemeManager and ThemeManager.Themes["Pure White"]
         else
@@ -1752,7 +1752,8 @@ function Window:SetTheme(themeNameOrTable)
         end
     elseif type(themeNameOrTable) == "table" then
         targetTheme = themeNameOrTable
-        targetMode = (targetTheme.Name and string.find(string.lower(targetTheme.Name), "white")) and "Light" or "Dark"
+        local nameLower = targetTheme.Name and string.lower(targetTheme.Name) or ""
+        targetMode = (targetTheme.IsLight == true or nameLower == "pure white" or (string.find(nameLower, "white") and not string.find(nameLower, "black"))) and "Light" or "Dark"
     end
 
     if not targetTheme and ThemeManager then
@@ -1956,15 +1957,25 @@ function Window:_applyThemeToComponent(comp, targetTheme, isDark)
     end
 
     if comp._actionBtn then
-        comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
+        comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
         comp._actionBtn.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
     end
 
-    if comp._label then
-        if comp._isPrimary then
-            comp._label.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
+    if comp._label and comp._container and comp._container:IsA("TextButton") then
+        if not isDark then
+            comp._container.BackgroundColor3 = Color3.fromRGB(18, 20, 24)
+            comp._label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            local st = comp._container:FindFirstChildOfClass("UIStroke")
+            if st then st.Enabled = false end
         else
-            comp._label.TextColor3 = targetTheme.TextPrimary
+            local isPri = comp._isPrimary
+            comp._container.BackgroundColor3 = isPri and Color3.fromRGB(255, 255, 255) or targetTheme.Element
+            comp._label.TextColor3 = isPri and Color3.fromRGB(14, 14, 16) or targetTheme.TextPrimary
+            local st = comp._container:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Enabled = not isPri
+                st.Color = targetTheme.Border
+            end
         end
     end
 
@@ -2048,6 +2059,12 @@ function Window:_applyThemeToComponent(comp, targetTheme, isDark)
             self:_applyThemeToComponent(item, targetTheme, isDark)
         end
     end
+
+    if comp._buttons then
+        for _, btn in ipairs(comp._buttons) do
+            self:_applyThemeToComponent(btn, targetTheme, isDark)
+        end
+    end
 end
 
 function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
@@ -2062,8 +2079,26 @@ function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
             if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" then
                 desc.Color = targetTheme.Border
             end
+        elseif desc:IsA("TextButton") and (desc.Name:find("Button_") or desc.Name == "ActionButton") then
+            if not isDark then
+                desc.BackgroundColor3 = Color3.fromRGB(18, 20, 24)
+                if desc.Name == "ActionButton" then
+                    desc.TextColor3 = Color3.fromRGB(255, 255, 255)
+                end
+                local st = desc:FindFirstChildOfClass("UIStroke")
+                if st then st.Enabled = false end
+            else
+                desc.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                if desc.Name == "ActionButton" then
+                    desc.TextColor3 = Color3.fromRGB(14, 14, 16)
+                end
+                local st = desc:FindFirstChildOfClass("UIStroke")
+                if st then st.Enabled = false end
+            end
         elseif desc:IsA("TextLabel") then
-            if desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
+            if desc.Name == "Label" and desc.Parent and desc.Parent:IsA("TextButton") and desc.Parent.Name:find("Button_") then
+                desc.TextColor3 = not isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(14, 14, 16)
+            elseif desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
                 desc.TextColor3 = targetTheme.TextPrimary
             elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" then
                 desc.TextColor3 = targetTheme.TextSecondary

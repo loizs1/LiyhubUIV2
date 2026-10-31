@@ -120,13 +120,14 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     btnLayout.Padding = UDim.new(0, 8)
     btnLayout.Parent = btnRow
     
+    local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     local cancelBtn = Instance.new("TextButton")
     cancelBtn.Name = "CancelButton"
     cancelBtn.Size = UDim2.new(0, 90, 1, 0)
-    cancelBtn.BackgroundColor3 = theme.Element
+    cancelBtn.BackgroundColor3 = isDark and theme.Element or Color3.fromRGB(236, 238, 243)
     cancelBtn.AutoButtonColor = false
     cancelBtn.Text = cancelText
-    cancelBtn.TextColor3 = theme.TextSecondary
+    cancelBtn.TextColor3 = isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24)
     cancelBtn.Font = theme.FontBold
     cancelBtn.TextSize = theme.FontSizeSmall
     cancelBtn.BorderSizePixel = 0
@@ -140,10 +141,10 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     local confirmBtn = Instance.new("TextButton")
     confirmBtn.Name = "ConfirmButton"
     confirmBtn.Size = UDim2.new(0, 90, 1, 0)
-    confirmBtn.BackgroundColor3 = theme.ElementActive
+    confirmBtn.BackgroundColor3 = isDark and theme.ElementActive or Color3.fromRGB(18, 20, 24)
     confirmBtn.AutoButtonColor = false
     confirmBtn.Text = confirmText
-    confirmBtn.TextColor3 = theme.TextPrimary
+    confirmBtn.TextColor3 = isDark and theme.TextPrimary or Color3.fromRGB(255, 255, 255)
     confirmBtn.Font = theme.FontBold
     confirmBtn.TextSize = theme.FontSizeSmall
     confirmBtn.BorderSizePixel = 0

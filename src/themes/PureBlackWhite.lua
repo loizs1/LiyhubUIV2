@@ -1,5 +1,7 @@
 local PureBlackWhite = {
     Name = "Pure Black & White",
+    IsDark = true,
+    IsLight = false,
     
     DefaultLogo = "rbxassetid://126257104774952",
     DefaultBanner = "rbxassetid://108339444679489",

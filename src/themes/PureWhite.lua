@@ -10,6 +10,8 @@ end
 
 local PureWhite = table.clone(PureBlackWhite or {})
 PureWhite.Name = "Pure White"
+PureWhite.IsDark = false
+PureWhite.IsLight = true
 PureWhite.Background = Color3.fromRGB(244, 245, 248)
 PureWhite.Header = Color3.fromRGB(255, 255, 255)
 PureWhite.Sidebar = Color3.fromRGB(238, 240, 244)
@@ -38,4 +40,11 @@ PureWhite.ToggleInactive = Color3.fromRGB(215, 218, 225)
 PureWhite.ToggleBorderInactive = Color3.fromRGB(190, 195, 205)
 PureWhite.SliderTrack = Color3.fromRGB(220, 224, 232)
 PureWhite.SliderFill = Color3.fromRGB(20, 22, 26)
+PureWhite.Button = Color3.fromRGB(18, 20, 24)
+PureWhite.ButtonText = Color3.fromRGB(255, 255, 255)
+PureWhite.ButtonHover = Color3.fromRGB(36, 40, 48)
+PureWhite.ButtonActive = Color3.fromRGB(50, 56, 68)
+PureWhite.ButtonSecondary = Color3.fromRGB(18, 20, 24)
+PureWhite.ButtonSecondaryText = Color3.fromRGB(255, 255, 255)
+PureWhite.ButtonSecondaryHover = Color3.fromRGB(36, 40, 48)
 return PureWhite

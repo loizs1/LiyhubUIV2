@@ -15,6 +15,8 @@ end
 _modules["src/themes/PureBlackWhite"] = function()
 local PureBlackWhite = {
 Name = "Pure Black & White",
+IsDark = true,
+IsLight = false,
 DefaultLogo = "rbxassetid://126257104774952",
 DefaultBanner = "rbxassetid://108339444679489",
 FallbackLogo = "rbxassetid://126257104774952",
@@ -93,6 +95,8 @@ end)
 end
 local PureWhite = table.clone(PureBlackWhite or {})
 PureWhite.Name = "Pure White"
+PureWhite.IsDark = false
+PureWhite.IsLight = true
 PureWhite.Background = Color3.fromRGB(244, 245, 248)
 PureWhite.Header = Color3.fromRGB(255, 255, 255)
 PureWhite.Sidebar = Color3.fromRGB(238, 240, 244)
@@ -121,6 +125,13 @@ PureWhite.ToggleInactive = Color3.fromRGB(215, 218, 225)
 PureWhite.ToggleBorderInactive = Color3.fromRGB(190, 195, 205)
 PureWhite.SliderTrack = Color3.fromRGB(220, 224, 232)
 PureWhite.SliderFill = Color3.fromRGB(20, 22, 26)
+PureWhite.Button = Color3.fromRGB(18, 20, 24)
+PureWhite.ButtonText = Color3.fromRGB(255, 255, 255)
+PureWhite.ButtonHover = Color3.fromRGB(36, 40, 48)
+PureWhite.ButtonActive = Color3.fromRGB(50, 56, 68)
+PureWhite.ButtonSecondary = Color3.fromRGB(18, 20, 24)
+PureWhite.ButtonSecondaryText = Color3.fromRGB(255, 255, 255)
+PureWhite.ButtonSecondaryHover = Color3.fromRGB(36, 40, 48)
 return PureWhite
 end
 _modules["src/themes/ThemeManager"] = function()
@@ -849,13 +860,14 @@ btnLayout.FillDirection = Enum.FillDirection.Horizontal
 btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 btnLayout.Padding = UDim.new(0, 8)
 btnLayout.Parent = btnRow
+local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local cancelBtn = Instance.new("TextButton")
 cancelBtn.Name = "CancelButton"
 cancelBtn.Size = UDim2.new(0, 90, 1, 0)
-cancelBtn.BackgroundColor3 = theme.Element
+cancelBtn.BackgroundColor3 = isDark and theme.Element or Color3.fromRGB(236, 238, 243)
 cancelBtn.AutoButtonColor = false
 cancelBtn.Text = cancelText
-cancelBtn.TextColor3 = theme.TextSecondary
+cancelBtn.TextColor3 = isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24)
 cancelBtn.Font = theme.FontBold
 cancelBtn.TextSize = theme.FontSizeSmall
 cancelBtn.BorderSizePixel = 0
@@ -867,10 +879,10 @@ cCorner.Parent = cancelBtn
 local confirmBtn = Instance.new("TextButton")
 confirmBtn.Name = "ConfirmButton"
 confirmBtn.Size = UDim2.new(0, 90, 1, 0)
-confirmBtn.BackgroundColor3 = theme.ElementActive
+confirmBtn.BackgroundColor3 = isDark and theme.ElementActive or Color3.fromRGB(18, 20, 24)
 confirmBtn.AutoButtonColor = false
 confirmBtn.Text = confirmText
-confirmBtn.TextColor3 = theme.TextPrimary
+confirmBtn.TextColor3 = isDark and theme.TextPrimary or Color3.fromRGB(255, 255, 255)
 confirmBtn.Font = theme.FontBold
 confirmBtn.TextSize = theme.FontSizeSmall
 confirmBtn.BorderSizePixel = 0
@@ -1221,6 +1233,7 @@ local TweenService = game:GetService("TweenService")
 local Button = {}
 Button.__index = Button
 function Button.new(parent, options, theme, cleanup)
+local self
 options = options or {}
 local isActionRow = (options.ButtonText ~= nil) or (options.Description ~= nil and options.Title ~= nil)
 local callback = options.Callback or options.OnClick or function() end
@@ -1273,14 +1286,17 @@ descLabel.TextTruncate = Enum.TextTruncate.AtEnd
 descLabel.Active = false
 descLabel.Parent = rowContainer
 end
+local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
+local btnBg = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+local btnTextCol = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
 local actionBtn = Instance.new("TextButton")
 actionBtn.Name = "ActionButton"
 actionBtn.Size = UDim2.new(0, 68, 0, 26)
 actionBtn.Position = UDim2.new(1, -78, 0.5, -13)
-actionBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+actionBtn.BackgroundColor3 = btnBg
 actionBtn.AutoButtonColor = false
 actionBtn.Text = btnText
-actionBtn.TextColor3 = Color3.fromRGB(14, 14, 16)
+actionBtn.TextColor3 = btnTextCol
 actionBtn.Font = theme.FontBold
 actionBtn.TextSize = theme.FontSizeSmall
 actionBtn.BorderSizePixel = 0
@@ -1299,10 +1315,18 @@ task.spawn(callback)
 end
 local clickConn = actionBtn.Activated:Connect(trigger)
 local hConn = actionBtn.MouseEnter:Connect(function()
-TweenService:Create(actionBtn, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = Color3.fromRGB(230, 230, 235) }):Play()
+local curDark = (self and self._theme and (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White"))
+if curDark == nil then curDark = isDark end
+local curHov = curDark and Color3.fromRGB(230, 230, 235) or Color3.fromRGB(36, 40, 48)
+local anim = (self and self._theme and self._theme.AnimationFast) or theme.AnimationFast
+TweenService:Create(actionBtn, TweenInfo.new(anim), { BackgroundColor3 = curHov }):Play()
 end)
 local lConn = actionBtn.MouseLeave:Connect(function()
-TweenService:Create(actionBtn, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+local curDark = (self and self._theme and (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White"))
+if curDark == nil then curDark = isDark end
+local curBg = curDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+local anim = (self and self._theme and self._theme.AnimationFast) or theme.AnimationFast
+TweenService:Create(actionBtn, TweenInfo.new(anim), { BackgroundColor3 = curBg }):Play()
 end)
 if cleanup then
 cleanup:Add(clickConn)
@@ -1310,19 +1334,33 @@ cleanup:Add(hConn)
 cleanup:Add(lConn)
 cleanup:Add(rowContainer)
 end
-return setmetatable({
+self = setmetatable({
 _container = rowContainer,
 _actionBtn = actionBtn,
 _theme = theme,
 _callback = callback,
 _conns = { clickConn, hConn, lConn },
 }, Button)
+return self
 end
 local text = options.Text or options.Name or "Button"
+local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
+local defaultBg, hoverBg, activeBg, txtColor
+if not isDark then
+defaultBg = Color3.fromRGB(18, 20, 24)
+hoverBg = Color3.fromRGB(36, 40, 48)
+activeBg = Color3.fromRGB(50, 56, 68)
+txtColor = Color3.fromRGB(255, 255, 255)
+else
+defaultBg = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
+hoverBg = isPrimary and Color3.fromRGB(235, 235, 240) or theme.ElementHover
+activeBg = isPrimary and Color3.fromRGB(215, 215, 225) or theme.ElementActive
+txtColor = isPrimary and Color3.fromRGB(14, 14, 16) or theme.TextPrimary
+end
 local container = Instance.new("TextButton")
 container.Name = "Button_" .. text
 container.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 32)
-container.BackgroundColor3 = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
+container.BackgroundColor3 = defaultBg
 container.AutoButtonColor = false
 container.Text = ""
 container.BorderSizePixel = 0
@@ -1331,7 +1369,7 @@ container.Parent = parent
 local corner = Instance.new("UICorner")
 corner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
 corner.Parent = container
-if theme.UseStrokes and not isPrimary then
+if theme.UseStrokes and isDark and not isPrimary then
 local stroke = Instance.new("UIStroke")
 stroke.Name = "BorderStroke"
 stroke.Color = theme.Border
@@ -1345,13 +1383,13 @@ label.Size = UDim2.new(1, -16, 1, 0)
 label.Position = UDim2.new(0, 8, 0, 0)
 label.BackgroundTransparency = 1
 label.Text = text
-label.TextColor3 = isPrimary and Color3.fromRGB(14, 14, 16) or theme.TextPrimary
+label.TextColor3 = txtColor
 label.Font = theme.FontBold
 label.TextSize = theme.FontSizeRegular
 label.TextXAlignment = Enum.TextXAlignment.Center
 label.Active = false
 label.Parent = container
-local self = setmetatable({
+self = setmetatable({
 _container = container,
 _label = label,
 _theme = theme,
@@ -1360,24 +1398,29 @@ _callback = callback,
 _disabled = false,
 _conns = {},
 }, Button)
-local defaultBg = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
-local hoverBg = isPrimary and Color3.fromRGB(235, 235, 240) or theme.ElementHover
-local activeBg = isPrimary and Color3.fromRGB(215, 215, 225) or theme.ElementActive
 local hoverConn = container.MouseEnter:Connect(function()
 if self._disabled then return end
-TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = hoverBg }):Play()
+local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+local curHover = not curDark and Color3.fromRGB(36, 40, 48) or (self._isPrimary and Color3.fromRGB(235, 235, 240) or self._theme.ElementHover)
+TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curHover }):Play()
 end)
 local leaveConn = container.MouseLeave:Connect(function()
 if self._disabled then return end
-TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = defaultBg }):Play()
+local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+local curBg = not curDark and Color3.fromRGB(18, 20, 24) or (self._isPrimary and Color3.fromRGB(255, 255, 255) or self._theme.Element)
+TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curBg }):Play()
 end)
 local downConn = container.MouseButton1Down:Connect(function()
 if self._disabled then return end
-TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = activeBg }):Play()
+local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+local curActive = not curDark and Color3.fromRGB(50, 56, 68) or (self._isPrimary and Color3.fromRGB(215, 215, 225) or self._theme.ElementActive)
+TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curActive }):Play()
 end)
 local upConn = container.MouseButton1Up:Connect(function()
 if self._disabled then return end
-TweenService:Create(container, TweenInfo.new(theme.AnimationFast), { BackgroundColor3 = hoverBg }):Play()
+local curDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
+local curHover = not curDark and Color3.fromRGB(36, 40, 48) or (self._isPrimary and Color3.fromRGB(235, 235, 240) or self._theme.ElementHover)
+TweenService:Create(container, TweenInfo.new(self._theme.AnimationFast), { BackgroundColor3 = curHover }):Play()
 end)
 local lastBtn = 0
 local function triggerBtn()
@@ -5566,7 +5609,7 @@ local targetTheme = nil
 local targetMode = "Dark"
 if type(themeNameOrTable) == "string" then
 local lower = string.lower(themeNameOrTable)
-if lower == "light" or lower == "white" or string.find(lower, "white") then
+if lower == "light" or lower == "pure white" or (string.find(lower, "white") and not string.find(lower, "black")) then
 targetMode = "Light"
 targetTheme = ThemeManager and ThemeManager.Themes["Pure White"]
 else
@@ -5575,7 +5618,8 @@ targetTheme = ThemeManager and ThemeManager.Themes["Pure Black & White"]
 end
 elseif type(themeNameOrTable) == "table" then
 targetTheme = themeNameOrTable
-targetMode = (targetTheme.Name and string.find(string.lower(targetTheme.Name), "white")) and "Light" or "Dark"
+local nameLower = targetTheme.Name and string.lower(targetTheme.Name) or ""
+targetMode = (targetTheme.IsLight == true or nameLower == "pure white" or (string.find(nameLower, "white") and not string.find(nameLower, "black"))) and "Light" or "Dark"
 end
 if not targetTheme and ThemeManager then
 targetTheme = ThemeManager:GetTheme()
@@ -5764,14 +5808,24 @@ cStroke.Color = targetTheme.Border
 end
 end
 if comp._actionBtn then
-comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
+comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 comp._actionBtn.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
 end
-if comp._label then
-if comp._isPrimary then
-comp._label.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
+if comp._label and comp._container and comp._container:IsA("TextButton") then
+if not isDark then
+comp._container.BackgroundColor3 = Color3.fromRGB(18, 20, 24)
+comp._label.TextColor3 = Color3.fromRGB(255, 255, 255)
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then st.Enabled = false end
 else
-comp._label.TextColor3 = targetTheme.TextPrimary
+local isPri = comp._isPrimary
+comp._container.BackgroundColor3 = isPri and Color3.fromRGB(255, 255, 255) or targetTheme.Element
+comp._label.TextColor3 = isPri and Color3.fromRGB(14, 14, 16) or targetTheme.TextPrimary
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then
+st.Enabled = not isPri
+st.Color = targetTheme.Border
+end
 end
 end
 if comp._titleLabel then
@@ -5847,6 +5901,11 @@ for _, item in ipairs(comp._items) do
 self:_applyThemeToComponent(item, targetTheme, isDark)
 end
 end
+if comp._buttons then
+for _, btn in ipairs(comp._buttons) do
+self:_applyThemeToComponent(btn, targetTheme, isDark)
+end
+end
 end
 function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
 if not rootInstance then return end
@@ -5860,8 +5919,26 @@ if desc:IsA("UIStroke") then
 if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" then
 desc.Color = targetTheme.Border
 end
+elseif desc:IsA("TextButton") and (desc.Name:find("Button_") or desc.Name == "ActionButton") then
+if not isDark then
+desc.BackgroundColor3 = Color3.fromRGB(18, 20, 24)
+if desc.Name == "ActionButton" then
+desc.TextColor3 = Color3.fromRGB(255, 255, 255)
+end
+local st = desc:FindFirstChildOfClass("UIStroke")
+if st then st.Enabled = false end
+else
+desc.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+if desc.Name == "ActionButton" then
+desc.TextColor3 = Color3.fromRGB(14, 14, 16)
+end
+local st = desc:FindFirstChildOfClass("UIStroke")
+if st then st.Enabled = false end
+end
 elseif desc:IsA("TextLabel") then
-if desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
+if desc.Name == "Label" and desc.Parent and desc.Parent:IsA("TextButton") and desc.Parent.Name:find("Button_") then
+desc.TextColor3 = not isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(14, 14, 16)
+elseif desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
 desc.TextColor3 = targetTheme.TextPrimary
 elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" then
 desc.TextColor3 = targetTheme.TextSecondary
