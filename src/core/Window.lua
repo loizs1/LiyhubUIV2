@@ -1846,6 +1846,10 @@ function Window:SetTheme(themeNameOrTable)
         self._gripIcon.ImageColor3 = isDark and Color3.fromRGB(140, 155, 180) or Color3.fromRGB(80, 90, 110)
     end
 
+    if self._mobilePin and self._mobilePin.SetTheme then
+        self._mobilePin:SetTheme(targetTheme, isDark)
+    end
+
     for _, tabGroup in ipairs(self._tabGroups or {}) do
         if tabGroup._header then
             local gTitle = tabGroup._header:FindFirstChild("Title")
@@ -2160,11 +2164,12 @@ function TabGroup:CreateTab(options)
     corner.CornerRadius = self._window._theme.SmallCornerRadius
     corner.Parent = tabBtn
     
+    local isDarkTab = (self._window._currentThemeMode ~= "Light")
     local activeBar = Instance.new("Frame")
     activeBar.Name = "ActiveBar"
     activeBar.Size = UDim2.new(0, 3, 0, 18)
     activeBar.Position = UDim2.new(0, 0, 0.5, -9)
-    activeBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    activeBar.BackgroundColor3 = isDarkTab and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
     activeBar.BorderSizePixel = 0
     activeBar.Visible = false
     activeBar.Parent = tabBtn
@@ -2295,6 +2300,7 @@ function Tab:_deactivate()
     self._titleLabel.TextColor3 = curTheme.TextMuted
     self._titleLabel.Font = curTheme.FontRegular
     self._activeBar.Visible = false
+    self._activeBar.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
     if self._iconLabel then
         self._iconLabel.ImageColor3 = isDark and Color3.fromRGB(130, 140, 160) or Color3.fromRGB(130, 136, 148)
     end

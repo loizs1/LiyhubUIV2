@@ -13,12 +13,13 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     local initialPos = options.Position or UDim2.new(0.5, -70, 0, 14)
     local userText = options.User or ""
     
+    local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     local container = Instance.new("TextButton")
     container.Name = "LiyHub_MobilePin"
     container.Size = UDim2.new(0, 0, 0, 36)
     container.AutomaticSize = Enum.AutomaticSize.X
     container.Position = initialPos
-    container.BackgroundColor3 = theme.Header or Color3.fromRGB(16, 16, 19)
+    container.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
     container.AutoButtonColor = false
     container.Text = ""
     container.BorderSizePixel = 0
@@ -44,7 +45,7 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     if theme.UseStrokes then
         local stroke = Instance.new("UIStroke")
         stroke.Name = "BorderStroke"
-        stroke.Color = theme.BorderWindow or Color3.fromRGB(45, 45, 55)
+        stroke.Color = isDark and (theme.BorderWindow or Color3.fromRGB(45, 45, 55)) or theme.Border
         stroke.Thickness = 1
         stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         stroke.Parent = container
@@ -54,7 +55,7 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     iconBg.Name = "IconBg"
     iconBg.Size = UDim2.new(0, 24, 0, 24)
     iconBg.Position = UDim2.new(0, 8, 0.5, -12)
-    iconBg.BackgroundColor3 = theme.Element or Color3.fromRGB(24, 24, 29)
+    iconBg.BackgroundColor3 = isDark and (theme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
     iconBg.BorderSizePixel = 0
     iconBg.ZIndex = 1000000
     iconBg.ClipsDescendants = true
@@ -177,6 +178,27 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     end
     
     return self
+end
+
+function MobilePin:SetTheme(targetTheme, isDark)
+    self._theme = targetTheme
+    if self._container then
+        self._container.BackgroundColor3 = isDark and (targetTheme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
+        local stroke = self._container:FindFirstChildOfClass("UIStroke")
+        if stroke then
+            stroke.Color = isDark and (targetTheme.BorderWindow or Color3.fromRGB(45, 45, 55)) or targetTheme.Border
+        end
+    end
+    local iconBg = self._container and self._container:FindFirstChild("IconBg")
+    if iconBg then
+        iconBg.BackgroundColor3 = isDark and (targetTheme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
+    end
+    if self._titleLabel then
+        self._titleLabel.TextColor3 = targetTheme.TextPrimary
+    end
+    if self._subLabel then
+        self._subLabel.TextColor3 = targetTheme.TextMuted
+    end
 end
 
 function MobilePin:SetVisible(visible)

@@ -1036,12 +1036,13 @@ local closeSubText = options.CloseText or "Tap to Close"
 local logoAsset = options.Logo or options.Icon or theme.DefaultLogo or "rbxasset://textures/LiyhubLogo.png"
 local initialPos = options.Position or UDim2.new(0.5, -70, 0, 14)
 local userText = options.User or ""
+local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local container = Instance.new("TextButton")
 container.Name = "LiyHub_MobilePin"
 container.Size = UDim2.new(0, 0, 0, 36)
 container.AutomaticSize = Enum.AutomaticSize.X
 container.Position = initialPos
-container.BackgroundColor3 = theme.Header or Color3.fromRGB(16, 16, 19)
+container.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
 container.AutoButtonColor = false
 container.Text = ""
 container.BorderSizePixel = 0
@@ -1063,7 +1064,7 @@ pinScale.Parent = container
 if theme.UseStrokes then
 local stroke = Instance.new("UIStroke")
 stroke.Name = "BorderStroke"
-stroke.Color = theme.BorderWindow or Color3.fromRGB(45, 45, 55)
+stroke.Color = isDark and (theme.BorderWindow or Color3.fromRGB(45, 45, 55)) or theme.Border
 stroke.Thickness = 1
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = container
@@ -1072,7 +1073,7 @@ local iconBg = Instance.new("Frame")
 iconBg.Name = "IconBg"
 iconBg.Size = UDim2.new(0, 24, 0, 24)
 iconBg.Position = UDim2.new(0, 8, 0.5, -12)
-iconBg.BackgroundColor3 = theme.Element or Color3.fromRGB(24, 24, 29)
+iconBg.BackgroundColor3 = isDark and (theme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
 iconBg.BorderSizePixel = 0
 iconBg.ZIndex = 1000000
 iconBg.ClipsDescendants = true
@@ -1183,6 +1184,26 @@ cleanup:Add(upConn)
 cleanup:Add(container)
 end
 return self
+end
+function MobilePin:SetTheme(targetTheme, isDark)
+self._theme = targetTheme
+if self._container then
+self._container.BackgroundColor3 = isDark and (targetTheme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
+local stroke = self._container:FindFirstChildOfClass("UIStroke")
+if stroke then
+stroke.Color = isDark and (targetTheme.BorderWindow or Color3.fromRGB(45, 45, 55)) or targetTheme.Border
+end
+end
+local iconBg = self._container and self._container:FindFirstChild("IconBg")
+if iconBg then
+iconBg.BackgroundColor3 = isDark and (targetTheme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
+end
+if self._titleLabel then
+self._titleLabel.TextColor3 = targetTheme.TextPrimary
+end
+if self._subLabel then
+self._subLabel.TextColor3 = targetTheme.TextMuted
+end
 end
 function MobilePin:SetVisible(visible)
 self._container.Visible = visible == true
@@ -5703,6 +5724,9 @@ end
 if self._gripIcon then
 self._gripIcon.ImageColor3 = isDark and Color3.fromRGB(140, 155, 180) or Color3.fromRGB(80, 90, 110)
 end
+if self._mobilePin and self._mobilePin.SetTheme then
+self._mobilePin:SetTheme(targetTheme, isDark)
+end
 for _, tabGroup in ipairs(self._tabGroups or {}) do
 if tabGroup._header then
 local gTitle = tabGroup._header:FindFirstChild("Title")
@@ -5994,11 +6018,12 @@ tabBtn.Parent = self._tabsFrame
 local corner = Instance.new("UICorner")
 corner.CornerRadius = self._window._theme.SmallCornerRadius
 corner.Parent = tabBtn
+local isDarkTab = (self._window._currentThemeMode ~= "Light")
 local activeBar = Instance.new("Frame")
 activeBar.Name = "ActiveBar"
 activeBar.Size = UDim2.new(0, 3, 0, 18)
 activeBar.Position = UDim2.new(0, 0, 0.5, -9)
-activeBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+activeBar.BackgroundColor3 = isDarkTab and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
 activeBar.BorderSizePixel = 0
 activeBar.Visible = false
 activeBar.Parent = tabBtn
@@ -6115,6 +6140,7 @@ end
 self._titleLabel.TextColor3 = curTheme.TextMuted
 self._titleLabel.Font = curTheme.FontRegular
 self._activeBar.Visible = false
+self._activeBar.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
 if self._iconLabel then
 self._iconLabel.ImageColor3 = isDark and Color3.fromRGB(130, 140, 160) or Color3.fromRGB(130, 136, 148)
 end
