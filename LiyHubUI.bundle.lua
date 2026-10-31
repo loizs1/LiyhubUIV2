@@ -3631,6 +3631,8 @@ _modules["src/core/Window"] = function()
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Window = {}
 Window.__index = Window
 local TabGroup = {}
@@ -3701,6 +3703,7 @@ local function resolveParentGui(customParent)
 if customParent then return customParent end
 local okH, h = pcall(function() return gethui and gethui() end)
 if okH and h then return h end
+if not RunService:IsStudio() then
 local okCg, cg = pcall(function() return game:GetService("CoreGui") end)
 if okCg and cg then
 local test = Instance.new("Folder")
@@ -3709,6 +3712,7 @@ test.Parent = cg
 test:Destroy()
 end)
 if pOk then return cg end
+end
 end
 local lp = Players.LocalPlayer
 if lp then
@@ -3740,6 +3744,15 @@ mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Active = true
 mainFrame.Parent = screenGui
+local cursorUnlocker = Instance.new("TextButton")
+cursorUnlocker.Name = "CursorUnlocker"
+cursorUnlocker.Size = UDim2.fromOffset(0, 0)
+cursorUnlocker.BackgroundTransparency = 1
+cursorUnlocker.Text = ""
+cursorUnlocker.Modal = true
+cursorUnlocker.Visible = true
+cursorUnlocker.Active = false
+cursorUnlocker.Parent = mainFrame
 local windowScale = Instance.new("UIScale")
 windowScale.Name = "WindowScale"
 windowScale.Scale = sizePreset.Scale or 1.0
