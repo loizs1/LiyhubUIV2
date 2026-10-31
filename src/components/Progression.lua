@@ -3,6 +3,10 @@ local TweenService = game:GetService("TweenService")
 local Progression = {}
 Progression.__index = Progression
 
+local okIcon, IconService = pcall(function()
+    return require(script.Parent.Parent.services.IconService)
+end)
+
 local DEFAULT_STEP_ICONS = {
     [1] = "rbxassetid://6031075931",
     [2] = "rbxassetid://6031075929",
@@ -136,11 +140,17 @@ function Progression.new(parent, options, theme, cleanup)
         icon.Size = UDim2.new(0, 14, 0, 14)
         icon.Position = UDim2.new(0.5, -7, 0.5, -7)
         icon.BackgroundTransparency = 1
-        icon.Image = stepData.Icon or DEFAULT_STEP_ICONS[i] or DEFAULT_STEP_ICONS[1]
-        icon.ImageColor3 = (i == initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
+        icon.ScaleType = Enum.ScaleType.Fit
         icon.Active = false
         icon.ZIndex = 3
         icon.Parent = nodeBtn
+        local initColor = (i == initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
+        if okIcon and IconService and IconService.Apply then
+            IconService.Apply(icon, stepData.Icon or "check", initColor)
+        else
+            icon.Image = stepData.Icon or ""
+            icon.ImageColor3 = initColor
+        end
         
         local stepLbl = Instance.new("TextLabel")
         stepLbl.Name = "Label"

@@ -3077,6 +3077,9 @@ _modules["src/components/Progression"] = function()
 local TweenService = game:GetService("TweenService")
 local Progression = {}
 Progression.__index = Progression
+local okIcon, IconService = pcall(function()
+return require(script.Parent.Parent.services.IconService)
+end)
 local DEFAULT_STEP_ICONS = {
 [1] = "rbxassetid://6031075931",
 [2] = "rbxassetid://6031075929",
@@ -3194,11 +3197,17 @@ icon.Name = "Icon"
 icon.Size = UDim2.new(0, 14, 0, 14)
 icon.Position = UDim2.new(0.5, -7, 0.5, -7)
 icon.BackgroundTransparency = 1
-icon.Image = stepData.Icon or DEFAULT_STEP_ICONS[i] or DEFAULT_STEP_ICONS[1]
-icon.ImageColor3 = (i == initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
+icon.ScaleType = Enum.ScaleType.Fit
 icon.Active = false
 icon.ZIndex = 3
 icon.Parent = nodeBtn
+local initColor = (i == initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
+if okIcon and IconService and IconService.Apply then
+IconService.Apply(icon, stepData.Icon or "check", initColor)
+else
+icon.Image = stepData.Icon or ""
+icon.ImageColor3 = initColor
+end
 local stepLbl = Instance.new("TextLabel")
 stepLbl.Name = "Label"
 stepLbl.AnchorPoint = Vector2.new(0.5, 0)
@@ -3882,13 +3891,6 @@ tabGroupsPadding.PaddingBottom = UDim.new(0, 8)
 tabGroupsPadding.PaddingLeft = UDim.new(0, 8)
 tabGroupsPadding.PaddingRight = UDim.new(0, 8)
 tabGroupsPadding.Parent = tabGroupsScroll
-local customUser = options.User or options.UserProfile or options.Profile
-local localUser = Players.LocalPlayer
-local dispNameText = (type(customUser) == "table" and (customUser.DisplayName or customUser.Name)) or options.DisplayName or (localUser and localUser.DisplayName or "User")
-local rawNameText = (type(customUser) == "table" and (customUser.Username or customUser.User)) or options.Username or (localUser and ("@" .. localUser.Name) or "@user")
-if string.sub(rawNameText, 1, 1) ~= "@" then
-rawNameText = "@" .. rawNameText
-end
 local profileCard = Instance.new("TextButton")
 profileCard.Name = "ProfileCard"
 profileCard.Size = UDim2.new(1, -16, 0, 46)
@@ -3920,34 +3922,12 @@ avatarImg.Parent = profileCard
 local avCorner = Instance.new("UICorner")
 avCorner.CornerRadius = UDim.new(1, 0)
 avCorner.Parent = avatarImg
-local customAv = (type(customUser) == "table" and customUser.Avatar) or options.Avatar
-if customAv then
-if IconService and IconService.Apply then
-IconService.Apply(avatarImg, customAv)
-else
-avatarImg.Image = tostring(customAv)
-end
-else
-task.spawn(function()
-local player = Players.LocalPlayer
-if player then
-local thumb, isReady = Players:GetUserThumbnailAsync(
-player.UserId,
-Enum.ThumbnailType.HeadShot,
-Enum.ThumbnailSize.Size100x100
-)
-if thumb and avatarImg and avatarImg.Parent then
-avatarImg.Image = thumb
-end
-end
-end)
-end
 local profDisplayName = Instance.new("TextLabel")
 profDisplayName.Name = "DisplayName"
 profDisplayName.Size = UDim2.new(1, -48, 0, 16)
 profDisplayName.Position = UDim2.new(0, 45, 0, 7)
 profDisplayName.BackgroundTransparency = 1
-profDisplayName.Text = dispNameText
+profDisplayName.Text = ""
 profDisplayName.TextColor3 = theme.TextPrimary
 profDisplayName.Font = theme.FontBold
 profDisplayName.TextSize = theme.FontSizeSmall
@@ -3959,13 +3939,43 @@ profUsername.Name = "Username"
 profUsername.Size = UDim2.new(1, -48, 0, 14)
 profUsername.Position = UDim2.new(0, 45, 0, 23)
 profUsername.BackgroundTransparency = 1
-profUsername.Text = rawNameText
+profUsername.Text = ""
 profUsername.TextColor3 = theme.TextSecondary
 profUsername.Font = theme.FontRegular
 profUsername.TextSize = 10
 profUsername.TextXAlignment = Enum.TextXAlignment.Left
 profUsername.TextTruncate = Enum.TextTruncate.AtEnd
 profUsername.Parent = profileCard
+local function applyRealProfile(realPlayer)
+if not realPlayer then return end
+profDisplayName.Text = realPlayer.DisplayName
+profUsername.Text = "@" .. realPlayer.Name
+task.spawn(function()
+local thumb = Players:GetUserThumbnailAsync(
+realPlayer.UserId,
+Enum.ThumbnailType.HeadShot,
+Enum.ThumbnailSize.Size100x100
+)
+if thumb and avatarImg and avatarImg.Parent then
+avatarImg.Image = thumb
+end
+end)
+end
+local realPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+if realPlayer then
+applyRealProfile(realPlayer)
+else
+local playerConn
+playerConn = Players.PlayerAdded:Connect(function(newPlayer)
+applyRealProfile(newPlayer)
+if playerConn then
+playerConn:Disconnect()
+end
+end)
+if cleanup then
+cleanup:Add(playerConn)
+end
+end
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
 contentArea.Size = UDim2.new(1, -190, 1, 0)
@@ -4282,8 +4292,8 @@ function Window:Minimize()
 self._minimized = true
 self._mainFrame.Visible = false
 if self._mobilePin then
-local localUser = Players.LocalPlayer
-local dispNameText = localUser and localUser.DisplayName or "User"
+local realPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+local dispNameText = realPlayer and realPlayer.DisplayName or ""
 self._mobilePin:SetUserText(dispNameText)
 if self._uiScale then
 self._mobilePin:SetScale(self._uiScale.Scale)
@@ -4442,54 +4452,31 @@ end
 function Window:GetScale()
 return self._uiScale and self._uiScale.Scale or 1.0
 end
-function Window:SetUserProfile(data)
-if not self._profileCard or type(data) ~= "table" then return end
-self._userProfileData = data
-if data.DisplayName then
-local dName = self._profileCard:FindFirstChild("DisplayName")
-if dName then dName.Text = tostring(data.DisplayName) end
-end
-if data.Username then
-local uName = self._profileCard:FindFirstChild("Username")
-if uName then
-local uStr = tostring(data.Username)
-if string.sub(uStr, 1, 1) ~= "@" then uStr = "@" .. uStr end
-uName.Text = uStr
-end
-end
-if data.Avatar then
-local av = self._profileCard:FindFirstChild("Avatar")
-if av then
-local iconService = self._iconService
-if iconService and iconService.Apply then
-iconService.Apply(av, data.Avatar)
-else
-av.Image = tostring(data.Avatar)
-end
-end
-end
-if self._mobilePin and self._mobilePin.SetUserText then
-self._mobilePin:SetUserText(data.DisplayName or data.Username or "")
-end
-end
 function Window:GetUserProfile()
-local localUser = Players.LocalPlayer
-local dName = (self._userProfileData and self._userProfileData.DisplayName) or (localUser and localUser.DisplayName or "User")
-local uName = (self._userProfileData and self._userProfileData.Username) or (localUser and ("@" .. localUser.Name) or "@user")
+local realPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+if not realPlayer then
 return {
-DisplayName = dName,
-Username = uName,
-UserId = localUser and localUser.UserId or 0,
-AccountAge = localUser and localUser.AccountAge or 0,
+DisplayName = "",
+Username = "",
+UserId = 0,
+AccountAge = 0,
+}
+end
+return {
+DisplayName = realPlayer.DisplayName,
+Username = "@" .. realPlayer.Name,
+UserId = realPlayer.UserId,
+AccountAge = realPlayer.AccountAge,
 }
 end
 function Window:ShowProfileModal()
-local localUser = Players.LocalPlayer
-local dName = (self._userProfileData and self._userProfileData.DisplayName) or (localUser and localUser.DisplayName or "User")
-local uName = (self._userProfileData and self._userProfileData.Username) or (localUser and ("@" .. localUser.Name) or "@user")
-local uid = localUser and tostring(localUser.UserId) or "0"
-local age = localUser and (tostring(localUser.AccountAge) .. " days") or "N/A"
-local isPrem = localUser and (localUser.MembershipType == Enum.MembershipType.Premium)
+local realPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+if not realPlayer then return end
+local dName = realPlayer.DisplayName
+local uName = "@" .. realPlayer.Name
+local uid = tostring(realPlayer.UserId)
+local age = tostring(realPlayer.AccountAge) .. " days"
+local isPrem = realPlayer.MembershipType == Enum.MembershipType.Premium
 local status = isPrem and "Roblox Premium" or "Standard Account"
 self:ShowModal({
 Title = "User Profile",

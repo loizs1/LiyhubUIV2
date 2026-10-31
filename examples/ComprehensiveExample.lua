@@ -46,11 +46,11 @@ local QuestProgression = FarmSection:CreateProgression({
     Title = "Quest Journey (Auto Farm)",
     Subtitle = "Automated quest and boss combat workflow",
     Steps = {
-        { Label = "Accept", Icon = "rbxassetid://6031075931" },
-        { Label = "Teleport", Icon = "rbxassetid://6031075929" },
-        { Label = "Farm", Icon = "rbxassetid://6031094678" },
-        { Label = "Boss", Icon = "rbxassetid://6031091004" },
-        { Label = "Reward", Icon = "rbxasset://textures/LiyhubLogo.png" },
+        { Label = "Accept", Icon = "check" },
+        { Label = "Teleport", Icon = "teleport" },
+        { Label = "Farm", Icon = "swords" },
+        { Label = "Boss", Icon = "skull" },
+        { Label = "Reward", Icon = "gem" },
     },
     CurrentStep = 1,
     Callback = function(stepIndex)
