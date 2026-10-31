@@ -10,11 +10,13 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     local openSubText = options.OpenText or "Tap to Open"
     local closeSubText = options.CloseText or "Tap to Close"
     local logoAsset = options.Logo or options.Icon or theme.DefaultLogo or "rbxasset://textures/LiyhubLogo.png"
-    local initialPos = options.Position or UDim2.new(0.5, -60, 0, 14)
+    local initialPos = options.Position or UDim2.new(0.5, -70, 0, 14)
+    local userText = options.User or ""
     
     local container = Instance.new("TextButton")
     container.Name = "LiyHub_MobilePin"
-    container.Size = UDim2.new(0, 120, 0, 36)
+    container.Size = UDim2.new(0, 0, 0, 36)
+    container.AutomaticSize = Enum.AutomaticSize.X
     container.Position = initialPos
     container.BackgroundColor3 = theme.Header or Color3.fromRGB(16, 16, 19)
     container.AutoButtonColor = false
@@ -28,6 +30,16 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = container
+    
+    local sizeConstraint = Instance.new("UISizeConstraint")
+    sizeConstraint.MinSize = Vector2.new(130, 36)
+    sizeConstraint.MaxSize = Vector2.new(280, 44)
+    sizeConstraint.Parent = container
+    
+    local pinScale = Instance.new("UIScale")
+    pinScale.Name = "PinScale"
+    pinScale.Scale = 1.0
+    pinScale.Parent = container
     
     if theme.UseStrokes then
         local stroke = Instance.new("UIStroke")
@@ -63,24 +75,38 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     iconImg.ZIndex = 1000001
     iconImg.Parent = iconBg
     
+    local textContainer = Instance.new("Frame")
+    textContainer.Name = "TextContainer"
+    textContainer.Size = UDim2.new(0, 0, 1, 0)
+    textContainer.AutomaticSize = Enum.AutomaticSize.X
+    textContainer.Position = UDim2.new(0, 38, 0, 0)
+    textContainer.BackgroundTransparency = 1
+    textContainer.Parent = container
+    
+    local pad = Instance.new("UIPadding")
+    pad.PaddingRight = UDim.new(0, 16)
+    pad.Parent = textContainer
+    
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -40, 0, 16)
-    titleLabel.Position = UDim2.new(0, 38, 0, 4)
+    titleLabel.Size = UDim2.new(0, 0, 0, 16)
+    titleLabel.AutomaticSize = Enum.AutomaticSize.X
+    titleLabel.Position = UDim2.new(0, 0, 0, 4)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = titleText
     titleLabel.TextColor3 = theme.TextPrimary
     titleLabel.Font = theme.FontBold
-    titleLabel.TextSize = 12
+    titleLabel.TextSize = 11
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Active = false
     titleLabel.ZIndex = 1000001
-    titleLabel.Parent = container
+    titleLabel.Parent = textContainer
     
     local subLabel = Instance.new("TextLabel")
     subLabel.Name = "Subtitle"
-    subLabel.Size = UDim2.new(1, -40, 0, 12)
-    subLabel.Position = UDim2.new(0, 38, 0, 18)
+    subLabel.Size = UDim2.new(0, 0, 0, 12)
+    subLabel.AutomaticSize = Enum.AutomaticSize.X
+    subLabel.Position = UDim2.new(0, 0, 0, 18)
     subLabel.BackgroundTransparency = 1
     subLabel.Text = closeSubText
     subLabel.TextColor3 = theme.TextMuted
@@ -89,15 +115,17 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
     subLabel.Active = false
     subLabel.ZIndex = 1000001
-    subLabel.Parent = container
+    subLabel.Parent = textContainer
     
     local self = setmetatable({
         _container = container,
         _window = window,
         _titleLabel = titleLabel,
         _subLabel = subLabel,
+        _pinScale = pinScale,
         _openText = openSubText,
         _closeText = closeSubText,
+        _userText = userText,
         _theme = theme,
         _dragging = false,
     }, MobilePin)
@@ -152,8 +180,28 @@ function MobilePin:SetVisible(visible)
     self._container.Visible = visible == true
 end
 
+function MobilePin:SetUserText(userText)
+    self._userText = userText or ""
+    self:SetOpenState(not self._container.Visible)
+end
+
+function MobilePin:SetScale(scaleFactor)
+    local s = tonumber(scaleFactor) or 1.0
+    if self._pinScale then
+        self._pinScale.Scale = math.clamp(s, 0.7, 1.5)
+    end
+end
+
 function MobilePin:SetOpenState(isOpen)
-    self._subLabel.Text = isOpen and self._closeText or self._openText
+    if isOpen then
+        self._subLabel.Text = self._closeText
+    else
+        if self._userText and self._userText ~= "" then
+            self._subLabel.Text = self._userText .. " | " .. self._openText
+        else
+            self._subLabel.Text = self._openText
+        end
+    end
 end
 
 function MobilePin:Destroy()

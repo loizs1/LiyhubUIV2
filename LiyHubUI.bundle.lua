@@ -1210,11 +1210,13 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     local openSubText = options.OpenText or "Tap to Open"
     local closeSubText = options.CloseText or "Tap to Close"
     local logoAsset = options.Logo or options.Icon or theme.DefaultLogo or "rbxasset://textures/LiyhubLogo.png"
-    local initialPos = options.Position or UDim2.new(0.5, -60, 0, 14)
+    local initialPos = options.Position or UDim2.new(0.5, -70, 0, 14)
+    local userText = options.User or ""
     
     local container = Instance.new("TextButton")
     container.Name = "LiyHub_MobilePin"
-    container.Size = UDim2.new(0, 120, 0, 36)
+    container.Size = UDim2.new(0, 0, 0, 36)
+    container.AutomaticSize = Enum.AutomaticSize.X
     container.Position = initialPos
     container.BackgroundColor3 = theme.Header or Color3.fromRGB(16, 16, 19)
     container.AutoButtonColor = false
@@ -1228,6 +1230,16 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = container
+    
+    local sizeConstraint = Instance.new("UISizeConstraint")
+    sizeConstraint.MinSize = Vector2.new(130, 36)
+    sizeConstraint.MaxSize = Vector2.new(280, 44)
+    sizeConstraint.Parent = container
+    
+    local pinScale = Instance.new("UIScale")
+    pinScale.Name = "PinScale"
+    pinScale.Scale = 1.0
+    pinScale.Parent = container
     
     if theme.UseStrokes then
         local stroke = Instance.new("UIStroke")
@@ -1263,24 +1275,38 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     iconImg.ZIndex = 1000001
     iconImg.Parent = iconBg
     
+    local textContainer = Instance.new("Frame")
+    textContainer.Name = "TextContainer"
+    textContainer.Size = UDim2.new(0, 0, 1, 0)
+    textContainer.AutomaticSize = Enum.AutomaticSize.X
+    textContainer.Position = UDim2.new(0, 38, 0, 0)
+    textContainer.BackgroundTransparency = 1
+    textContainer.Parent = container
+    
+    local pad = Instance.new("UIPadding")
+    pad.PaddingRight = UDim.new(0, 16)
+    pad.Parent = textContainer
+    
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -40, 0, 16)
-    titleLabel.Position = UDim2.new(0, 38, 0, 4)
+    titleLabel.Size = UDim2.new(0, 0, 0, 16)
+    titleLabel.AutomaticSize = Enum.AutomaticSize.X
+    titleLabel.Position = UDim2.new(0, 0, 0, 4)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = titleText
     titleLabel.TextColor3 = theme.TextPrimary
     titleLabel.Font = theme.FontBold
-    titleLabel.TextSize = 12
+    titleLabel.TextSize = 11
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Active = false
     titleLabel.ZIndex = 1000001
-    titleLabel.Parent = container
+    titleLabel.Parent = textContainer
     
     local subLabel = Instance.new("TextLabel")
     subLabel.Name = "Subtitle"
-    subLabel.Size = UDim2.new(1, -40, 0, 12)
-    subLabel.Position = UDim2.new(0, 38, 0, 18)
+    subLabel.Size = UDim2.new(0, 0, 0, 12)
+    subLabel.AutomaticSize = Enum.AutomaticSize.X
+    subLabel.Position = UDim2.new(0, 0, 0, 18)
     subLabel.BackgroundTransparency = 1
     subLabel.Text = closeSubText
     subLabel.TextColor3 = theme.TextMuted
@@ -1289,15 +1315,17 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
     subLabel.Active = false
     subLabel.ZIndex = 1000001
-    subLabel.Parent = container
+    subLabel.Parent = textContainer
     
     local self = setmetatable({
         _container = container,
         _window = window,
         _titleLabel = titleLabel,
         _subLabel = subLabel,
+        _pinScale = pinScale,
         _openText = openSubText,
         _closeText = closeSubText,
+        _userText = userText,
         _theme = theme,
         _dragging = false,
     }, MobilePin)
@@ -1352,8 +1380,28 @@ function MobilePin:SetVisible(visible)
     self._container.Visible = visible == true
 end
 
+function MobilePin:SetUserText(userText)
+    self._userText = userText or ""
+    self:SetOpenState(not self._container.Visible)
+end
+
+function MobilePin:SetScale(scaleFactor)
+    local s = tonumber(scaleFactor) or 1.0
+    if self._pinScale then
+        self._pinScale.Scale = math.clamp(s, 0.7, 1.5)
+    end
+end
+
 function MobilePin:SetOpenState(isOpen)
-    self._subLabel.Text = isOpen and self._closeText or self._openText
+    if isOpen then
+        self._subLabel.Text = self._closeText
+    else
+        if self._userText and self._userText ~= "" then
+            self._subLabel.Text = self._userText .. " | " .. self._openText
+        else
+            self._subLabel.Text = self._openText
+        end
+    end
 end
 
 function MobilePin:Destroy()
@@ -4562,7 +4610,11 @@ function Window.new(options, dependencies)
         self._mobilePin = MobilePin.new(screenGui, self, {
             Title = titleText,
             Logo = logoAsset,
+            User = dispNameText,
         }, theme, cleanup)
+        if self._uiScale then
+            self._mobilePin:SetScale(self._uiScale.Scale)
+        end
         self._mobilePin:SetVisible(false)
     end
 
@@ -4614,6 +4666,27 @@ function Window.new(options, dependencies)
                     local newH = math.clamp(math.floor(resizeStartSize.Y + delta.Y), minH, maxH)
                     mainFrame.Size = UDim2.fromOffset(newW, newH)
                     self._originalSize = mainFrame.Size
+                    if self._profileCard then
+                        local isCompactH = newH < 350
+                        self._profileCard.Size = isCompactH and UDim2.new(1, -16, 0, 36) or UDim2.new(1, -16, 0, 46)
+                        self._profileCard.Position = isCompactH and UDim2.new(0, 8, 1, -40) or UDim2.new(0, 8, 1, -52)
+                        local av = self._profileCard:FindFirstChild("Avatar")
+                        if av then
+                            av.Size = isCompactH and UDim2.new(0, 24, 0, 24) or UDim2.new(0, 32, 0, 32)
+                            av.Position = isCompactH and UDim2.new(0, 6, 0.5, -12) or UDim2.new(0, 7, 0.5, -16)
+                        end
+                        local dName = self._profileCard:FindFirstChild("DisplayName")
+                        local uName = self._profileCard:FindFirstChild("Username")
+                        local isNarrow = newW < 560
+                        if dName then
+                            dName.TextSize = isNarrow and 10 or 12
+                            dName.Position = isCompactH and UDim2.new(0, 36, 0, 3) or UDim2.new(0, 45, 0, 7)
+                        end
+                        if uName then
+                            uName.TextSize = isNarrow and 8 or 10
+                            uName.Position = isCompactH and UDim2.new(0, 36, 0, 18) or UDim2.new(0, 45, 0, 23)
+                        end
+                    end
                     if self._forceTwoColumns == nil then
                         local autoTwo = newW >= 620
                         for _, tab in ipairs(self._allTabs or {}) do
@@ -4700,6 +4773,12 @@ function Window:Minimize()
     self._minimized = true
     self._mainFrame.Visible = false
     if self._mobilePin then
+        local localUser = Players.LocalPlayer
+        local dispNameText = localUser and localUser.DisplayName or "User"
+        self._mobilePin:SetUserText(dispNameText)
+        if self._uiScale then
+            self._mobilePin:SetScale(self._uiScale.Scale)
+        end
         self._mobilePin:SetVisible(true)
         self._mobilePin:SetOpenState(false)
     end
@@ -4773,6 +4852,16 @@ function Window:SetDevice(deviceType)
     end
     if self._layoutModeDropdown then
         self._layoutModeDropdown:SetValue(isTwoCols and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
+    end
+    if self._mobilePin and self._mobilePin.SetScale then
+        self._mobilePin:SetScale(preset.Scale)
+    end
+    if self._profileCard then
+        local isSmall = sbW < 180
+        local dName = self._profileCard:FindFirstChild("DisplayName")
+        local uName = self._profileCard:FindFirstChild("Username")
+        if dName then dName.TextSize = isSmall and 10 or 12 end
+        if uName then uName.TextSize = isSmall and 9 or 10 end
     end
 end
 
