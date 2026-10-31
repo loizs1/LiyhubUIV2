@@ -141,6 +141,10 @@ function Layout:RegisterSectionInstance(sectionCard)
     for _, sec in ipairs(self._sections) do
         if sec.SectionCard == nil then
             sec.SectionCard = sectionCard
+            local side = sec.Side or "Left"
+            sectionCard:SetAttribute("LayoutSide", side)
+            sectionCard:SetAttribute("OriginalOrder", sec.Order or 1)
+            sectionCard.LayoutOrder = sec.Order or 1
             break
         end
     end
@@ -150,19 +154,55 @@ function Layout:SetTwoColumns(enabled)
     if self._twoColumns == enabled then return end
     self._twoColumns = enabled
     
-    self._dualContainer.Visible = enabled
-    self._singleColumn.Visible = not enabled
-    
-    for _, sec in ipairs(self._sections) do
-        local card = sec.SectionCard
-        if card and card.Parent then
-            if enabled then
-                local side = sec.Side or "Left"
-                card.Parent = (string.lower(side) == "right") and self._rightColumn or self._leftColumn
-            else
-                card.Parent = self._singleColumn
+    if enabled then
+        local children = self._singleColumn:GetChildren()
+        local validChildren = {}
+        for _, c in ipairs(children) do
+            if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
+                table.insert(validChildren, c)
             end
         end
+        table.sort(validChildren, function(a, b)
+            local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
+            local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
+            return ordA < ordB
+        end)
+        for _, child in ipairs(validChildren) do
+            local side = child:GetAttribute("LayoutSide") or "Left"
+            if string.lower(side) == "right" then
+                child.Parent = self._rightColumn
+            else
+                child.Parent = self._leftColumn
+            end
+        end
+        self._dualContainer.Visible = true
+        self._singleColumn.Visible = false
+    else
+        local leftChildren = self._leftColumn:GetChildren()
+        local rightChildren = self._rightColumn:GetChildren()
+        local allChildren = {}
+        for _, c in ipairs(leftChildren) do
+            if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
+                c:SetAttribute("LayoutSide", "Left")
+                table.insert(allChildren, c)
+            end
+        end
+        for _, c in ipairs(rightChildren) do
+            if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
+                c:SetAttribute("LayoutSide", "Right")
+                table.insert(allChildren, c)
+            end
+        end
+        table.sort(allChildren, function(a, b)
+            local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
+            local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
+            return ordA < ordB
+        end)
+        for _, c in ipairs(allChildren) do
+            c.Parent = self._singleColumn
+        end
+        self._dualContainer.Visible = false
+        self._singleColumn.Visible = true
     end
 end
 

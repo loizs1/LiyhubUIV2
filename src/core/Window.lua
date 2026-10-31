@@ -739,9 +739,7 @@ function Window:SetDevice(deviceType)
     end
     local dev = string.lower(preset.Name)
     local isTwoCols = (dev == "pc" or dev == "tablet")
-    if self._forceTwoColumns ~= nil then
-        isTwoCols = self._forceTwoColumns
-    end
+    self._forceTwoColumns = isTwoCols
     for _, tab in ipairs(self._allTabs or {}) do
         if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
             tab._layoutEngine:SetTwoColumns(isTwoCols)
@@ -1268,6 +1266,11 @@ function Tab:CreateBanner(options)
         self._window._theme,
         self._window._cleanup
     )
+    if banner and banner._container then
+        if self._layoutEngine and self._layoutEngine.RegisterSectionInstance then
+            self._layoutEngine:RegisterSectionInstance(banner._container)
+        end
+    end
     return banner
 end
 

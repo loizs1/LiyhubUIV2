@@ -22,12 +22,7 @@ if lp then
     end
 end
 
-local mod = ReplicatedStorage:WaitForChild("LiyHubUI")
-local clone = mod:Clone()
-clone.Name = "LiyHubUI_Runner"
-clone.Parent = ReplicatedStorage
-local LiyHubUI = require(clone)
-clone:Destroy()
+local LiyHubUI = require(ReplicatedStorage:WaitForChild("LiyHubUI"))
 
 local Window = LiyHubUI:CreateWindow({
     Title = "Liyhub",
