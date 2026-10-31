@@ -4637,7 +4637,7 @@ end,
 local drmSec = userTab:CreateSection("DRM License & Security")
 drmSec:CreateParagraph({
 Title = "Tier: " .. tostring(drmTier) .. " (" .. drmStatusStr .. ")",
-Content = string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s executions", tostring(drmKey), tostring(drmRemaining), tostring(executionsCount)),
+Content = string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s", tostring(drmKey), tostring(drmRemaining), tostring(executionsCount) .. (tonumber(executionsCount) == 1 and " execution" or " executions")),
 })
 drmSec:CreateButton({
 Name = "Copy License Key",
