@@ -3513,21 +3513,27 @@ return Banner
 end
 _modules["src/components/Progression"] = function()
 local TweenService = game:GetService("TweenService")
+local IconService = nil
+pcall(function()
+IconService = _require("src/services/IconService")
+end)
+if not IconService then
+pcall(function()
+IconService = require(script.Parent.Parent.services.IconService)
+end)
+end
 local Progression = {}
 Progression.__index = Progression
-local okIcon, IconService = pcall(function()
-return require(script.Parent.Parent.services.IconService)
-end)
 function Progression.new(parent, options, theme, cleanup)
 options = options or {}
 local titleText = options.Title or options.Name or "Progression"
 local subtitleText = options.Subtitle or "Step workflow progression"
 local steps = options.Steps or {
-{ Label = "Accept" },
-{ Label = "Teleport" },
-{ Label = "Farm" },
-{ Label = "Boss" },
-{ Label = "Reward" },
+{ Label = "Accept", Icon = "check" },
+{ Label = "Teleport", Icon = "teleport" },
+{ Label = "Farm", Icon = "swords" },
+{ Label = "Boss", Icon = "shield" },
+{ Label = "Reward", Icon = "zap" },
 }
 local initialStep = math.clamp(options.CurrentStep or options.Default or 1, 1, #steps)
 local onStepChanged = options.OnStepChanged or options.Callback or function() end
@@ -3590,7 +3596,7 @@ subLabel.Active = false
 subLabel.Parent = headerFrame
 local stepperFrame = Instance.new("Frame")
 stepperFrame.Name = "Stepper"
-stepperFrame.Size = UDim2.new(1, 0, 0, 52)
+stepperFrame.Size = UDim2.new(1, 0, 0, 54)
 stepperFrame.BackgroundTransparency = 1
 stepperFrame.Parent = container
 local margin = 32
@@ -3603,8 +3609,18 @@ lineBg.BackgroundColor3 = theme.SliderTrack
 lineBg.BorderSizePixel = 0
 lineBg.ZIndex = 1
 lineBg.Parent = stepperFrame
-local stepNodes = {}
 local numSteps = #steps
+local initRel = numSteps > 1 and ((initialStep - 1) / (numSteps - 1)) or 0
+local lineFill = Instance.new("Frame")
+lineFill.Name = "LineFill"
+lineFill.AnchorPoint = Vector2.new(0, 0.5)
+lineFill.Position = UDim2.new(0, margin, 0, 14)
+lineFill.Size = UDim2.new(initRel, math.floor(-margin * 2 * initRel), 0, 2)
+lineFill.BackgroundColor3 = theme.AccentStep
+lineFill.BorderSizePixel = 0
+lineFill.ZIndex = 1
+lineFill.Parent = stepperFrame
+local stepNodes = {}
 for i, stepData in ipairs(steps) do
 local t = numSteps > 1 and ((i - 1) / (numSteps - 1)) or 0.5
 local xOffset = math.floor((1 - 2 * t) * margin)
@@ -3632,31 +3648,34 @@ icon.ScaleType = Enum.ScaleType.Fit
 icon.Active = false
 icon.ZIndex = 3
 icon.Parent = nodeBtn
+local iconName = stepData.Icon or "check"
 local initColor = (i == initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
-if okIcon and IconService and IconService.Apply then
-IconService.Apply(icon, stepData.Icon or "check", initColor)
+if IconService and IconService.Apply then
+IconService.Apply(icon, iconName, initColor)
 else
-icon.Image = stepData.Icon or ""
+icon.Image = tostring(iconName)
 icon.ImageColor3 = initColor
 end
-local stepLbl = Instance.new("TextLabel")
+local stepLbl = Instance.new("TextButton")
 stepLbl.Name = "Label"
 stepLbl.AnchorPoint = Vector2.new(0.5, 0)
-stepLbl.Size = UDim2.new(0, 60, 0, 14)
+stepLbl.Size = UDim2.new(0, 60, 0, 16)
 stepLbl.Position = UDim2.new(t, xOffset, 0, 32)
 stepLbl.TextTruncate = Enum.TextTruncate.AtEnd
 stepLbl.BackgroundTransparency = 1
+stepLbl.AutoButtonColor = false
 stepLbl.Text = stepData.Label or ("Step " .. tostring(i))
 stepLbl.TextColor3 = (i == initialStep) and theme.AccentStep or theme.TextMuted
 stepLbl.Font = (i == initialStep) and theme.FontBold or theme.FontRegular
 stepLbl.TextSize = 10
 stepLbl.TextXAlignment = Enum.TextXAlignment.Center
-stepLbl.Active = false
-stepLbl.ZIndex = 2
+stepLbl.Active = true
+stepLbl.ZIndex = 5
 stepLbl.Parent = stepperFrame
 stepNodes[i] = {
 Button = nodeBtn,
 Icon = icon,
+IconName = iconName,
 Label = stepLbl,
 }
 end
@@ -3666,6 +3685,8 @@ _stepNodes = stepNodes,
 _currentStep = initialStep,
 _steps = steps,
 _theme = theme,
+_lineFill = lineFill,
+_margin = margin,
 _callback = onStepChanged,
 _conns = {},
 }, Progression)
@@ -3677,10 +3698,13 @@ if now - lastStep < 0.1 then return end
 lastStep = now
 self:SetStep(i)
 end
-local conn = node.Button.Activated:Connect(clickStep)
-table.insert(self._conns, conn)
+local connBtn = node.Button.Activated:Connect(clickStep)
+local connLbl = node.Label.Activated:Connect(clickStep)
+table.insert(self._conns, connBtn)
+table.insert(self._conns, connLbl)
 if cleanup then
-cleanup:Add(conn)
+cleanup:Add(connBtn)
+cleanup:Add(connLbl)
 end
 end
 if cleanup then cleanup:Add(container) end
@@ -3688,15 +3712,27 @@ return self
 end
 function Progression:SetStep(stepIndex)
 self._currentStep = math.clamp(stepIndex, 1, #self._steps)
+local numSteps = #self._steps
+local progressRel = numSteps > 1 and ((self._currentStep - 1) / (numSteps - 1)) or 0
+if self._lineFill then
+TweenService:Create(self._lineFill, TweenInfo.new(self._theme.AnimationFast), {
+Size = UDim2.new(progressRel, math.floor(-self._margin * 2 * progressRel), 0, 2)
+}):Play()
+end
 for i, node in ipairs(self._stepNodes) do
 local isActive = (i == self._currentStep)
-local targetColor = isActive and self._theme.AccentStep or self._theme.SliderTrack
-local targetIconColor = isActive and Color3.fromRGB(255, 255, 255) or self._theme.TextMuted
-local targetLabelColor = isActive and self._theme.AccentStep or self._theme.TextMuted
+local isCompleted = (i < self._currentStep)
+local targetColor = isActive and self._theme.AccentStep or (isCompleted and Color3.fromRGB(35, 75, 125) or self._theme.SliderTrack)
+local targetIconColor = (isActive or isCompleted) and Color3.fromRGB(255, 255, 255) or self._theme.TextMuted
+local targetLabelColor = isActive and self._theme.AccentStep or (isCompleted and Color3.fromRGB(180, 205, 235) or self._theme.TextMuted)
 TweenService:Create(node.Button, TweenInfo.new(self._theme.AnimationFast), {
 BackgroundColor3 = targetColor
 }):Play()
+if IconService and IconService.Apply then
+IconService.Apply(node.Icon, node.IconName or "check", targetIconColor)
+else
 node.Icon.ImageColor3 = targetIconColor
+end
 node.Label.TextColor3 = targetLabelColor
 node.Label.Font = isActive and self._theme.FontBold or self._theme.FontRegular
 end

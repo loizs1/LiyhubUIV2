@@ -42,6 +42,10 @@ local MainTab = MainGroup:CreateTab({
 
 local FarmSection = MainTab:CreateSection("Auto Farming & Quest")
 
+local autoFarmActive = false
+local autoFarmThread = nil
+local stepNames = { "Accept", "Teleport", "Farm", "Boss", "Reward" }
+
 local QuestProgression = FarmSection:CreateProgression({
     Title = "Quest Journey (Auto Farm)",
     Subtitle = "Automated quest and boss combat workflow",
@@ -54,14 +58,59 @@ local QuestProgression = FarmSection:CreateProgression({
     },
     CurrentStep = 1,
     Callback = function(stepIndex)
+        Window:Notify({
+            Title = "Quest Step Selected",
+            Content = "Active step set to: " .. tostring(stepNames[stepIndex] or stepIndex),
+            Duration = 1.5,
+            Type = "Info"
+        })
     end
 })
+
+local function stopAutoFarm()
+    autoFarmActive = false
+    if autoFarmThread then
+        task.cancel(autoFarmThread)
+        autoFarmThread = nil
+    end
+    Window:Notify({
+        Title = "Auto Farm",
+        Content = "Quest progression paused.",
+        Duration = 2,
+        Type = "Info"
+    })
+end
+
+local function startAutoFarm()
+    if autoFarmActive then return end
+    autoFarmActive = true
+    Window:Notify({
+        Title = "Auto Farm",
+        Content = "Advancing quest progression pipeline...",
+        Duration = 2,
+        Type = "Success"
+    })
+    autoFarmThread = task.spawn(function()
+        while autoFarmActive do
+            task.wait(1.5)
+            if not autoFarmActive then break end
+            local cur = QuestProgression:GetStep()
+            local nxt = (cur % 5) + 1
+            QuestProgression:SetStep(nxt)
+        end
+    end)
+end
 
 FarmSection:CreateToggle({
     Name = "Auto Execute Step",
     Desc = "Continuously advances and completes the selected quest journey step.",
     Default = false,
     Callback = function(state)
+        if state then
+            startAutoFarm()
+        else
+            stopAutoFarm()
+        end
     end
 })
 
@@ -69,13 +118,11 @@ FarmSection:CreateButtonGroup({
     Buttons = {
         {
             Name = "Start Auto Farm",
-            Callback = function()
-            end
+            Callback = startAutoFarm
         },
         {
             Name = "Stop Auto Farm",
-            Callback = function()
-            end
+            Callback = stopAutoFarm
         }
     }
 })
