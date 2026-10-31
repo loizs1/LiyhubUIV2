@@ -240,30 +240,49 @@ function Window.new(options, dependencies)
     headerDivider.BorderSizePixel = 0
     headerDivider.Parent = header
     
+    local function formatHeaderTitle(isDark)
+        local divColor = isDark and "#707888" or "#9AA2B0"
+        local rawTitle = options.Title or "Liyhub"
+        local rawSubtitle = options.Subtitle or subtitleText
+        if string.find(rawTitle, "|") then
+            local parts = string.split(rawTitle, "|")
+            local brand = string.gsub(parts[1], "^%s*(.-)%s*$", "%1")
+            local details = string.gsub(parts[2], "^%s*(.-)%s*$", "%1")
+            if #parts > 2 then
+                for k = 3, #parts do
+                    details = details .. " | " .. string.gsub(parts[k], "^%s*(.-)%s*$", "%1")
+                end
+            end
+            return string.format("<b>%s</b>  <font color=\"%s\">|</font>  %s", brand, divColor, details)
+        elseif rawSubtitle and rawSubtitle ~= "" then
+            return string.format("<b>%s</b>  <font color=\"%s\">|</font>  %s", rawTitle, divColor, rawSubtitle)
+        else
+            return string.format("<b>%s</b>", rawTitle)
+        end
+    end
+
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -165, 0, 18)
-    titleLabel.Position = UDim2.new(0, 46, 0, 7)
+    titleLabel.AnchorPoint = Vector2.new(0, 0.5)
+    titleLabel.Position = UDim2.new(0, 48, 0.5, 0)
+    titleLabel.Size = UDim2.new(1, -165, 0, 22)
     titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = titleText
+    titleLabel.RichText = true
+    titleLabel.Text = formatHeaderTitle(isDarkInit)
     titleLabel.TextColor3 = theme.TextPrimary
-    titleLabel.Font = theme.FontTitle
-    titleLabel.TextSize = theme.FontSizeTitle
+    titleLabel.Font = theme.FontRegular
+    titleLabel.TextSize = 13.5
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     titleLabel.Parent = header
     
     local subLabel = Instance.new("TextLabel")
     subLabel.Name = "Subtitle"
-    subLabel.Size = UDim2.new(1, -165, 0, 14)
-    subLabel.Position = UDim2.new(0, 46, 0, 25)
+    subLabel.Size = UDim2.new(0, 0, 0, 0)
+    subLabel.Position = UDim2.new(0, 0, 0, 0)
     subLabel.BackgroundTransparency = 1
-    subLabel.Text = subtitleText
-    subLabel.TextColor3 = theme.TextMuted
-    subLabel.Font = theme.FontRegular
-    subLabel.TextSize = theme.FontSizeSubtitle
-    subLabel.TextXAlignment = Enum.TextXAlignment.Left
-    subLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    subLabel.Text = ""
+    subLabel.Visible = false
     subLabel.Parent = header
     
     local controlsFrame = Instance.new("Frame")
@@ -696,6 +715,7 @@ function Window.new(options, dependencies)
         _headerDivider = headerDivider,
         _titleLabel = titleLabel,
         _subLabel = subLabel,
+        _formatHeaderTitle = formatHeaderTitle,
         _sidebar = sidebar,
         _tabGroupsScroll = tabGroupsScroll,
         _contentArea = contentArea,
@@ -1808,6 +1828,9 @@ function Window:SetTheme(themeNameOrTable)
     end
     if self._titleLabel then
         self._titleLabel.TextColor3 = targetTheme.TextPrimary
+        if self._formatHeaderTitle then
+            self._titleLabel.Text = self._formatHeaderTitle(isDark)
+        end
     end
     if self._subLabel then
         self._subLabel.TextColor3 = targetTheme.TextMuted
