@@ -563,7 +563,7 @@ function Window.new(options, dependencies)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isResizing = true
             resizeStartMouse = Vector2.new(input.Position.X, input.Position.Y)
-            resizeStartSize = Vector2.new(mainFrame.AbsoluteSize.X, mainFrame.AbsoluteSize.Y)
+            resizeStartSize = Vector2.new(mainFrame.Size.X.Offset, mainFrame.Size.Y.Offset)
             TweenService:Create(gripIcon, TweenInfo.new(0.1), {
                 ImageColor3 = Color3.fromRGB(255, 255, 255),
                 ImageTransparency = 0
@@ -582,12 +582,20 @@ function Window.new(options, dependencies)
                     end
                     local minW = sizePreset.MinSize and sizePreset.MinSize.X or 440
                     local minH = sizePreset.MinSize and sizePreset.MinSize.Y or 300
-                    local maxW = math.max(curVp.X - 20, 600)
-                    local maxH = math.max(curVp.Y - 20, 400)
+                    local maxW = math.max(math.floor(curVp.X / activeScale) - 20, 600)
+                    local maxH = math.max(math.floor(curVp.Y / activeScale) - 20, 400)
                     local newW = math.clamp(math.floor(resizeStartSize.X + delta.X), minW, maxW)
                     local newH = math.clamp(math.floor(resizeStartSize.Y + delta.Y), minH, maxH)
                     mainFrame.Size = UDim2.fromOffset(newW, newH)
                     self._originalSize = mainFrame.Size
+                    if self._forceTwoColumns == nil then
+                        local autoTwo = newW >= 620
+                        for _, tab in ipairs(self._allTabs or {}) do
+                            if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
+                                tab._layoutEngine:SetTwoColumns(autoTwo)
+                            end
+                        end
+                    end
                 end
             end)
 
@@ -739,6 +747,9 @@ function Window:SetDevice(deviceType)
             tab._layoutEngine:SetTwoColumns(isTwoCols)
         end
     end
+    if self._layoutModeDropdown then
+        self._layoutModeDropdown:SetValue(isTwoCols and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
+    end
 end
 
 function Window:SetScale(scaleFactor)
@@ -859,7 +870,7 @@ function Window:_initUniversalTabs(options)
     })
 
     local devSec = settingsTab:CreateSection("Device Layout Presets")
-    devSec:CreateDropdown({
+    local layoutModeDropdown = devSec:CreateDropdown({
         Name = "Layout Structure Mode",
         Options = { "2 Column (Kiri & Kanan)", "1 Column (1 Baris Lurus)" },
         Default = (self._currentDevice == "Android") and "1 Column (1 Baris Lurus)" or "2 Column (Kiri & Kanan)",
@@ -873,6 +884,7 @@ function Window:_initUniversalTabs(options)
             })
         end
     })
+    self._layoutModeDropdown = layoutModeDropdown
     devSec:CreateButtonGroup({
         Buttons = {
             {

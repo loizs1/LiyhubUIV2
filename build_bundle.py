@@ -34,8 +34,6 @@ files_to_bundle = [
     ("src/services/ConfigService", "src/services/ConfigService.lua"),
     ("src/services/ProfileService", "src/services/ProfileService.lua"),
     ("src/core/Window", "src/core/Window.lua"),
-    ("tests/UnitTests", "tests/UnitTests.lua"),
-    ("tests/TestRunner", "tests/TestRunner.lua"),
 ]
 
 bundle_code = """--[[

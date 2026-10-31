@@ -326,6 +326,7 @@ function Dropdown.new(parent, options, theme, cleanup)
                 else
                     self._selected = opt
                     updateSelectionSummary()
+                    self:_rebuildOptions()
                     self:Close()
                     task.spawn(self._callback, opt)
                 end
@@ -392,6 +393,7 @@ end
 
 function Dropdown:Open()
     self._open = true
+    self:_rebuildOptions()
     self._chevron.Rotation = 180
     self._listContainer.Visible = true
     local itemCount = #self._options
