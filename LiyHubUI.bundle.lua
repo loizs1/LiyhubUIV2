@@ -3998,6 +3998,7 @@ Tab.__index = Tab
 local Section = {}
 Section.__index = Section
 function Window.new(options, dependencies)
+local self
 options = options or {}
 local deps = dependencies or {}
 local theme = deps.Theme
@@ -4121,8 +4122,9 @@ windowScale.Parent = mainFrame
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = theme.WindowCornerRadius or theme.CornerRadius
 mainCorner.Parent = mainFrame
+local mainStroke = nil
 if theme.UseStrokes then
-local mainStroke = Instance.new("UIStroke")
+mainStroke = Instance.new("UIStroke")
 mainStroke.Name = "WindowStroke"
 mainStroke.Color = theme.BorderWindow or Color3.fromRGB(42, 42, 50)
 mainStroke.Thickness = 1
@@ -4165,9 +4167,16 @@ local logoToggleConn = logoBtn.Activated:Connect(function()
 self:ToggleSidebar()
 end)
 if cleanup then cleanup:Add(logoToggleConn) end
+local headerDivider = Instance.new("Frame")
+headerDivider.Name = "HeaderDivider"
+headerDivider.Size = UDim2.new(1, 0, 0, 1)
+headerDivider.Position = UDim2.new(0, 0, 1, -1)
+headerDivider.BackgroundColor3 = theme.Border
+headerDivider.BorderSizePixel = 0
+headerDivider.Parent = header
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(1, -130, 0, 18)
+titleLabel.Size = UDim2.new(1, -165, 0, 18)
 titleLabel.Position = UDim2.new(0, 46, 0, 7)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = titleText
@@ -4179,7 +4188,7 @@ titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 titleLabel.Parent = header
 local subLabel = Instance.new("TextLabel")
 subLabel.Name = "Subtitle"
-subLabel.Size = UDim2.new(1, -130, 0, 14)
+subLabel.Size = UDim2.new(1, -165, 0, 14)
 subLabel.Position = UDim2.new(0, 46, 0, 25)
 subLabel.BackgroundTransparency = 1
 subLabel.Text = subtitleText
@@ -4248,7 +4257,7 @@ moonCutout.Name = "MoonCutout"
 moonCutout.Size = UDim2.fromOffset(12, 12)
 moonCutout.AnchorPoint = Vector2.new(0.5, 0.5)
 moonCutout.Position = UDim2.new(0.5, -3.5, 0.5, -2.5)
-moonCutout.BackgroundColor3 = themeBtn.BackgroundColor3
+moonCutout.BackgroundColor3 = (self and self._controlBtnBg) or themeBtn.BackgroundColor3
 moonCutout.BorderSizePixel = 0
 moonCutout.ZIndex = 23
 moonCutout.Active = false
@@ -4369,24 +4378,28 @@ local closeBar2Corner = Instance.new("UICorner")
 closeBar2Corner.CornerRadius = UDim.new(1, 0)
 closeBar2Corner.Parent = closeBar2
 local themeHovIn = themeBtn.MouseEnter:Connect(function()
-TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+local hov = (self and self._controlBtnHover) or controlBtnHover
+TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = hov }):Play()
 local mc = themeIconContainer:FindFirstChild("MoonCutout")
 if mc then
-TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = hov }):Play()
 end
 end)
 local themeHovOut = themeBtn.MouseLeave:Connect(function()
-TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+local bg = (self and self._controlBtnBg) or controlBtnBg
+TweenService:Create(themeBtn, TweenInfo.new(0.12), { BackgroundColor3 = bg }):Play()
 local mc = themeIconContainer:FindFirstChild("MoonCutout")
 if mc then
-TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+TweenService:Create(mc, TweenInfo.new(0.12), { BackgroundColor3 = bg }):Play()
 end
 end)
 local minHovIn = minBtn.MouseEnter:Connect(function()
-TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnHover }):Play()
+local hov = (self and self._controlBtnHover) or controlBtnHover
+TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = hov }):Play()
 end)
 local minHovOut = minBtn.MouseLeave:Connect(function()
-TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
+local bg = (self and self._controlBtnBg) or controlBtnBg
+TweenService:Create(minBtn, TweenInfo.new(0.12), { BackgroundColor3 = bg }):Play()
 end)
 local closeHovIn = closeBtn.MouseEnter:Connect(function()
 TweenService:Create(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(50, 24, 30) }):Play()
@@ -4394,9 +4407,11 @@ closeBar1.BackgroundColor3 = Color3.fromRGB(240, 100, 110)
 closeBar2.BackgroundColor3 = Color3.fromRGB(240, 100, 110)
 end)
 local closeHovOut = closeBtn.MouseLeave:Connect(function()
-TweenService:Create(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = controlBtnBg }):Play()
-closeBar1.BackgroundColor3 = controlIconColor
-closeBar2.BackgroundColor3 = controlIconColor
+local bg = (self and self._controlBtnBg) or controlBtnBg
+local ic = (self and self._controlIconColor) or controlIconColor
+TweenService:Create(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = bg }):Play()
+closeBar1.BackgroundColor3 = ic
+closeBar2.BackgroundColor3 = ic
 end)
 if cleanup then
 cleanup:Add(themeHovIn)
@@ -4560,10 +4575,15 @@ gripIcon.ImageTransparency = 0.45
 gripIcon.ZIndex = 51
 gripIcon.Active = false
 gripIcon.Parent = resizeGrip
-local self = setmetatable({
+self = setmetatable({
 _screenGui = screenGui,
 _mainFrame = mainFrame,
+_mainStroke = mainStroke,
 _header = header,
+_headerFlatBottom = headerFlatBottom,
+_headerDivider = headerDivider,
+_titleLabel = titleLabel,
+_subLabel = subLabel,
 _sidebar = sidebar,
 _tabGroupsScroll = tabGroupsScroll,
 _contentArea = contentArea,
@@ -4614,6 +4634,10 @@ _renderThemeIcon = renderThemeIcon,
 _currentThemeMode = "Dark",
 _themeManager = deps.ThemeManager,
 _userProfileData = nil,
+_gripIcon = gripIcon,
+_controlBtnBg = controlBtnBg,
+_controlBtnHover = controlBtnHover,
+_controlIconColor = controlIconColor,
 }, Window)
 local lastProfClick = 0
 local function onProfileClicked()
@@ -5566,8 +5590,11 @@ end
 if self._header then
 TweenService:Create(self._header, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Header }):Play()
 end
-if self._headerStroke then
-TweenService:Create(self._headerStroke, TweenInfo.new(0.2), { Color = targetTheme.Border }):Play()
+if self._headerFlatBottom then
+self._headerFlatBottom.BackgroundColor3 = targetTheme.Header
+end
+if self._headerDivider then
+self._headerDivider.BackgroundColor3 = targetTheme.Border
 end
 if self._titleLabel then
 self._titleLabel.TextColor3 = targetTheme.TextPrimary
@@ -5581,8 +5608,8 @@ end
 if self._sidebarStroke then
 TweenService:Create(self._sidebarStroke, TweenInfo.new(0.2), { Color = targetTheme.Border }):Play()
 end
-if self._contentContainer then
-self._contentContainer.BackgroundColor3 = targetTheme.Background
+if self._contentArea then
+self._contentArea.BackgroundColor3 = targetTheme.Background
 end
 if self._profileCard then
 TweenService:Create(self._profileCard, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.SidebarItem }):Play()
@@ -5590,6 +5617,10 @@ local dName = self._profileCard:FindFirstChild("DisplayName")
 local uName = self._profileCard:FindFirstChild("Username")
 if dName then dName.TextColor3 = targetTheme.TextPrimary end
 if uName then uName.TextColor3 = targetTheme.TextMuted end
+local pStroke = self._profileCard:FindFirstChildOfClass("UIStroke")
+if pStroke then pStroke.Color = targetTheme.Border end
+local av = self._profileCard:FindFirstChild("Avatar")
+if av then av.BackgroundColor3 = targetTheme.Header end
 end
 if self._themeBtn then
 self._themeBtn.BackgroundColor3 = btnBg
@@ -5612,16 +5643,177 @@ end
 if self._renderThemeIcon then
 self._renderThemeIcon(isDark)
 end
-for _, tab in ipairs(self._allTabs or {}) do
-if tab._btn then
-local isActive = (self._activeTab == tab)
-tab._btn.BackgroundColor3 = isActive and targetTheme.SidebarItemActive or targetTheme.SidebarItem
-if tab._label then
-tab._label.TextColor3 = isActive and targetTheme.TextPrimary or targetTheme.TextMuted
+if self._gripIcon then
+self._gripIcon.ImageColor3 = isDark and Color3.fromRGB(140, 155, 180) or Color3.fromRGB(80, 90, 110)
 end
+for _, tabGroup in ipairs(self._tabGroups or {}) do
+if tabGroup._header then
+local gTitle = tabGroup._header:FindFirstChild("Title")
+if gTitle then gTitle.TextColor3 = targetTheme.TextMuted end
+local gArrow = tabGroup._header:FindFirstChild("Arrow")
+if gArrow then gArrow.ImageColor3 = targetTheme.TextMuted end
+end
+end
+for _, tab in ipairs(self._allTabs or {}) do
+if tab == self._activeTab then
+tab:_activate()
+else
+tab:_deactivate()
 end
 if tab._contentContainer then
 tab._contentContainer.BackgroundColor3 = targetTheme.Background
+end
+for _, section in ipairs(tab._sections or {}) do
+self:_applyThemeToSection(section, targetTheme, isDark)
+end
+end
+end
+function Window:_applyThemeToSection(section, targetTheme, isDark)
+if not section then return end
+if section._container then
+section._container.BackgroundColor3 = targetTheme.Card
+local secStroke = section._container:FindFirstChildOfClass("UIStroke")
+if secStroke then
+secStroke.Color = targetTheme.Border
+end
+end
+if section._title then
+section._title.TextColor3 = targetTheme.TextPrimary
+end
+if section._arrow then
+section._arrow.ImageColor3 = targetTheme.TextSecondary
+end
+if section._icon then
+section._icon.ImageColor3 = targetTheme.TextPrimary
+end
+for _, comp in ipairs(section._components or {}) do
+self:_applyThemeToComponent(comp, targetTheme, isDark)
+end
+if section._body then
+self:_walkAndThemeDescendants(section._body, targetTheme, isDark)
+end
+end
+function Window:_applyThemeToComponent(comp, targetTheme, isDark)
+if not comp or type(comp) ~= "table" then return end
+comp._theme = targetTheme
+if comp._container then
+local c = comp._container
+if c:IsA("GuiObject") then
+if comp._isPrimary then
+c.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
+elseif comp._isPrimary == false or c.Name:find("ActionRow_") or c.Name:find("Paragraph_") or c.Name:find("Toggle_") or c.Name:find("Slider_") or c.Name:find("Input_") or c.Name:find("Keybind_") or c.Name:find("Button_") then
+c.BackgroundColor3 = targetTheme.Element
+end
+end
+local cStroke = c:FindFirstChildOfClass("UIStroke")
+if cStroke then
+cStroke.Color = targetTheme.Border
+end
+end
+if comp._actionBtn then
+comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
+comp._actionBtn.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
+end
+if comp._label then
+if comp._isPrimary then
+comp._label.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
+else
+comp._label.TextColor3 = targetTheme.TextPrimary
+end
+end
+if comp._titleLabel then
+comp._titleLabel.TextColor3 = targetTheme.TextPrimary
+end
+if comp._contentLabel then
+comp._contentLabel.TextColor3 = targetTheme.TextSecondary
+end
+if comp._switch then
+local active = comp._state == true
+comp._switch.BackgroundColor3 = active and targetTheme.ToggleActive or targetTheme.ToggleInactive
+if comp._switchStroke then
+comp._switchStroke.Color = active and targetTheme.ToggleActive or targetTheme.ToggleBorderInactive
+end
+if comp._knob then
+comp._knob.BackgroundColor3 = active and targetTheme.ToggleKnob or targetTheme.ToggleKnobInactive
+end
+end
+if comp._track then
+comp._track.BackgroundColor3 = isDark and Color3.fromRGB(20, 22, 30) or Color3.fromRGB(222, 226, 234)
+if comp._trackStroke then
+comp._trackStroke.Color = isDark and Color3.fromRGB(36, 40, 56) or Color3.fromRGB(205, 210, 220)
+end
+if comp._fill then
+comp._fill.BackgroundColor3 = targetTheme.SliderFill
+end
+local valLabel = comp._track:FindFirstChild("Value")
+if valLabel then
+valLabel.TextColor3 = targetTheme.TextPrimary
+end
+end
+if comp._boxBg then
+comp._boxBg.BackgroundColor3 = targetTheme.Card
+local bStroke = comp._boxBg:FindFirstChildOfClass("UIStroke")
+if bStroke then
+bStroke.Color = targetTheme.Border
+end
+end
+if comp._textBox then
+comp._textBox.TextColor3 = targetTheme.TextPrimary
+comp._textBox.PlaceholderColor3 = targetTheme.TextMuted
+end
+if comp._selectBox then
+comp._selectBox.BackgroundColor3 = targetTheme.Element
+local sbStroke = comp._selectBox:FindFirstChildOfClass("UIStroke")
+if sbStroke then
+sbStroke.Color = targetTheme.Border
+end
+if comp._selectionLabel then
+comp._selectionLabel.TextColor3 = targetTheme.TextSecondary
+end
+if comp._chevron then
+comp._chevron.ImageColor3 = targetTheme.TextMuted
+end
+end
+if comp._listContainer then
+comp._listContainer.BackgroundColor3 = targetTheme.Card
+local lcStroke = comp._listContainer:FindFirstChildOfClass("UIStroke")
+if lcStroke then
+lcStroke.Color = targetTheme.Border
+end
+end
+if comp._keyButton then
+comp._keyButton.BackgroundColor3 = targetTheme.Card
+comp._keyButton.TextColor3 = targetTheme.TextPrimary
+local kbStroke = comp._keyButton:FindFirstChildOfClass("UIStroke")
+if kbStroke then
+kbStroke.Color = targetTheme.Border
+end
+end
+if comp._items then
+for _, item in ipairs(comp._items) do
+self:_applyThemeToComponent(item, targetTheme, isDark)
+end
+end
+end
+function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
+if not rootInstance then return end
+for _, desc in ipairs(rootInstance:GetDescendants()) do
+if desc:IsA("UIStroke") then
+if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" then
+desc.Color = targetTheme.Border
+end
+elseif desc:IsA("TextLabel") then
+if desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
+desc.TextColor3 = targetTheme.TextPrimary
+elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" then
+desc.TextColor3 = targetTheme.TextSecondary
+elseif desc.Name == "SelectionLabel" then
+desc.TextColor3 = targetTheme.TextSecondary
+end
+elseif desc:IsA("ImageLabel") then
+if desc.Name == "Arrow" or desc.Name == "Chevron" then
+desc.ImageColor3 = targetTheme.TextMuted
+end
 end
 end
 end
@@ -5678,6 +5870,13 @@ activeBar.Parent = tabBtn
 local barCorner = Instance.new("UICorner")
 barCorner.CornerRadius = UDim.new(1, 0)
 barCorner.Parent = activeBar
+local tabStroke = Instance.new("UIStroke")
+tabStroke.Name = "ActiveStroke"
+tabStroke.Color = self._window._theme.Border
+tabStroke.Thickness = 1
+tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+tabStroke.Enabled = false
+tabStroke.Parent = tabBtn
 local iconLabel = nil
 local labelOffset = 10
 if iconId then
@@ -5751,23 +5950,37 @@ end
 return tabObj
 end
 function Tab:_activate()
+local curTheme = self._window._theme
+local isDark = (self._window._currentThemeMode ~= "Light")
 self._button.BackgroundTransparency = 0
-self._button.BackgroundColor3 = Color3.fromRGB(30, 36, 52)
-self._titleLabel.TextColor3 = self._window._theme.TextPrimary
-self._titleLabel.Font = self._window._theme.FontBold
+self._button.BackgroundColor3 = isDark and Color3.fromRGB(28, 28, 34) or Color3.fromRGB(255, 255, 255)
+local aStroke = self._button:FindFirstChild("ActiveStroke")
+if aStroke then
+aStroke.Enabled = not isDark
+aStroke.Color = curTheme.Border
+end
+self._titleLabel.TextColor3 = curTheme.TextPrimary
+self._titleLabel.Font = curTheme.FontBold
 self._activeBar.Visible = not self._window._sidebarCollapsed
+self._activeBar.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
 if self._iconLabel then
-self._iconLabel.ImageColor3 = Color3.fromRGB(160, 180, 255)
+self._iconLabel.ImageColor3 = isDark and Color3.fromRGB(180, 200, 255) or Color3.fromRGB(20, 22, 26)
 end
 self._contentContainer.Visible = true
 end
 function Tab:_deactivate()
+local curTheme = self._window._theme
+local isDark = (self._window._currentThemeMode ~= "Light")
 self._button.BackgroundTransparency = 1
-self._titleLabel.TextColor3 = self._window._theme.TextSecondary
-self._titleLabel.Font = self._window._theme.FontBold
+local aStroke = self._button:FindFirstChild("ActiveStroke")
+if aStroke then
+aStroke.Enabled = false
+end
+self._titleLabel.TextColor3 = curTheme.TextMuted
+self._titleLabel.Font = curTheme.FontRegular
 self._activeBar.Visible = false
 if self._iconLabel then
-self._iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
+self._iconLabel.ImageColor3 = isDark and Color3.fromRGB(130, 140, 160) or Color3.fromRGB(130, 136, 148)
 end
 self._contentContainer.Visible = false
 end
@@ -5830,9 +6043,10 @@ sHeader.Text = ""
 sHeader.Parent = sectionCard
 local secOffset = 0
 local secIcon = sectionOptions.Icon or sectionOptions.Image
+local sImg = nil
 if secIcon then
 local iconService = self._window._iconService
-local sImg = Instance.new("ImageLabel")
+sImg = Instance.new("ImageLabel")
 sImg.Name = "SectionIcon"
 sImg.Size = UDim2.fromOffset(14, 14)
 sImg.Position = UDim2.new(0, 0, 0.5, -7)
@@ -5881,8 +6095,11 @@ local sectionObj = setmetatable({
 _tab = self,
 _window = self._window,
 _container = sectionCard,
-_body = sBody,
+_header = sHeader,
+_title = sTitle,
 _arrow = sArrow,
+_icon = sImg,
+_body = sBody,
 _collapsed = false,
 _components = {},
 }, Section)
