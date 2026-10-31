@@ -7,14 +7,6 @@ local okIcon, IconService = pcall(function()
     return require(script.Parent.Parent.services.IconService)
 end)
 
-local DEFAULT_STEP_ICONS = {
-    [1] = "rbxassetid://6031075931",
-    [2] = "rbxassetid://6031075929",
-    [3] = "rbxassetid://6031094678",
-    [4] = "rbxassetid://6031091004",
-    [5] = "rbxassetid://6031075936",
-}
-
 function Progression.new(parent, options, theme, cleanup)
     options = options or {}
     local titleText = options.Title or options.Name or "Progression"
@@ -182,6 +174,7 @@ function Progression.new(parent, options, theme, cleanup)
         _steps = steps,
         _theme = theme,
         _callback = onStepChanged,
+        _conns = {},
     }, Progression)
     
     local lastStep = 0
@@ -193,6 +186,7 @@ function Progression.new(parent, options, theme, cleanup)
             self:SetStep(i)
         end
         local conn = node.Button.Activated:Connect(clickStep)
+        table.insert(self._conns, conn)
         if cleanup then
             cleanup:Add(conn)
         end
@@ -225,8 +219,15 @@ function Progression:GetStep()
 end
 
 function Progression:Destroy()
+    if self._conns then
+        for _, c in ipairs(self._conns) do
+            if c and c.Connected then c:Disconnect() end
+        end
+        self._conns = {}
+    end
     if self._container then
         self._container:Destroy()
+        self._container = nil
     end
 end
 

@@ -1,9 +1,3 @@
---[[
-    LiyHub UI - Config Service
-    Provides safe persistent configuration storage, serialization, validation,
-    import/export, and in-memory fallback for standard Roblox Studio runtime.
-]]
-
 local HttpService = game:GetService("HttpService")
 
 local ConfigService = {}
@@ -86,7 +80,6 @@ function ConfigService:Save()
             return false, tostring(err)
         end
     end
-    -- In-memory / Studio environment
     return true
 end
 
@@ -107,4 +100,3 @@ function ConfigService:Load()
 end
 
 return ConfigService
-

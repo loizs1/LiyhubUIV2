@@ -110,6 +110,7 @@ function Button.new(parent, options, theme, cleanup)
             _actionBtn = actionBtn,
             _theme = theme,
             _callback = callback,
+            _conns = { clickConn, hConn, lConn },
         }, Button)
     end
     
@@ -158,6 +159,7 @@ function Button.new(parent, options, theme, cleanup)
         _isPrimary = isPrimary,
         _callback = callback,
         _disabled = false,
+        _conns = {},
     }, Button)
     
     local defaultBg = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
@@ -191,6 +193,8 @@ function Button.new(parent, options, theme, cleanup)
     end
     local clickConn = container.Activated:Connect(triggerBtn)
     
+    self._conns = { hoverConn, leaveConn, downConn, upConn, clickConn }
+    
     if cleanup then
         cleanup:Add(hoverConn)
         cleanup:Add(leaveConn)
@@ -219,8 +223,15 @@ function Button:SetDisabled(state)
 end
 
 function Button:Destroy()
+    if self._conns then
+        for _, c in ipairs(self._conns) do
+            if c and c.Connected then c:Disconnect() end
+        end
+        self._conns = {}
+    end
     if self._container then
         self._container:Destroy()
+        self._container = nil
     end
 end
 

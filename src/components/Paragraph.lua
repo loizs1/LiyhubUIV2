@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Paragraph Component
-    An informative text card supporting dynamic content and titles.
-]]
-
 local Paragraph = {}
 Paragraph.__index = Paragraph
 
@@ -89,4 +84,3 @@ function Paragraph:Destroy()
 end
 
 return Paragraph
-

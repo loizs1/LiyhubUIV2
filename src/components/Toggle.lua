@@ -106,6 +106,7 @@ function Toggle.new(parent, options, theme, cleanup)
         _state = defaultState,
         _callback = callback,
         _disabled = false,
+        _clickConn = nil,
     }, Toggle)
     
     local function updateVisual(animate)
@@ -142,6 +143,7 @@ function Toggle.new(parent, options, theme, cleanup)
     end
     
     local clickConn = container.Activated:Connect(toggleState)
+    self._clickConn = clickConn
     
     if cleanup then
         cleanup:Add(clickConn)
@@ -173,8 +175,13 @@ function Toggle:GetValue()
 end
 
 function Toggle:Destroy()
+    if self._clickConn and self._clickConn.Connected then
+        self._clickConn:Disconnect()
+        self._clickConn = nil
+    end
     if self._container then
         self._container:Destroy()
+        self._container = nil
     end
 end
 

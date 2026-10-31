@@ -173,12 +173,14 @@ function Slider.new(parent, options, theme, cleanup)
         local mousePos = UserInputService:GetMouseLocation()
         updateFromInput(mousePos.X)
     end)
+    self._trackDown = trackDown
     
     local moveConn = UserInputService.InputChanged:Connect(function(input)
         if self._dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             updateFromInput(input.Position.X)
         end
     end)
+    self._moveConn = moveConn
     
     local upConn = UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -187,6 +189,7 @@ function Slider.new(parent, options, theme, cleanup)
             end
         end
     end)
+    self._upConn = upConn
     
     if cleanup then
         cleanup:Add(trackDown)
@@ -213,8 +216,21 @@ function Slider:GetValue()
 end
 
 function Slider:Destroy()
+    if self._trackDown then
+        pcall(function() self._trackDown:Disconnect() end)
+        self._trackDown = nil
+    end
+    if self._moveConn then
+        pcall(function() self._moveConn:Disconnect() end)
+        self._moveConn = nil
+    end
+    if self._upConn then
+        pcall(function() self._upConn:Disconnect() end)
+        self._upConn = nil
+    end
     if self._container then
         self._container:Destroy()
+        self._container = nil
     end
 end
 

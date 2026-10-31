@@ -139,6 +139,7 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
             startPos = container.Position
         end
     end)
+    self._downConn = downConn
     
     local moveConn = UserInputService.InputChanged:Connect(function(input)
         if self._dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
@@ -154,6 +155,7 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
             )
         end
     end)
+    self._moveConn = moveConn
     
     local upConn = UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -165,6 +167,7 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
             end
         end
     end)
+    self._upConn = upConn
     
     if cleanup then
         cleanup:Add(downConn)
@@ -205,8 +208,21 @@ function MobilePin:SetOpenState(isOpen)
 end
 
 function MobilePin:Destroy()
+    if self._downConn then
+        pcall(function() self._downConn:Disconnect() end)
+        self._downConn = nil
+    end
+    if self._moveConn then
+        pcall(function() self._moveConn:Disconnect() end)
+        self._moveConn = nil
+    end
+    if self._upConn then
+        pcall(function() self._upConn:Disconnect() end)
+        self._upConn = nil
+    end
     if self._container then
         self._container:Destroy()
+        self._container = nil
     end
 end
 

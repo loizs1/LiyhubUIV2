@@ -28,6 +28,7 @@ files_to_bundle = [
     ("src/components/Dropdown", "src/components/Dropdown.lua"),
     ("src/components/DropdownGroup", "src/components/DropdownGroup.lua"),
     ("src/components/Keybind", "src/components/Keybind.lua"),
+    ("src/components/ColorPicker", "src/components/ColorPicker.lua"),
     ("src/components/Paragraph", "src/components/Paragraph.lua"),
     ("src/components/Divider", "src/components/Divider.lua"),
     ("src/components/Banner", "src/components/Banner.lua"),
@@ -38,11 +39,7 @@ files_to_bundle = [
     ("src/core/Window", "src/core/Window.lua"),
 ]
 
-bundle_code = """--[[
-    LiyHub UI - Complete Standalone Distribution Bundle
-    Pure Black & White Minimalist Edition
-]]
-
+bundle_code = """
 local _modules = {}
 local _cache = {}
 
@@ -73,7 +70,6 @@ for mod_name, rel_path in files_to_bundle:
     bundle_code += content + "\nend\n"
 
 bundle_code += """
--- Direct references for top-level LiyHubUI
 local PureBlackWhite = _require("src/themes/PureBlackWhite")
 local ThemeManager = _require("src/themes/ThemeManager")
 local Cleanup = _require("src/core/Cleanup")
@@ -96,6 +92,7 @@ local InputGroup = _require("src/components/InputGroup")
 local Dropdown = _require("src/components/Dropdown")
 local DropdownGroup = _require("src/components/DropdownGroup")
 local Keybind = _require("src/components/Keybind")
+local ColorPicker = _require("src/components/ColorPicker")
 local Paragraph = _require("src/components/Paragraph")
 local Divider = _require("src/components/Divider")
 local Banner = _require("src/components/Banner")
@@ -149,6 +146,7 @@ function LiyHubUI:CreateWindow(options)
         Dropdown = Dropdown,
         DropdownGroup = DropdownGroup,
         Keybind = Keybind,
+        ColorPicker = ColorPicker,
         Paragraph = Paragraph,
         Divider = Divider,
         Banner = Banner,
@@ -182,12 +180,24 @@ end
 
 function LiyHubUI:Notify(options)
     if Modal then
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-        local pgui = player and player:FindFirstChildOfClass("PlayerGui")
-        if pgui then
+        local hub = LiyHubUI
+        local parentGui = nil
+        if hub._activeWindows and #hub._activeWindows > 0 and hub._activeWindows[1]._screenGui then
+            parentGui = hub._activeWindows[1]._screenGui
+        else
+            local okHui, hui = pcall(function() return gethui and gethui() end)
+            if okHui and hui then
+                parentGui = hui
+            else
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+                local pgui = player and player:FindFirstChildOfClass("PlayerGui")
+                parentGui = pgui or game:GetService("CoreGui")
+            end
+        end
+        if parentGui then
             local theme = ThemeManager and ThemeManager:GetTheme()
-            Modal.Notify(pgui, options, theme)
+            Modal.Notify(parentGui, options, theme)
         end
     end
 end

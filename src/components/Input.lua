@@ -72,6 +72,8 @@ function Input.new(parent, options, theme, cleanup)
         _callback = callback,
         _onSubmit = onSubmit,
         _disabled = false,
+        _focusInConn = nil,
+        _focusLostConn = nil,
     }, Input)
     
     local focusInConn = textBox.Focused:Connect(function()
@@ -93,6 +95,9 @@ function Input.new(parent, options, theme, cleanup)
             task.spawn(self._onSubmit, self._value)
         end
     end)
+    
+    self._focusInConn = focusInConn
+    self._focusLostConn = focusLostConn
     
     if cleanup then
         cleanup:Add(focusInConn)
@@ -120,6 +125,14 @@ function Input:SetPlaceholder(text)
 end
 
 function Input:Destroy()
+    if self._focusInConn and self._focusInConn.Connected then
+        self._focusInConn:Disconnect()
+        self._focusInConn = nil
+    end
+    if self._focusLostConn and self._focusLostConn.Connected then
+        self._focusLostConn:Disconnect()
+        self._focusLostConn = nil
+    end
     if self._container then
         self._container:Destroy()
         self._container = nil

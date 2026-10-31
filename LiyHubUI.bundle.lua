@@ -558,6 +558,7 @@ _rightColumn = nil,
 _singleColumn = nil,
 _sections = {},
 _sectionCount = 0,
+_cardMeta = {},
 }, Layout)
 self:_initialize()
 return self
@@ -666,8 +667,7 @@ for _, sec in ipairs(self._sections) do
 if sec.SectionCard == nil then
 sec.SectionCard = sectionCard
 local side = sec.Side or "Left"
-sectionCard:SetAttribute("LayoutSide", side)
-sectionCard:SetAttribute("OriginalOrder", sec.Order or 1)
+self._cardMeta[sectionCard] = { Side = side, Order = sec.Order or 1 }
 sectionCard.LayoutOrder = sec.Order or 1
 break
 end
@@ -693,13 +693,16 @@ collectFrom(self._leftColumn)
 collectFrom(self._rightColumn)
 collectFrom(self._singleColumn)
 table.sort(allCards, function(a, b)
-local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
-local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
+local metaA = self._cardMeta[a]
+local metaB = self._cardMeta[b]
+local ordA = metaA and metaA.Order or a.LayoutOrder or 0
+local ordB = metaB and metaB.Order or b.LayoutOrder or 0
 return ordA < ordB
 end)
 if enabled then
 for _, card in ipairs(allCards) do
-local side = card:GetAttribute("LayoutSide") or "Left"
+local meta = self._cardMeta[card]
+local side = meta and meta.Side or "Left"
 if string.lower(side) == "right" then
 card.Parent = self._rightColumn
 else
@@ -1142,6 +1145,7 @@ dragStart = input.Position
 startPos = container.Position
 end
 end)
+self._downConn = downConn
 local moveConn = UserInputService.InputChanged:Connect(function(input)
 if self._dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 local delta = input.Position - dragStart
@@ -1156,6 +1160,7 @@ startPos.Y.Offset + delta.Y
 )
 end
 end)
+self._moveConn = moveConn
 local upConn = UserInputService.InputEnded:Connect(function(input)
 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 if self._dragging then
@@ -1166,6 +1171,7 @@ end
 end
 end
 end)
+self._upConn = upConn
 if cleanup then
 cleanup:Add(downConn)
 cleanup:Add(moveConn)
@@ -1199,8 +1205,21 @@ end
 end
 end
 function MobilePin:Destroy()
+if self._downConn then
+pcall(function() self._downConn:Disconnect() end)
+self._downConn = nil
+end
+if self._moveConn then
+pcall(function() self._moveConn:Disconnect() end)
+self._moveConn = nil
+end
+if self._upConn then
+pcall(function() self._upConn:Disconnect() end)
+self._upConn = nil
+end
 if self._container then
 self._container:Destroy()
+self._container = nil
 end
 end
 return MobilePin
@@ -1304,6 +1323,7 @@ _container = rowContainer,
 _actionBtn = actionBtn,
 _theme = theme,
 _callback = callback,
+_conns = { clickConn, hConn, lConn },
 }, Button)
 end
 local text = options.Text or options.Name or "Button"
@@ -1346,6 +1366,7 @@ _theme = theme,
 _isPrimary = isPrimary,
 _callback = callback,
 _disabled = false,
+_conns = {},
 }, Button)
 local defaultBg = isPrimary and Color3.fromRGB(255, 255, 255) or theme.Element
 local hoverBg = isPrimary and Color3.fromRGB(235, 235, 240) or theme.ElementHover
@@ -1375,6 +1396,7 @@ if self._disabled then return end
 task.spawn(self._callback)
 end
 local clickConn = container.Activated:Connect(triggerBtn)
+self._conns = { hoverConn, leaveConn, downConn, upConn, clickConn }
 if cleanup then
 cleanup:Add(hoverConn)
 cleanup:Add(leaveConn)
@@ -1399,8 +1421,15 @@ self._label.TextColor3 = self._disabled and self._theme.TextDisabled or (self._i
 end
 end
 function Button:Destroy()
+if self._conns then
+for _, c in ipairs(self._conns) do
+if c and c.Connected then c:Disconnect() end
+end
+self._conns = {}
+end
 if self._container then
 self._container:Destroy()
+self._container = nil
 end
 end
 return Button
@@ -1570,6 +1599,7 @@ _theme = theme,
 _state = defaultState,
 _callback = callback,
 _disabled = false,
+_clickConn = nil,
 }, Toggle)
 local function updateVisual(animate)
 local animTime = animate and theme.AnimationFast or 0
@@ -1602,6 +1632,7 @@ updateVisual(true)
 task.spawn(self._callback, self._state)
 end
 local clickConn = container.Activated:Connect(toggleState)
+self._clickConn = clickConn
 if cleanup then
 cleanup:Add(clickConn)
 cleanup:Add(container)
@@ -1627,8 +1658,13 @@ function Toggle:GetValue()
 return self._state
 end
 function Toggle:Destroy()
+if self._clickConn and self._clickConn.Connected then
+self._clickConn:Disconnect()
+self._clickConn = nil
+end
 if self._container then
 self._container:Destroy()
+self._container = nil
 end
 end
 return Toggle
@@ -1851,11 +1887,13 @@ self._dragging = true
 local mousePos = UserInputService:GetMouseLocation()
 updateFromInput(mousePos.X)
 end)
+self._trackDown = trackDown
 local moveConn = UserInputService.InputChanged:Connect(function(input)
 if self._dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 updateFromInput(input.Position.X)
 end
 end)
+self._moveConn = moveConn
 local upConn = UserInputService.InputEnded:Connect(function(input)
 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 if self._dragging then
@@ -1863,6 +1901,7 @@ self._dragging = false
 end
 end
 end)
+self._upConn = upConn
 if cleanup then
 cleanup:Add(trackDown)
 cleanup:Add(moveConn)
@@ -1884,8 +1923,21 @@ function Slider:GetValue()
 return self._value
 end
 function Slider:Destroy()
+if self._trackDown then
+pcall(function() self._trackDown:Disconnect() end)
+self._trackDown = nil
+end
+if self._moveConn then
+pcall(function() self._moveConn:Disconnect() end)
+self._moveConn = nil
+end
+if self._upConn then
+pcall(function() self._upConn:Disconnect() end)
+self._upConn = nil
+end
 if self._container then
 self._container:Destroy()
+self._container = nil
 end
 end
 return Slider
@@ -2019,6 +2071,8 @@ _value = defaultText,
 _callback = callback,
 _onSubmit = onSubmit,
 _disabled = false,
+_focusInConn = nil,
+_focusLostConn = nil,
 }, Input)
 local focusInConn = textBox.Focused:Connect(function()
 if self._disabled then return end
@@ -2037,6 +2091,8 @@ if enterPressed then
 task.spawn(self._onSubmit, self._value)
 end
 end)
+self._focusInConn = focusInConn
+self._focusLostConn = focusLostConn
 if cleanup then
 cleanup:Add(focusInConn)
 cleanup:Add(focusLostConn)
@@ -2058,6 +2114,14 @@ function Input:SetPlaceholder(text)
 self._textBox.PlaceholderText = tostring(text)
 end
 function Input:Destroy()
+if self._focusInConn and self._focusInConn.Connected then
+self._focusInConn:Disconnect()
+self._focusInConn = nil
+end
+if self._focusLostConn and self._focusLostConn.Connected then
+self._focusLostConn:Disconnect()
+self._focusLostConn = nil
+end
 if self._container then
 self._container:Destroy()
 self._container = nil
@@ -2319,6 +2383,7 @@ _selected = isMulti and {} or nil,
 _callback = callback,
 _open = false,
 _optionButtons = {},
+_optionConns = {},
 _cleanup = cleanup,
 }, Dropdown)
 if isMulti then
@@ -2363,9 +2428,27 @@ self._selectionLabel.TextColor3 = self._theme.TextSecondary
 end
 end
 end
+function self:_syncVisuals()
+for _, optData in ipairs(self._optionButtons) do
+local isChecked = false
+if self._isMulti then
+isChecked = self._selected[optData.value] == true
+else
+isChecked = (self._selected == optData.value)
+end
+optData.button.BackgroundColor3 = isChecked and self._theme.ElementActive or self._theme.Element
+optData.label.TextColor3 = isChecked and self._theme.TextPrimary or self._theme.TextSecondary
+optData.label.Font = isChecked and self._theme.FontBold or self._theme.FontRegular
+optData.check.Visible = isChecked
+end
+end
 function self:_rebuildOptions()
-for _, btn in ipairs(self._optionButtons) do
-btn:Destroy()
+for _, conn in ipairs(self._optionConns) do
+pcall(function() conn:Disconnect() end)
+end
+self._optionConns = {}
+for _, optData in ipairs(self._optionButtons) do
+pcall(function() optData.button:Destroy() end)
 end
 self._optionButtons = {}
 for _, opt in ipairs(self._options) do
@@ -2431,21 +2514,24 @@ table.insert(activeList, item)
 end
 end
 self:_updateSummary()
-self:_rebuildOptions()
+self:_syncVisuals()
 task.spawn(self._callback, activeList)
 else
 self._selected = opt
 self:_updateSummary()
-self:_rebuildOptions()
+self:_syncVisuals()
 self:Close()
 task.spawn(self._callback, opt)
 end
 end
 local optClick = optBtn.Activated:Connect(onOptionClicked)
-if self._cleanup then
-self._cleanup:Add(optClick)
-end
-table.insert(self._optionButtons, optBtn)
+table.insert(self._optionConns, optClick)
+table.insert(self._optionButtons, {
+button = optBtn,
+label = optLabel,
+check = checkIcon,
+value = opt,
+})
 end
 end
 if actionsBar then
@@ -2456,7 +2542,7 @@ for _, item in ipairs(self._options) do
 self._selected[item] = true
 end
 self:_updateSummary()
-self:_rebuildOptions()
+self:_syncVisuals()
 local outList = {}
 for _, item in ipairs(self._options) do
 table.insert(outList, item)
@@ -2469,7 +2555,7 @@ if clBtn then
 clBtn.Activated:Connect(function()
 self._selected = {}
 self:_updateSummary()
-self:_rebuildOptions()
+self:_syncVisuals()
 task.spawn(self._callback, {})
 end)
 end
@@ -2488,6 +2574,7 @@ self:Open()
 end
 end
 local headerClick = selectBox.Activated:Connect(toggleDropdown)
+self._headerClick = headerClick
 if cleanup then
 cleanup:Add(headerClick)
 cleanup:Add(container)
@@ -2584,8 +2671,16 @@ self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
 end
 end
 function Dropdown:Destroy()
+for _, conn in ipairs(self._optionConns or {}) do
+pcall(function() conn:Disconnect() end)
+end
+self._optionConns = {}
+if self._headerClick then
+pcall(function() self._headerClick:Disconnect() end)
+end
 if self._container then
 self._container:Destroy()
+self._container = nil
 end
 end
 return Dropdown
@@ -2715,6 +2810,7 @@ TweenService:Create(self._keyButton, TweenInfo.new(theme.AnimationFast), {
 BackgroundColor3 = theme.ElementActive
 }):Play()
 end)
+self._keyClickConn = keyClickConn
 local inputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 if self._listening then
 if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -2737,6 +2833,7 @@ end)
 if cleanup then
 cleanup:Add(keyClickConn)
 cleanup:Add(inputBeganConn)
+self._inputBeganConn = inputBeganConn
 cleanup:Add(container)
 end
 return self
@@ -2757,12 +2854,302 @@ function Keybind:SetText(text)
 self._label.Text = tostring(text)
 end
 function Keybind:Destroy()
+if self._keyClickConn then
+pcall(function() self._keyClickConn:Disconnect() end)
+self._keyClickConn = nil
+end
+if self._inputBeganConn then
+pcall(function() self._inputBeganConn:Disconnect() end)
+self._inputBeganConn = nil
+end
 if self._container then
 self._container:Destroy()
 self._container = nil
 end
 end
 return Keybind
+end
+_modules["src/components/ColorPicker"] = function()
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local ColorPicker = {}
+ColorPicker.__index = ColorPicker
+local PRESET_COLORS = {
+Color3.fromRGB(255, 255, 255),
+Color3.fromRGB(255, 60, 60),
+Color3.fromRGB(255, 140, 0),
+Color3.fromRGB(255, 220, 0),
+Color3.fromRGB(40, 220, 100),
+Color3.fromRGB(0, 190, 255),
+Color3.fromRGB(60, 110, 255),
+Color3.fromRGB(180, 80, 255),
+}
+function ColorPicker.new(parent, options, theme, cleanup)
+options = options or {}
+local name = options.Name or options.Title or options.Text or "Color"
+local currentColor = options.Default or Color3.fromRGB(255, 255, 255)
+local callback = options.Callback or function() end
+local container = Instance.new("Frame")
+container.Name = "ColorPicker_" .. name
+container.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
+container.BackgroundColor3 = theme.Element
+container.BorderSizePixel = 0
+container.ClipsDescendants = true
+container.Parent = parent
+local corner = Instance.new("UICorner")
+corner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
+corner.Parent = container
+if theme.UseStrokes then
+local stroke = Instance.new("UIStroke")
+stroke.Name = "BorderStroke"
+stroke.Color = theme.Border
+stroke.Thickness = 1
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = container
+end
+local headerBtn = Instance.new("TextButton")
+headerBtn.Name = "HeaderButton"
+headerBtn.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
+headerBtn.BackgroundTransparency = 1
+headerBtn.AutoButtonColor = false
+headerBtn.Text = ""
+headerBtn.Active = true
+headerBtn.Parent = container
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, -50, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = name
+titleLabel.TextColor3 = theme.TextPrimary
+titleLabel.Font = theme.FontBold
+titleLabel.TextSize = 11
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Active = false
+titleLabel.Parent = headerBtn
+local colorChip = Instance.new("Frame")
+colorChip.Name = "ColorChip"
+colorChip.Size = UDim2.new(0, 26, 0, 16)
+colorChip.Position = UDim2.new(1, -36, 0.5, -8)
+colorChip.BackgroundColor3 = currentColor
+colorChip.BorderSizePixel = 0
+colorChip.Active = false
+colorChip.Parent = headerBtn
+local chipCorner = Instance.new("UICorner")
+chipCorner.CornerRadius = UDim.new(0, 4)
+chipCorner.Parent = colorChip
+local chipStroke = Instance.new("UIStroke")
+chipStroke.Color = Color3.fromRGB(255, 255, 255)
+chipStroke.Transparency = 0.7
+chipStroke.Thickness = 1
+chipStroke.Parent = colorChip
+local tray = Instance.new("Frame")
+tray.Name = "PaletteTray"
+tray.Size = UDim2.new(1, -16, 0, 96)
+tray.Position = UDim2.new(0, 8, 0, (theme.SmallElementHeight or 34) + 4)
+tray.BackgroundTransparency = 1
+tray.Visible = false
+tray.Parent = container
+local presetsRow = Instance.new("Frame")
+presetsRow.Name = "Presets"
+presetsRow.Size = UDim2.new(1, 0, 0, 20)
+presetsRow.BackgroundTransparency = 1
+presetsRow.Parent = tray
+local pLayout = Instance.new("UIListLayout")
+pLayout.FillDirection = Enum.FillDirection.Horizontal
+pLayout.SortOrder = Enum.SortOrder.LayoutOrder
+pLayout.Padding = UDim.new(0, 5)
+pLayout.Parent = presetsRow
+local self = setmetatable({
+_container = container,
+_chip = colorChip,
+_tray = tray,
+_color = currentColor,
+_theme = theme,
+_callback = callback,
+_isOpen = false,
+_conns = {},
+_sliderConns = {},
+}, ColorPicker)
+for _, pCol in ipairs(PRESET_COLORS) do
+local pBtn = Instance.new("TextButton")
+pBtn.Name = "Preset"
+pBtn.Size = UDim2.new(0, 20, 0, 20)
+pBtn.BackgroundColor3 = pCol
+pBtn.AutoButtonColor = false
+pBtn.Text = ""
+pBtn.BorderSizePixel = 0
+pBtn.Parent = presetsRow
+local pCorn = Instance.new("UICorner")
+pCorn.CornerRadius = UDim.new(0, 4)
+pCorn.Parent = pBtn
+local pStroke = Instance.new("UIStroke")
+pStroke.Color = Color3.fromRGB(255, 255, 255)
+pStroke.Transparency = 0.75
+pStroke.Thickness = 1
+pStroke.Parent = pBtn
+local c = pBtn.Activated:Connect(function()
+self:SetValue(pCol, true)
+end)
+table.insert(self._conns, c)
+end
+local slidersFrame = Instance.new("Frame")
+slidersFrame.Name = "RGBChannels"
+slidersFrame.Size = UDim2.new(1, 0, 0, 68)
+slidersFrame.Position = UDim2.new(0, 0, 0, 26)
+slidersFrame.BackgroundTransparency = 1
+slidersFrame.Parent = tray
+local sLayout = Instance.new("UIListLayout")
+sLayout.FillDirection = Enum.FillDirection.Vertical
+sLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sLayout.Padding = UDim.new(0, 4)
+sLayout.Parent = slidersFrame
+local channels = {
+{ Name = "R", Color = Color3.fromRGB(255, 80, 80), Getter = function() return math.floor(self._color.R * 255) end, Setter = function(v) self._color = Color3.fromRGB(v, math.floor(self._color.G * 255), math.floor(self._color.B * 255)) end },
+{ Name = "G", Color = Color3.fromRGB(80, 255, 120), Getter = function() return math.floor(self._color.G * 255) end, Setter = function(v) self._color = Color3.fromRGB(math.floor(self._color.R * 255), v, math.floor(self._color.B * 255)) end },
+{ Name = "B", Color = Color3.fromRGB(80, 140, 255), Getter = function() return math.floor(self._color.B * 255) end, Setter = function(v) self._color = Color3.fromRGB(math.floor(self._color.R * 255), math.floor(self._color.G * 255), v) end },
+}
+local channelWidgets = {}
+for _, ch in ipairs(channels) do
+local row = Instance.new("Frame")
+row.Name = "Channel_" .. ch.Name
+row.Size = UDim2.new(1, 0, 0, 18)
+row.BackgroundTransparency = 1
+row.Parent = slidersFrame
+local tag = Instance.new("TextLabel")
+tag.Size = UDim2.new(0, 14, 1, 0)
+tag.BackgroundTransparency = 1
+tag.Text = ch.Name
+tag.TextColor3 = ch.Color
+tag.Font = theme.FontBold
+tag.TextSize = 10
+tag.Parent = row
+local track = Instance.new("TextButton")
+track.Name = "Track"
+track.Size = UDim2.new(1, -54, 0, 6)
+track.Position = UDim2.new(0, 18, 0.5, -3)
+track.BackgroundColor3 = theme.SliderTrack
+track.AutoButtonColor = false
+track.Text = ""
+track.BorderSizePixel = 0
+track.Parent = row
+local tCorn = Instance.new("UICorner")
+tCorn.CornerRadius = UDim.new(1, 0)
+tCorn.Parent = track
+local fill = Instance.new("Frame")
+fill.Name = "Fill"
+fill.Size = UDim2.new(ch.Getter() / 255, 0, 1, 0)
+fill.BackgroundColor3 = ch.Color
+fill.BorderSizePixel = 0
+fill.Parent = track
+local fCorn = Instance.new("UICorner")
+fCorn.CornerRadius = UDim.new(1, 0)
+fCorn.Parent = fill
+local valLbl = Instance.new("TextLabel")
+valLbl.Size = UDim2.new(0, 30, 1, 0)
+valLbl.Position = UDim2.new(1, -30, 0, 0)
+valLbl.BackgroundTransparency = 1
+valLbl.Text = tostring(ch.Getter())
+valLbl.TextColor3 = theme.TextMuted
+valLbl.Font = theme.FontRegular
+valLbl.TextSize = 10
+valLbl.TextXAlignment = Enum.TextXAlignment.Right
+valLbl.Parent = row
+channelWidgets[ch.Name] = { Fill = fill, ValLbl = valLbl, Channel = ch }
+local dragging = false
+local function updateFromInput(inputObj)
+local trackW = track.AbsoluteSize.X
+if trackW <= 0 then return end
+local relX = math.clamp(inputObj.Position.X - track.AbsolutePosition.X, 0, trackW)
+local ratio = relX / trackW
+local val = math.clamp(math.floor(ratio * 255 + 0.5), 0, 255)
+ch.Setter(val)
+fill.Size = UDim2.new(val / 255, 0, 1, 0)
+valLbl.Text = tostring(val)
+colorChip.BackgroundColor3 = self._color
+task.spawn(self._callback, self._color)
+end
+local tDown = track.InputBegan:Connect(function(inp)
+if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+dragging = true
+updateFromInput(inp)
+end
+end)
+local tMove = UserInputService.InputChanged:Connect(function(inp)
+if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+updateFromInput(inp)
+end
+end)
+local tEnd = UserInputService.InputEnded:Connect(function(inp)
+if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+dragging = false
+end
+end)
+table.insert(self._sliderConns, tDown)
+table.insert(self._sliderConns, tMove)
+table.insert(self._sliderConns, tEnd)
+end
+self._channelWidgets = channelWidgets
+local function toggleTray()
+self._isOpen = not self._isOpen
+tray.Visible = self._isOpen
+local targetH = self._isOpen and ((theme.SmallElementHeight or 34) + 104) or (theme.SmallElementHeight or 34)
+TweenService:Create(container, TweenInfo.new(theme.AnimationFast or 0.15), {
+Size = UDim2.new(1, 0, 0, targetH)
+}):Play()
+end
+local hClick = headerBtn.Activated:Connect(toggleTray)
+table.insert(self._conns, hClick)
+if cleanup then
+cleanup:Add(hClick)
+for _, c in ipairs(self._sliderConns) do cleanup:Add(c) end
+cleanup:Add(container)
+end
+return self
+end
+function ColorPicker:SetValue(color, fireCallback)
+if typeof(color) ~= "Color3" then return end
+self._color = color
+self._chip.BackgroundColor3 = color
+if self._channelWidgets then
+local r = math.floor(color.R * 255)
+local g = math.floor(color.G * 255)
+local b = math.floor(color.B * 255)
+if self._channelWidgets.R then
+self._channelWidgets.R.Fill.Size = UDim2.new(r / 255, 0, 1, 0)
+self._channelWidgets.R.ValLbl.Text = tostring(r)
+end
+if self._channelWidgets.G then
+self._channelWidgets.G.Fill.Size = UDim2.new(g / 255, 0, 1, 0)
+self._channelWidgets.G.ValLbl.Text = tostring(g)
+end
+if self._channelWidgets.B then
+self._channelWidgets.B.Fill.Size = UDim2.new(b / 255, 0, 1, 0)
+self._channelWidgets.B.ValLbl.Text = tostring(b)
+end
+end
+if fireCallback ~= false then
+task.spawn(self._callback, self._color)
+end
+end
+function ColorPicker:GetValue()
+return self._color
+end
+function ColorPicker:Destroy()
+for _, c in ipairs(self._conns) do
+if c and c.Connected then c:Disconnect() end
+end
+for _, c in ipairs(self._sliderConns) do
+if c and c.Connected then c:Disconnect() end
+end
+self._conns = {}
+self._sliderConns = {}
+if self._container then
+self._container:Destroy()
+self._container = nil
+end
+end
+return ColorPicker
 end
 _modules["src/components/Paragraph"] = function()
 local Paragraph = {}
@@ -3031,6 +3418,8 @@ _imageLabel = imageLabel,
 _descLabel = descLabel,
 _theme = theme,
 _collapsed = defaultCollapsed,
+_toggleConn = nil,
+_absConn = absConn,
 }, Banner)
 if header then
 local lastToggle = 0
@@ -3041,6 +3430,7 @@ lastToggle = now
 self:Toggle()
 end
 local toggleConn = header.Activated:Connect(doToggle)
+self._toggleConn = toggleConn
 if cleanup then
 cleanup:Add(toggleConn)
 end
@@ -3067,8 +3457,17 @@ function Banner:SetText(text)
 self._descLabel.Text = text
 end
 function Banner:Destroy()
+if self._toggleConn and self._toggleConn.Connected then
+self._toggleConn:Disconnect()
+self._toggleConn = nil
+end
+if self._absConn and self._absConn.Connected then
+self._absConn:Disconnect()
+self._absConn = nil
+end
 if self._container then
 self._container:Destroy()
+self._container = nil
 end
 end
 return Banner
@@ -3080,13 +3479,6 @@ Progression.__index = Progression
 local okIcon, IconService = pcall(function()
 return require(script.Parent.Parent.services.IconService)
 end)
-local DEFAULT_STEP_ICONS = {
-[1] = "rbxassetid://6031075931",
-[2] = "rbxassetid://6031075929",
-[3] = "rbxassetid://6031094678",
-[4] = "rbxassetid://6031091004",
-[5] = "rbxassetid://6031075936",
-}
 function Progression.new(parent, options, theme, cleanup)
 options = options or {}
 local titleText = options.Title or options.Name or "Progression"
@@ -3236,6 +3628,7 @@ _currentStep = initialStep,
 _steps = steps,
 _theme = theme,
 _callback = onStepChanged,
+_conns = {},
 }, Progression)
 local lastStep = 0
 for i, node in ipairs(stepNodes) do
@@ -3246,6 +3639,7 @@ lastStep = now
 self:SetStep(i)
 end
 local conn = node.Button.Activated:Connect(clickStep)
+table.insert(self._conns, conn)
 if cleanup then
 cleanup:Add(conn)
 end
@@ -3273,8 +3667,15 @@ function Progression:GetStep()
 return self._currentStep
 end
 function Progression:Destroy()
+if self._conns then
+for _, c in ipairs(self._conns) do
+if c and c.Connected then c:Disconnect() end
+end
+self._conns = {}
+end
 if self._container then
 self._container:Destroy()
+self._container = nil
 end
 end
 return Progression
@@ -3664,6 +4065,11 @@ local Paragraph = deps.Paragraph
 local Divider = deps.Divider
 local Banner = deps.Banner
 local Progression = deps.Progression
+local ColorPicker = deps.ColorPicker
+if not ColorPicker then
+local cOk, cRes = pcall(function() return require(script.Parent.Parent.components.ColorPicker) end)
+ColorPicker = cOk and cRes
+end
 local IconService = deps.IconService
 if not IconService then
 local iOk, iRes = pcall(function() return require(script.Parent.Parent.services.IconService) end)
@@ -4131,6 +4537,7 @@ Divider = Divider,
 Banner = Banner,
 Progression = Progression,
 MobilePin = MobilePin,
+ColorPicker = ColorPicker,
 },
 _tabGroups = {},
 _sidebarCollapsed = false,
@@ -4179,7 +4586,8 @@ end
 end)
 local dragUpdate = UserInputService.InputChanged:Connect(function(input)
 if input == dragInput and dragging then
-local delta = input.Position - dragStart
+local activeScale = windowScale.Scale > 0 and windowScale.Scale or 1.0
+local delta = (input.Position - dragStart) / activeScale
 mainFrame.Position = UDim2.new(
 startPos.X.Scale,
 startPos.X.Offset + delta.X,
@@ -4250,8 +4658,11 @@ ImageTransparency = 0.45
 }):Play()
 end
 end)
+local resizeMoveConn, resizeEndConn
 local resizeBegan = resizeGrip.InputBegan:Connect(function(input)
 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+if resizeMoveConn then resizeMoveConn:Disconnect(); resizeMoveConn = nil end
+if resizeEndConn then resizeEndConn:Disconnect(); resizeEndConn = nil end
 isResizing = true
 resizeStartMouse = Vector2.new(input.Position.X, input.Position.Y)
 resizeStartSize = Vector2.new(mainFrame.Size.X.Offset, mainFrame.Size.Y.Offset)
@@ -4259,8 +4670,7 @@ TweenService:Create(gripIcon, TweenInfo.new(0.1), {
 ImageColor3 = Color3.fromRGB(255, 255, 255),
 ImageTransparency = 0
 }):Play()
-local moveConn, endConn
-moveConn = UserInputService.InputChanged:Connect(function(moveInput)
+resizeMoveConn = UserInputService.InputChanged:Connect(function(moveInput)
 if not isResizing then return end
 if moveInput.UserInputType == Enum.UserInputType.MouseMovement or moveInput.UserInputType == Enum.UserInputType.Touch then
 local activeScale = windowScale.Scale > 0 and windowScale.Scale or 1.0
@@ -4309,11 +4719,11 @@ end
 end
 end
 end)
-endConn = UserInputService.InputEnded:Connect(function(endInput)
+resizeEndConn = UserInputService.InputEnded:Connect(function(endInput)
 if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
 isResizing = false
-if moveConn then moveConn:Disconnect() end
-if endConn then endConn:Disconnect() end
+if resizeMoveConn then resizeMoveConn:Disconnect(); resizeMoveConn = nil end
+if resizeEndConn then resizeEndConn:Disconnect(); resizeEndConn = nil end
 TweenService:Create(gripIcon, TweenInfo.new(0.2), {
 ImageColor3 = Color3.fromRGB(140, 155, 180),
 ImageTransparency = 0.45
@@ -4326,6 +4736,10 @@ if cleanup then
 cleanup:Add(gripEnter)
 cleanup:Add(gripLeave)
 cleanup:Add(resizeBegan)
+cleanup:Add(function()
+if resizeMoveConn then resizeMoveConn:Disconnect() end
+if resizeEndConn then resizeEndConn:Disconnect() end
+end)
 end
 if cleanup then
 cleanup:Add(dragBegan)
@@ -5309,6 +5723,186 @@ end
 table.insert(self._sections, sectionObj)
 return sectionObj
 end
+local Row = {}
+Row.__index = Row
+function Row.new(parent, theme, cleanup, components)
+local rowFrame = Instance.new("Frame")
+rowFrame.Name = "Row"
+rowFrame.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
+rowFrame.BackgroundTransparency = 1
+rowFrame.BorderSizePixel = 0
+rowFrame.Parent = parent
+local rList = Instance.new("UIListLayout")
+rList.FillDirection = Enum.FillDirection.Horizontal
+rList.SortOrder = Enum.SortOrder.LayoutOrder
+rList.Padding = UDim.new(0, 6)
+rList.Parent = rowFrame
+local self = setmetatable({
+_container = rowFrame,
+_theme = theme,
+_cleanup = cleanup,
+_components = components,
+_items = {},
+}, Row)
+if cleanup then
+cleanup:Add(rowFrame)
+end
+return self
+end
+function Row:_rebalance()
+local count = #self._items
+if count == 0 then return end
+local gapTotal = (count - 1) * 6
+local widthScale = 1 / count
+for _, item in ipairs(self._items) do
+local target = item._container or item
+if target and target:IsA("GuiObject") then
+target.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
+end
+end
+end
+function Row:AddToggle(options)
+local tog = self._components.Toggle.new(self._container, options, self._theme, self._cleanup)
+table.insert(self._items, tog)
+self:_rebalance()
+return tog
+end
+function Row:AddKeybind(options)
+local key = self._components.Keybind.new(self._container, options, self._theme, self._cleanup)
+table.insert(self._items, key)
+self:_rebalance()
+return key
+end
+function Row:AddButton(options)
+local btn = self._components.Button.new(self._container, options, self._theme, self._cleanup)
+table.insert(self._items, btn)
+self:_rebalance()
+return btn
+end
+function Row:AddSlider(options)
+local sld = self._components.Slider.new(self._container, options, self._theme, self._cleanup)
+table.insert(self._items, sld)
+self:_rebalance()
+return sld
+end
+function Row:AddDropdown(options)
+local drp = self._components.Dropdown.new(self._container, options, self._theme, self._cleanup)
+table.insert(self._items, drp)
+self:_rebalance()
+return drp
+end
+function Row:AddInput(options)
+local inp = self._components.Input.new(self._container, options, self._theme, self._cleanup)
+table.insert(self._items, inp)
+self:_rebalance()
+return inp
+end
+Row.AddTextbox = Row.AddInput
+function Row:AddColorPicker(options)
+local cp = self._components.ColorPicker.new(self._container, options, self._theme, self._cleanup)
+table.insert(self._items, cp)
+self:_rebalance()
+return cp
+end
+function Row:Destroy()
+if self._container then
+self._container:Destroy()
+self._container = nil
+end
+end
+local Label = {}
+Label.__index = Label
+function Label.new(parent, options, theme, cleanup, section)
+local text = type(options) == "table" and (options.Text or options.Name or options.Title or "") or tostring(options or "")
+local desc = type(options) == "table" and (options.Desc or options.Description) or nil
+local container = Instance.new("Frame")
+container.Name = "LabelCard"
+container.Size = UDim2.new(1, 0, 0, desc and 38 or 26)
+container.BackgroundColor3 = theme.Element
+container.BorderSizePixel = 0
+container.Parent = parent
+local corner = Instance.new("UICorner")
+corner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
+corner.Parent = container
+if theme.UseStrokes then
+local stroke = Instance.new("UIStroke")
+stroke.Name = "BorderStroke"
+stroke.Color = theme.BorderSubtle or theme.Border
+stroke.Thickness = 1
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = container
+end
+local mainLbl = Instance.new("TextLabel")
+mainLbl.Name = "Text"
+mainLbl.Size = UDim2.new(1, -16, 0, desc and 18 or 26)
+mainLbl.Position = UDim2.new(0, 10, 0, desc and 3 or 0)
+mainLbl.BackgroundTransparency = 1
+mainLbl.Text = text
+mainLbl.TextColor3 = theme.TextPrimary
+mainLbl.Font = theme.FontRegular
+mainLbl.TextSize = 11
+mainLbl.TextXAlignment = Enum.TextXAlignment.Left
+mainLbl.TextTruncate = Enum.TextTruncate.AtEnd
+mainLbl.Parent = container
+local descLbl = nil
+if desc then
+descLbl = Instance.new("TextLabel")
+descLbl.Name = "Desc"
+descLbl.Size = UDim2.new(1, -16, 0, 14)
+descLbl.Position = UDim2.new(0, 10, 0, 20)
+descLbl.BackgroundTransparency = 1
+descLbl.Text = desc
+descLbl.TextColor3 = theme.TextMuted
+descLbl.Font = theme.FontRegular
+descLbl.TextSize = 10
+descLbl.TextXAlignment = Enum.TextXAlignment.Left
+descLbl.TextTruncate = Enum.TextTruncate.AtEnd
+descLbl.Parent = container
+end
+local self = setmetatable({
+_container = container,
+_mainLbl = mainLbl,
+_descLbl = descLbl,
+_theme = theme,
+_section = section,
+}, Label)
+if cleanup then
+cleanup:Add(container)
+end
+return self
+end
+function Label:SetText(newText)
+self._mainLbl.Text = tostring(newText or "")
+end
+Label.Set = Label.SetText
+function Label:GetText()
+return self._mainLbl.Text
+end
+function Label:AddToggle(opt)
+return self._section and self._section:CreateToggle(opt)
+end
+function Label:AddDropdown(opt)
+return self._section and self._section:CreateDropdown(opt)
+end
+function Label:AddSlider(opt)
+return self._section and self._section:CreateSlider(opt)
+end
+function Label:AddButton(opt)
+return self._section and self._section:CreateButton(opt)
+end
+function Label:AddKeybind(opt)
+return self._section and self._section:CreateKeybind(opt)
+end
+function Label:AddInput(opt)
+return self._section and self._section:CreateInput(opt)
+end
+Label.AddTextbox = Label.AddInput
+function Label:Destroy()
+if self._container then
+self._container:Destroy()
+self._container = nil
+end
+end
 function Section:CreateButton(options)
 local btn = self._window._components.Button.new(
 self._body,
@@ -5469,6 +6063,26 @@ self._window._cleanup
 table.insert(self._components, prg)
 return prg
 end
+function Section:CreateColorPicker(options)
+local cp = self._window._components.ColorPicker.new(
+self._body,
+options,
+self._window._theme,
+self._window._cleanup
+)
+table.insert(self._components, cp)
+return cp
+end
+function Section:CreateRow()
+local row = Row.new(self._body, self._window._theme, self._window._cleanup, self._window._components)
+table.insert(self._components, row)
+return row
+end
+function Section:CreateLabel(optionsOrText)
+local lbl = Label.new(self._body, optionsOrText, self._window._theme, self._window._cleanup, self)
+table.insert(self._components, lbl)
+return lbl
+end
 TabGroup.AddTab = TabGroup.CreateTab
 Tab.AddSection = Tab.CreateSection
 Tab.AddBanner = Tab.CreateBanner
@@ -5488,6 +6102,11 @@ Section.AddParagraph = Section.CreateParagraph
 Section.AddDivider = Section.CreateDivider
 Section.AddBanner = Section.CreateBanner
 Section.AddProgression = Section.CreateProgression
+Section.AddColorPicker = Section.CreateColorPicker
+Section.AddRow = Section.CreateRow
+Section.AddLabel = Section.CreateLabel
+Section.AddTextbox = Section.CreateInput
+Section.CreateTextbox = Section.CreateInput
 return Window
 end
 local PureBlackWhite = _require("src/themes/PureBlackWhite")
@@ -5511,6 +6130,7 @@ local InputGroup = _require("src/components/InputGroup")
 local Dropdown = _require("src/components/Dropdown")
 local DropdownGroup = _require("src/components/DropdownGroup")
 local Keybind = _require("src/components/Keybind")
+local ColorPicker = _require("src/components/ColorPicker")
 local Paragraph = _require("src/components/Paragraph")
 local Divider = _require("src/components/Divider")
 local Banner = _require("src/components/Banner")
@@ -5561,6 +6181,7 @@ InputGroup = InputGroup,
 Dropdown = Dropdown,
 DropdownGroup = DropdownGroup,
 Keybind = Keybind,
+ColorPicker = ColorPicker,
 Paragraph = Paragraph,
 Divider = Divider,
 Banner = Banner,
@@ -5589,12 +6210,24 @@ return nil
 end
 function LiyHubUI:Notify(options)
 if Modal then
+local hub = LiyHubUI
+local parentGui = nil
+if hub._activeWindows and #hub._activeWindows > 0 and hub._activeWindows[1]._screenGui then
+parentGui = hub._activeWindows[1]._screenGui
+else
+local okHui, hui = pcall(function() return gethui and gethui() end)
+if okHui and hui then
+parentGui = hui
+else
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local pgui = player and player:FindFirstChildOfClass("PlayerGui")
-if pgui then
+parentGui = pgui or game:GetService("CoreGui")
+end
+end
+if parentGui then
 local theme = ThemeManager and ThemeManager:GetTheme()
-Modal.Notify(pgui, options, theme)
+Modal.Notify(parentGui, options, theme)
 end
 end
 end

@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Signals
-    Lightweight, high-performance event / signal implementation in Luau.
-]]
-
 local Signal = {}
 Signal.__index = Signal
 
@@ -84,4 +79,3 @@ function Signal:Destroy()
 end
 
 return Signal
-

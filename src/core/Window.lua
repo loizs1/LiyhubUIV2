@@ -1,9 +1,3 @@
---[[
-    LiyHub UI - Window & Core Navigation System
-    Implements main window frame, dragging, minimize/close, profile card,
-    collapsible tab groups, tabs, sections, layouts, mobile pin tab, and complete resource cleanup.
-]]
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -31,7 +25,6 @@ function Window.new(options, dependencies)
     local Modal = deps.Modal
     local MobilePin = deps.MobilePin
     
-    -- Load component modules
     local Button = deps.Button
     local ButtonGroup = deps.ButtonGroup
     local Toggle = deps.Toggle
@@ -47,6 +40,11 @@ function Window.new(options, dependencies)
     local Divider = deps.Divider
     local Banner = deps.Banner
     local Progression = deps.Progression
+    local ColorPicker = deps.ColorPicker
+    if not ColorPicker then
+        local cOk, cRes = pcall(function() return require(script.Parent.Parent.components.ColorPicker) end)
+        ColorPicker = cOk and cRes
+    end
     local IconService = deps.IconService
     if not IconService then
         local iOk, iRes = pcall(function() return require(script.Parent.Parent.services.IconService) end)
@@ -83,7 +81,7 @@ function Window.new(options, dependencies)
         end
     end
     local toggleKey = options.ToggleKey or Enum.KeyCode.RightControl
-    local enableMobilePin = options.MobilePin ~= false -- Default enabled
+    local enableMobilePin = options.MobilePin ~= false
     local logoAsset = options.Logo or "rbxassetid://6031075936"
     local function resolveParentGui(customParent)
         if customParent then return customParent end
@@ -124,7 +122,6 @@ function Window.new(options, dependencies)
     end
     screenGui.Parent = resolveParentGui(options.Parent)
     
-    -- Main Frame
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Size = defaultSize
@@ -165,7 +162,6 @@ function Window.new(options, dependencies)
     
 
     
-    -- Header Bar
     local header = Instance.new("Frame")
     header.Name = "Header"
     header.Size = UDim2.new(1, 0, 0, 48)
@@ -362,7 +358,6 @@ function Window.new(options, dependencies)
         cleanup:Add(closeHovOut)
     end
     
-    -- Body container
     local body = Instance.new("Frame")
     body.Name = "Body"
     body.Size = UDim2.new(1, 0, 1, -48)
@@ -370,7 +365,6 @@ function Window.new(options, dependencies)
     body.BackgroundTransparency = 1
     body.Parent = mainFrame
     
-    -- Left Sidebar
     local sidebar = Instance.new("Frame")
     sidebar.Name = "Sidebar"
     sidebar.Size = UDim2.new(0, 190, 1, 0)
@@ -378,7 +372,6 @@ function Window.new(options, dependencies)
     sidebar.BorderSizePixel = 0
     sidebar.Parent = body
     
-    -- Sidebar Tab Groups Container (Scrollable)
     local tabGroupsScroll = Instance.new("ScrollingFrame")
     tabGroupsScroll.Name = "TabGroupsScroll"
     tabGroupsScroll.Size = UDim2.new(1, 0, 1, -58)
@@ -402,7 +395,6 @@ function Window.new(options, dependencies)
     tabGroupsPadding.PaddingRight = UDim.new(0, 8)
     tabGroupsPadding.Parent = tabGroupsScroll
     
-    -- Profile Card at Bottom of Sidebar
     local profileCard = Instance.new("TextButton")
     profileCard.Name = "ProfileCard"
     profileCard.Size = UDim2.new(1, -16, 0, 46)
@@ -497,7 +489,6 @@ function Window.new(options, dependencies)
         end
     end
     
-    -- Right Content Area
     local contentArea = Instance.new("Frame")
     contentArea.Name = "ContentArea"
     contentArea.Size = UDim2.new(1, -190, 1, 0)
@@ -575,6 +566,7 @@ function Window.new(options, dependencies)
             Banner = Banner,
             Progression = Progression,
             MobilePin = MobilePin,
+            ColorPicker = ColorPicker,
         },
         _tabGroups = {},
         _sidebarCollapsed = false,
@@ -603,7 +595,6 @@ function Window.new(options, dependencies)
         cleanup:Add(profConn)
     end
     
-    -- Window Dragging Implementation
     local dragging = false
     local dragInput, dragStart, startPos
     
@@ -629,7 +620,8 @@ function Window.new(options, dependencies)
     
     local dragUpdate = UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
-            local delta = input.Position - dragStart
+            local activeScale = windowScale.Scale > 0 and windowScale.Scale or 1.0
+            local delta = (input.Position - dragStart) / activeScale
             mainFrame.Position = UDim2.new(
                 startPos.X.Scale,
                 startPos.X.Offset + delta.X,
@@ -677,7 +669,6 @@ function Window.new(options, dependencies)
         end
     end)
     
-    -- Create Mobile Pin Tab if enabled
     if enableMobilePin and MobilePin then
         self._mobilePin = MobilePin.new(screenGui, self, {
             Title = titleText,
@@ -709,8 +700,11 @@ function Window.new(options, dependencies)
         end
     end)
 
+    local resizeMoveConn, resizeEndConn
     local resizeBegan = resizeGrip.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if resizeMoveConn then resizeMoveConn:Disconnect(); resizeMoveConn = nil end
+            if resizeEndConn then resizeEndConn:Disconnect(); resizeEndConn = nil end
             isResizing = true
             resizeStartMouse = Vector2.new(input.Position.X, input.Position.Y)
             resizeStartSize = Vector2.new(mainFrame.Size.X.Offset, mainFrame.Size.Y.Offset)
@@ -719,8 +713,7 @@ function Window.new(options, dependencies)
                 ImageTransparency = 0
             }):Play()
 
-            local moveConn, endConn
-            moveConn = UserInputService.InputChanged:Connect(function(moveInput)
+            resizeMoveConn = UserInputService.InputChanged:Connect(function(moveInput)
                 if not isResizing then return end
                 if moveInput.UserInputType == Enum.UserInputType.MouseMovement or moveInput.UserInputType == Enum.UserInputType.Touch then
                     local activeScale = windowScale.Scale > 0 and windowScale.Scale or 1.0
@@ -770,11 +763,11 @@ function Window.new(options, dependencies)
                 end
             end)
 
-            endConn = UserInputService.InputEnded:Connect(function(endInput)
+            resizeEndConn = UserInputService.InputEnded:Connect(function(endInput)
                 if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
                     isResizing = false
-                    if moveConn then moveConn:Disconnect() end
-                    if endConn then endConn:Disconnect() end
+                    if resizeMoveConn then resizeMoveConn:Disconnect(); resizeMoveConn = nil end
+                    if resizeEndConn then resizeEndConn:Disconnect(); resizeEndConn = nil end
                     TweenService:Create(gripIcon, TweenInfo.new(0.2), {
                         ImageColor3 = Color3.fromRGB(140, 155, 180),
                         ImageTransparency = 0.45
@@ -788,6 +781,10 @@ function Window.new(options, dependencies)
         cleanup:Add(gripEnter)
         cleanup:Add(gripLeave)
         cleanup:Add(resizeBegan)
+        cleanup:Add(function()
+            if resizeMoveConn then resizeMoveConn:Disconnect() end
+            if resizeEndConn then resizeEndConn:Disconnect() end
+        end)
     end
     
     if cleanup then
@@ -1472,7 +1469,6 @@ function Window:CreateTabGroup(name)
     gList.Padding = UDim.new(0, 3)
     gList.Parent = groupContainer
     
-    -- Header button (collapsible)
     local gHeader = Instance.new("TextButton")
     gHeader.Name = "Header"
     gHeader.Size = UDim2.new(1, 0, 0, 22)
@@ -1503,7 +1499,6 @@ function Window:CreateTabGroup(name)
     gArrow.Rotation = 180
     gArrow.Parent = gHeader
     
-    -- Tabs Frame
     local tabsFrame = Instance.new("Frame")
     tabsFrame.Name = "Tabs"
     tabsFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -1586,10 +1581,6 @@ function Window:CreateTab(options, icon)
 end
 Window.AddTab = Window.CreateTab
 
--- ============================================================================
--- TabGroup Methods
--- ============================================================================
-
 function TabGroup:CreateTab(options)
     local name = type(options) == "table" and (options.Name or options.Text) or tostring(options)
     local iconId = type(options) == "table" and (options.Icon or options.Image) or nil
@@ -1600,7 +1591,6 @@ function TabGroup:CreateTab(options)
         twoColumns = options.TwoColumns
     end
     
-    -- Tab Sidebar Button
     local tabBtn = Instance.new("TextButton")
     tabBtn.Name = "Tab_" .. name
     tabBtn.Size = UDim2.new(1, 0, 0, 32)
@@ -1660,7 +1650,6 @@ function TabGroup:CreateTab(options)
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = tabBtn
     
-    -- Tab Content Container
     local contentContainer = Instance.new("Frame")
     contentContainer.Name = "TabContent_" .. name
     contentContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -1710,10 +1699,6 @@ function TabGroup:CreateTab(options)
     
     return tabObj
 end
-
--- ============================================================================
--- Tab Methods
--- ============================================================================
 
 function Tab:_activate()
     self._button.BackgroundTransparency = 0
@@ -1796,7 +1781,6 @@ function Tab:CreateSection(nameOrOptions)
     sList.Padding = UDim.new(0, 8)
     sList.Parent = sectionCard
     
-    -- Section Header (Title & Collapsible Arrow)
     local sHeader = Instance.new("TextButton")
     sHeader.Name = "Header"
     sHeader.Size = UDim2.new(1, 0, 0, 22)
@@ -1847,7 +1831,6 @@ function Tab:CreateSection(nameOrOptions)
     sArrow.Rotation = 180
     sArrow.Parent = sHeader
     
-    -- Section Body (Holds components)
     local sBody = Instance.new("Frame")
     sBody.Name = "Body"
     sBody.Size = UDim2.new(1, 0, 0, 0)
@@ -1892,9 +1875,219 @@ function Tab:CreateSection(nameOrOptions)
     return sectionObj
 end
 
--- ============================================================================
--- Section Component Constructors
--- ============================================================================
+local Row = {}
+Row.__index = Row
+
+function Row.new(parent, theme, cleanup, components)
+    local rowFrame = Instance.new("Frame")
+    rowFrame.Name = "Row"
+    rowFrame.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
+    rowFrame.BackgroundTransparency = 1
+    rowFrame.BorderSizePixel = 0
+    rowFrame.Parent = parent
+
+    local rList = Instance.new("UIListLayout")
+    rList.FillDirection = Enum.FillDirection.Horizontal
+    rList.SortOrder = Enum.SortOrder.LayoutOrder
+    rList.Padding = UDim.new(0, 6)
+    rList.Parent = rowFrame
+
+    local self = setmetatable({
+        _container = rowFrame,
+        _theme = theme,
+        _cleanup = cleanup,
+        _components = components,
+        _items = {},
+    }, Row)
+
+    if cleanup then
+        cleanup:Add(rowFrame)
+    end
+
+    return self
+end
+
+function Row:_rebalance()
+    local count = #self._items
+    if count == 0 then return end
+    local gapTotal = (count - 1) * 6
+    local widthScale = 1 / count
+    for _, item in ipairs(self._items) do
+        local target = item._container or item
+        if target and target:IsA("GuiObject") then
+            target.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
+        end
+    end
+end
+
+function Row:AddToggle(options)
+    local tog = self._components.Toggle.new(self._container, options, self._theme, self._cleanup)
+    table.insert(self._items, tog)
+    self:_rebalance()
+    return tog
+end
+
+function Row:AddKeybind(options)
+    local key = self._components.Keybind.new(self._container, options, self._theme, self._cleanup)
+    table.insert(self._items, key)
+    self:_rebalance()
+    return key
+end
+
+function Row:AddButton(options)
+    local btn = self._components.Button.new(self._container, options, self._theme, self._cleanup)
+    table.insert(self._items, btn)
+    self:_rebalance()
+    return btn
+end
+
+function Row:AddSlider(options)
+    local sld = self._components.Slider.new(self._container, options, self._theme, self._cleanup)
+    table.insert(self._items, sld)
+    self:_rebalance()
+    return sld
+end
+
+function Row:AddDropdown(options)
+    local drp = self._components.Dropdown.new(self._container, options, self._theme, self._cleanup)
+    table.insert(self._items, drp)
+    self:_rebalance()
+    return drp
+end
+
+function Row:AddInput(options)
+    local inp = self._components.Input.new(self._container, options, self._theme, self._cleanup)
+    table.insert(self._items, inp)
+    self:_rebalance()
+    return inp
+end
+Row.AddTextbox = Row.AddInput
+
+function Row:AddColorPicker(options)
+    local cp = self._components.ColorPicker.new(self._container, options, self._theme, self._cleanup)
+    table.insert(self._items, cp)
+    self:_rebalance()
+    return cp
+end
+
+function Row:Destroy()
+    if self._container then
+        self._container:Destroy()
+        self._container = nil
+    end
+end
+
+local Label = {}
+Label.__index = Label
+
+function Label.new(parent, options, theme, cleanup, section)
+    local text = type(options) == "table" and (options.Text or options.Name or options.Title or "") or tostring(options or "")
+    local desc = type(options) == "table" and (options.Desc or options.Description) or nil
+    
+    local container = Instance.new("Frame")
+    container.Name = "LabelCard"
+    container.Size = UDim2.new(1, 0, 0, desc and 38 or 26)
+    container.BackgroundColor3 = theme.Element
+    container.BorderSizePixel = 0
+    container.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
+    corner.Parent = container
+
+    if theme.UseStrokes then
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "BorderStroke"
+        stroke.Color = theme.BorderSubtle or theme.Border
+        stroke.Thickness = 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = container
+    end
+
+    local mainLbl = Instance.new("TextLabel")
+    mainLbl.Name = "Text"
+    mainLbl.Size = UDim2.new(1, -16, 0, desc and 18 or 26)
+    mainLbl.Position = UDim2.new(0, 10, 0, desc and 3 or 0)
+    mainLbl.BackgroundTransparency = 1
+    mainLbl.Text = text
+    mainLbl.TextColor3 = theme.TextPrimary
+    mainLbl.Font = theme.FontRegular
+    mainLbl.TextSize = 11
+    mainLbl.TextXAlignment = Enum.TextXAlignment.Left
+    mainLbl.TextTruncate = Enum.TextTruncate.AtEnd
+    mainLbl.Parent = container
+
+    local descLbl = nil
+    if desc then
+        descLbl = Instance.new("TextLabel")
+        descLbl.Name = "Desc"
+        descLbl.Size = UDim2.new(1, -16, 0, 14)
+        descLbl.Position = UDim2.new(0, 10, 0, 20)
+        descLbl.BackgroundTransparency = 1
+        descLbl.Text = desc
+        descLbl.TextColor3 = theme.TextMuted
+        descLbl.Font = theme.FontRegular
+        descLbl.TextSize = 10
+        descLbl.TextXAlignment = Enum.TextXAlignment.Left
+        descLbl.TextTruncate = Enum.TextTruncate.AtEnd
+        descLbl.Parent = container
+    end
+
+    local self = setmetatable({
+        _container = container,
+        _mainLbl = mainLbl,
+        _descLbl = descLbl,
+        _theme = theme,
+        _section = section,
+    }, Label)
+
+    if cleanup then
+        cleanup:Add(container)
+    end
+
+    return self
+end
+
+function Label:SetText(newText)
+    self._mainLbl.Text = tostring(newText or "")
+end
+Label.Set = Label.SetText
+
+function Label:GetText()
+    return self._mainLbl.Text
+end
+
+function Label:AddToggle(opt)
+    return self._section and self._section:CreateToggle(opt)
+end
+
+function Label:AddDropdown(opt)
+    return self._section and self._section:CreateDropdown(opt)
+end
+
+function Label:AddSlider(opt)
+    return self._section and self._section:CreateSlider(opt)
+end
+
+function Label:AddButton(opt)
+    return self._section and self._section:CreateButton(opt)
+end
+
+function Label:AddKeybind(opt)
+    return self._section and self._section:CreateKeybind(opt)
+end
+
+function Label:AddInput(opt)
+    return self._section and self._section:CreateInput(opt)
+end
+Label.AddTextbox = Label.AddInput
+
+function Label:Destroy()
+    if self._container then
+        self._container:Destroy()
+        self._container = nil
+    end
+end
 
 function Section:CreateButton(options)
     local btn = self._window._components.Button.new(
@@ -2072,6 +2265,29 @@ function Section:CreateProgression(options)
     return prg
 end
 
+function Section:CreateColorPicker(options)
+    local cp = self._window._components.ColorPicker.new(
+        self._body,
+        options,
+        self._window._theme,
+        self._window._cleanup
+    )
+    table.insert(self._components, cp)
+    return cp
+end
+
+function Section:CreateRow()
+    local row = Row.new(self._body, self._window._theme, self._window._cleanup, self._window._components)
+    table.insert(self._components, row)
+    return row
+end
+
+function Section:CreateLabel(optionsOrText)
+    local lbl = Label.new(self._body, optionsOrText, self._window._theme, self._window._cleanup, self)
+    table.insert(self._components, lbl)
+    return lbl
+end
+
 TabGroup.AddTab = TabGroup.CreateTab
 Tab.AddSection = Tab.CreateSection
 Tab.AddBanner = Tab.CreateBanner
@@ -2092,5 +2308,10 @@ Section.AddParagraph = Section.CreateParagraph
 Section.AddDivider = Section.CreateDivider
 Section.AddBanner = Section.CreateBanner
 Section.AddProgression = Section.CreateProgression
+Section.AddColorPicker = Section.CreateColorPicker
+Section.AddRow = Section.CreateRow
+Section.AddLabel = Section.CreateLabel
+Section.AddTextbox = Section.CreateInput
+Section.CreateTextbox = Section.CreateInput
 
 return Window

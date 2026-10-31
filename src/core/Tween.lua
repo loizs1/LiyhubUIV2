@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Tween Utility
-    Provides standardized animation curves, timing, and cancellation safety.
-]]
-
 local TweenService = game:GetService("TweenService")
 
 local TweenUtil = {}
@@ -36,4 +31,3 @@ function TweenUtil.Position(instance, targetPosition, duration)
 end
 
 return TweenUtil
-

@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Input Group Component
-    Groups multiple text inputs in a shared card with isolated states and callbacks.
-]]
-
 local Input = nil
 pcall(function()
     Input = require(script.Parent.Input)
@@ -78,4 +73,3 @@ function InputGroup:Destroy()
 end
 
 return InputGroup
-

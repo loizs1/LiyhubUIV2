@@ -185,6 +185,8 @@ function Banner.new(parent, options, theme, cleanup)
         _descLabel = descLabel,
         _theme = theme,
         _collapsed = defaultCollapsed,
+        _toggleConn = nil,
+        _absConn = absConn,
     }, Banner)
     
     if header then
@@ -196,6 +198,7 @@ function Banner.new(parent, options, theme, cleanup)
             self:Toggle()
         end
         local toggleConn = header.Activated:Connect(doToggle)
+        self._toggleConn = toggleConn
         if cleanup then
             cleanup:Add(toggleConn)
         end
@@ -228,8 +231,17 @@ function Banner:SetText(text)
 end
 
 function Banner:Destroy()
+    if self._toggleConn and self._toggleConn.Connected then
+        self._toggleConn:Disconnect()
+        self._toggleConn = nil
+    end
+    if self._absConn and self._absConn.Connected then
+        self._absConn:Disconnect()
+        self._absConn = nil
+    end
     if self._container then
         self._container:Destroy()
+        self._container = nil
     end
 end
 

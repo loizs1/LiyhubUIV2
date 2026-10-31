@@ -71,6 +71,7 @@ function Keybind.new(parent, options, theme, cleanup)
             BackgroundColor3 = theme.ElementActive
         }):Play()
     end)
+    self._keyClickConn = keyClickConn
     
     local inputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if self._listening then
@@ -95,6 +96,7 @@ function Keybind.new(parent, options, theme, cleanup)
     if cleanup then
         cleanup:Add(keyClickConn)
         cleanup:Add(inputBeganConn)
+        self._inputBeganConn = inputBeganConn
         cleanup:Add(container)
     end
     
@@ -120,6 +122,14 @@ function Keybind:SetText(text)
 end
 
 function Keybind:Destroy()
+    if self._keyClickConn then
+        pcall(function() self._keyClickConn:Disconnect() end)
+        self._keyClickConn = nil
+    end
+    if self._inputBeganConn then
+        pcall(function() self._inputBeganConn:Disconnect() end)
+        self._inputBeganConn = nil
+    end
     if self._container then
         self._container:Destroy()
         self._container = nil

@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Divider Component
-    A subtle horizontal separator line.
-]]
-
 local Divider = {}
 Divider.__index = Divider
 
@@ -34,4 +29,3 @@ function Divider:Destroy()
 end
 
 return Divider
-

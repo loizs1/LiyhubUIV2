@@ -211,6 +211,7 @@ function Dropdown.new(parent, options, theme, cleanup)
         _callback = callback,
         _open = false,
         _optionButtons = {},
+        _optionConns = {},
         _cleanup = cleanup,
     }, Dropdown)
     
@@ -258,9 +259,28 @@ function Dropdown.new(parent, options, theme, cleanup)
         end
     end
     
+    function self:_syncVisuals()
+        for _, optData in ipairs(self._optionButtons) do
+            local isChecked = false
+            if self._isMulti then
+                isChecked = self._selected[optData.value] == true
+            else
+                isChecked = (self._selected == optData.value)
+            end
+            optData.button.BackgroundColor3 = isChecked and self._theme.ElementActive or self._theme.Element
+            optData.label.TextColor3 = isChecked and self._theme.TextPrimary or self._theme.TextSecondary
+            optData.label.Font = isChecked and self._theme.FontBold or self._theme.FontRegular
+            optData.check.Visible = isChecked
+        end
+    end
+
     function self:_rebuildOptions()
-        for _, btn in ipairs(self._optionButtons) do
-            btn:Destroy()
+        for _, conn in ipairs(self._optionConns) do
+            pcall(function() conn:Disconnect() end)
+        end
+        self._optionConns = {}
+        for _, optData in ipairs(self._optionButtons) do
+            pcall(function() optData.button:Destroy() end)
         end
         self._optionButtons = {}
         
@@ -333,22 +353,25 @@ function Dropdown.new(parent, options, theme, cleanup)
                         end
                     end
                     self:_updateSummary()
-                    self:_rebuildOptions()
+                    self:_syncVisuals()
                     task.spawn(self._callback, activeList)
                 else
                     self._selected = opt
                     self:_updateSummary()
-                    self:_rebuildOptions()
+                    self:_syncVisuals()
                     self:Close()
                     task.spawn(self._callback, opt)
                 end
             end
             
             local optClick = optBtn.Activated:Connect(onOptionClicked)
-            if self._cleanup then
-                self._cleanup:Add(optClick)
-            end
-            table.insert(self._optionButtons, optBtn)
+            table.insert(self._optionConns, optClick)
+            table.insert(self._optionButtons, {
+                button = optBtn,
+                label = optLabel,
+                check = checkIcon,
+                value = opt,
+            })
         end
     end
     
@@ -360,7 +383,7 @@ function Dropdown.new(parent, options, theme, cleanup)
                     self._selected[item] = true
                 end
                 self:_updateSummary()
-                self:_rebuildOptions()
+                self:_syncVisuals()
                 local outList = {}
                 for _, item in ipairs(self._options) do
                     table.insert(outList, item)
@@ -373,7 +396,7 @@ function Dropdown.new(parent, options, theme, cleanup)
             clBtn.Activated:Connect(function()
                 self._selected = {}
                 self:_updateSummary()
-                self:_rebuildOptions()
+                self:_syncVisuals()
                 task.spawn(self._callback, {})
             end)
         end
@@ -394,6 +417,7 @@ function Dropdown.new(parent, options, theme, cleanup)
         end
     end
     local headerClick = selectBox.Activated:Connect(toggleDropdown)
+    self._headerClick = headerClick
     
     if cleanup then
         cleanup:Add(headerClick)
@@ -500,8 +524,16 @@ function Dropdown:SetOptions(newOptions)
 end
 
 function Dropdown:Destroy()
+    for _, conn in ipairs(self._optionConns or {}) do
+        pcall(function() conn:Disconnect() end)
+    end
+    self._optionConns = {}
+    if self._headerClick then
+        pcall(function() self._headerClick:Disconnect() end)
+    end
     if self._container then
         self._container:Destroy()
+        self._container = nil
     end
 end
 

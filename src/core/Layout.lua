@@ -17,6 +17,7 @@ function Layout.new(container, options)
         _singleColumn = nil,
         _sections = {},
         _sectionCount = 0,
+        _cardMeta = {},
     }, Layout)
     
     self:_initialize()
@@ -142,8 +143,7 @@ function Layout:RegisterSectionInstance(sectionCard)
         if sec.SectionCard == nil then
             sec.SectionCard = sectionCard
             local side = sec.Side or "Left"
-            sectionCard:SetAttribute("LayoutSide", side)
-            sectionCard:SetAttribute("OriginalOrder", sec.Order or 1)
+            self._cardMeta[sectionCard] = { Side = side, Order = sec.Order or 1 }
             sectionCard.LayoutOrder = sec.Order or 1
             break
         end
@@ -174,14 +174,17 @@ function Layout:SetTwoColumns(enabled)
     collectFrom(self._singleColumn)
     
     table.sort(allCards, function(a, b)
-        local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
-        local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
+        local metaA = self._cardMeta[a]
+        local metaB = self._cardMeta[b]
+        local ordA = metaA and metaA.Order or a.LayoutOrder or 0
+        local ordB = metaB and metaB.Order or b.LayoutOrder or 0
         return ordA < ordB
     end)
     
     if enabled then
         for _, card in ipairs(allCards) do
-            local side = card:GetAttribute("LayoutSide") or "Left"
+            local meta = self._cardMeta[card]
+            local side = meta and meta.Side or "Left"
             if string.lower(side) == "right" then
                 card.Parent = self._rightColumn
             else

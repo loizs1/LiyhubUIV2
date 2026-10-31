@@ -1,9 +1,3 @@
---[[
-    LiyHub UI - Cleanup (Maid / Janitor)
-    Handles deterministic lifecycle tracking, connection disconnection,
-    instance destruction, task cancellation, and safe repeated destruction.
-]]
-
 local Cleanup = {}
 Cleanup.__index = Cleanup
 
@@ -81,4 +75,3 @@ function Cleanup:Destroy()
 end
 
 return Cleanup
-

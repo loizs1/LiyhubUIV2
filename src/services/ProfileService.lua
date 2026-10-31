@@ -1,8 +1,3 @@
---[[
-    LiyHub UI - Profile Service
-    Manages named configuration profiles (e.g. Default, Farming, PvP).
-]]
-
 local ProfileService = {}
 ProfileService.__index = ProfileService
 
@@ -57,10 +52,8 @@ function ProfileService:SwitchProfile(name)
     if not self._profiles[name] then
         return false, "Profile does not exist"
     end
-    -- Save current config into active profile
     if self._configService then
         self._profiles[self._activeProfile] = self._configService:GetAll()
-        -- Load target profile into config service
         self._configService:SetAll(self._profiles[name])
     end
     self._activeProfile = name
@@ -76,4 +69,3 @@ function ProfileService:SaveActiveProfile()
 end
 
 return ProfileService
-
