@@ -37,7 +37,7 @@ Overlay = Color3.fromRGB(0, 0, 0),
 Border = Color3.fromRGB(34, 34, 40),
 BorderSubtle = Color3.fromRGB(28, 28, 34),
 BorderFocus = Color3.fromRGB(75, 75, 90),
-BorderWindow = Color3.fromRGB(42, 42, 50),
+BorderWindow = Color3.fromRGB(255, 255, 255),
 TextPrimary = Color3.fromRGB(255, 255, 255),
 TextSecondary = Color3.fromRGB(160, 160, 172),
 TextMuted = Color3.fromRGB(110, 110, 122),
@@ -112,7 +112,7 @@ PureWhite.Scrollbar = Color3.fromRGB(195, 200, 210)
 PureWhite.Border = Color3.fromRGB(218, 222, 230)
 PureWhite.BorderSubtle = Color3.fromRGB(228, 231, 238)
 PureWhite.BorderFocus = Color3.fromRGB(140, 145, 160)
-PureWhite.BorderWindow = Color3.fromRGB(210, 215, 224)
+PureWhite.BorderWindow = Color3.fromRGB(18, 20, 24)
 PureWhite.TextPrimary = Color3.fromRGB(18, 20, 24)
 PureWhite.TextSecondary = Color3.fromRGB(80, 85, 96)
 PureWhite.TextMuted = Color3.fromRGB(130, 136, 148)
@@ -1063,7 +1063,7 @@ pinScale.Scale = 1.0
 pinScale.Parent = container
 local stroke = Instance.new("UIStroke")
 stroke.Name = "BorderStroke"
-stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
+stroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 stroke.Thickness = 1
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = container
@@ -1081,6 +1081,12 @@ iconImg.Parent = container
 local iconCorner = Instance.new("UICorner")
 iconCorner.CornerRadius = UDim.new(0, 5)
 iconCorner.Parent = iconImg
+local logoStroke = Instance.new("UIStroke")
+logoStroke.Name = "LogoStroke"
+logoStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+logoStroke.Thickness = 1
+logoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+logoStroke.Parent = iconImg
 local textContainer = Instance.new("Frame")
 textContainer.Name = "TextContainer"
 textContainer.Size = UDim2.new(0, 0, 1, 0)
@@ -1181,7 +1187,12 @@ if self._container then
 self._container.BackgroundColor3 = isDark and Color3.fromRGB(16, 17, 20) or Color3.fromRGB(255, 255, 255)
 local stroke = self._container:FindFirstChildOfClass("UIStroke")
 if stroke then
-stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
+stroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+end
+local logo = self._container:FindFirstChild("Logo")
+local lStroke = logo and logo:FindFirstChildOfClass("UIStroke")
+if lStroke then
+lStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 end
 end
 if self._titleLabel then
@@ -4219,6 +4230,13 @@ logoImg.Parent = logoBtn
 local logoCorner = Instance.new("UICorner")
 logoCorner.CornerRadius = UDim.new(0, 6)
 logoCorner.Parent = logoImg
+local isDarkInit = (theme.IsLight ~= true and theme.Name ~= "Pure White")
+local logoStroke = Instance.new("UIStroke")
+logoStroke.Name = "LogoStroke"
+logoStroke.Color = isDarkInit and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+logoStroke.Thickness = 1
+logoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+logoStroke.Parent = logoImg
 local logoToggleConn = logoBtn.Activated:Connect(function()
 self:ToggleSidebar()
 end)
@@ -4695,8 +4713,8 @@ _originalSize = defaultSize,
 _destroyed = false,
 _themeBtn = themeBtn,
 _minBtn = minBtn,
-_logoBadge = logoBadge,
-_logoStroke = lbStroke,
+_logoBadge = nil,
+_logoStroke = logoStroke,
 _closeBtn = closeBtn,
 _themeIconContainer = themeIconContainer,
 _renderThemeIcon = renderThemeIcon,
@@ -5715,6 +5733,9 @@ self._renderThemeIcon(isDark)
 end
 if self._gripIcon then
 self._gripIcon.ImageColor3 = isDark and Color3.fromRGB(140, 155, 180) or Color3.fromRGB(80, 90, 110)
+end
+if self._logoStroke then
+self._logoStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 end
 if self._mobilePin and self._mobilePin.SetTheme then
 self._mobilePin:SetTheme(targetTheme, isDark)

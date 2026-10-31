@@ -207,6 +207,14 @@ function Window.new(options, dependencies)
     local logoCorner = Instance.new("UICorner")
     logoCorner.CornerRadius = UDim.new(0, 6)
     logoCorner.Parent = logoImg
+
+    local isDarkInit = (theme.IsLight ~= true and theme.Name ~= "Pure White")
+    local logoStroke = Instance.new("UIStroke")
+    logoStroke.Name = "LogoStroke"
+    logoStroke.Color = isDarkInit and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+    logoStroke.Thickness = 1
+    logoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    logoStroke.Parent = logoImg
     
     local logoToggleConn = logoBtn.Activated:Connect(function()
         self:ToggleSidebar()
@@ -732,8 +740,8 @@ function Window.new(options, dependencies)
         _destroyed = false,
         _themeBtn = themeBtn,
         _minBtn = minBtn,
-        _logoBadge = logoBadge,
-        _logoStroke = lbStroke,
+        _logoBadge = nil,
+        _logoStroke = logoStroke,
         _closeBtn = closeBtn,
         _themeIconContainer = themeIconContainer,
         _renderThemeIcon = renderThemeIcon,
@@ -1851,6 +1859,10 @@ function Window:SetTheme(themeNameOrTable)
 
     if self._gripIcon then
         self._gripIcon.ImageColor3 = isDark and Color3.fromRGB(140, 155, 180) or Color3.fromRGB(80, 90, 110)
+    end
+
+    if self._logoStroke then
+        self._logoStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
     end
 
     if self._mobilePin and self._mobilePin.SetTheme then
