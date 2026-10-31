@@ -676,61 +676,63 @@ end
 function Layout:SetTwoColumns(enabled)
 if self._twoColumns == enabled then return end
 self._twoColumns = enabled
-if enabled then
-local children = self._singleColumn:GetChildren()
-local validChildren = {}
-for _, c in ipairs(children) do
-if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
-table.insert(validChildren, c)
+local allCards = {}
+local seen = {}
+local function collectFrom(container)
+if not container then return end
+for _, child in ipairs(container:GetChildren()) do
+if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+if not seen[child] then
+seen[child] = true
+table.insert(allCards, child)
 end
 end
-table.sort(validChildren, function(a, b)
+end
+end
+collectFrom(self._leftColumn)
+collectFrom(self._rightColumn)
+collectFrom(self._singleColumn)
+table.sort(allCards, function(a, b)
 local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
 local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
 return ordA < ordB
 end)
-for _, child in ipairs(validChildren) do
-local side = child:GetAttribute("LayoutSide") or "Left"
+if enabled then
+for _, card in ipairs(allCards) do
+local side = card:GetAttribute("LayoutSide") or "Left"
 if string.lower(side) == "right" then
-child.Parent = self._rightColumn
+card.Parent = self._rightColumn
 else
-child.Parent = self._leftColumn
+card.Parent = self._leftColumn
 end
 end
 self._dualContainer.Visible = true
 self._singleColumn.Visible = false
+if self._leftColumn then
+self._leftColumn.CanvasPosition = Vector2.new(0, 0)
+end
+if self._rightColumn then
+self._rightColumn.CanvasPosition = Vector2.new(0, 0)
+end
 else
-local leftChildren = self._leftColumn:GetChildren()
-local rightChildren = self._rightColumn:GetChildren()
-local allChildren = {}
-for _, c in ipairs(leftChildren) do
-if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
-c:SetAttribute("LayoutSide", "Left")
-table.insert(allChildren, c)
-end
-end
-for _, c in ipairs(rightChildren) do
-if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
-c:SetAttribute("LayoutSide", "Right")
-table.insert(allChildren, c)
-end
-end
-table.sort(allChildren, function(a, b)
-local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
-local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
-return ordA < ordB
-end)
-for _, c in ipairs(allChildren) do
-c.Parent = self._singleColumn
+for _, card in ipairs(allCards) do
+card.Parent = self._singleColumn
 end
 self._dualContainer.Visible = false
 self._singleColumn.Visible = true
+if self._singleColumn then
+self._singleColumn.CanvasPosition = Vector2.new(0, 0)
+end
 end
 end
 function Layout:IsTwoColumns()
 return self._twoColumns
 end
-function Layout:UpdateForDevice(deviceName, isMinimized)
+function Layout:UpdateForDevice(deviceName, isMinimized, forceOverride)
+if forceOverride ~= nil then
+self:SetTwoColumns(forceOverride)
+return
+end
 local dev = string.lower(deviceName or "pc")
 if dev == "pc" or dev == "tablet" then
 self:SetTwoColumns(true)
@@ -772,11 +774,6 @@ if ws and ws:IsA("UIScale") then
 uiScaleVal = ws.Scale
 end
 end
-if uiScaleVal and uiScaleVal ~= 1 then
-local oScale = Instance.new("UIScale")
-oScale.Scale = uiScaleVal
-oScale.Parent = overlay
-end
 local dialog = Instance.new("Frame")
 dialog.Name = "Dialog"
 dialog.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -787,6 +784,11 @@ dialog.BackgroundColor3 = theme.Header
 dialog.BorderSizePixel = 0
 dialog.ZIndex = 101
 dialog.Parent = overlay
+if uiScaleVal and uiScaleVal ~= 1 then
+local oScale = Instance.new("UIScale")
+oScale.Scale = uiScaleVal
+oScale.Parent = dialog
+end
 local dConstraint = Instance.new("UISizeConstraint")
 dConstraint.MinSize = Vector2.new(280, 130)
 dConstraint.MaxSize = Vector2.new(420, 500)
@@ -2130,6 +2132,11 @@ _modules["src/components/Dropdown"] = function()
 local TweenService = game:GetService("TweenService")
 local Dropdown = {}
 Dropdown.__index = Dropdown
+local LucideSheet = "rbxassetid://136111683851629"
+local ChevronRectSize = Vector2.new(24, 24)
+local ChevronRectOffset = Vector2.new(625, 25)
+local CheckRectSize = Vector2.new(24, 24)
+local CheckRectOffset = Vector2.new(175, 450)
 function Dropdown.new(parent, options, theme, cleanup)
 options = options or {}
 local text = options.Title or options.Name or options.Text or "Dropdown"
@@ -2197,11 +2204,14 @@ selectionLabel.ZIndex = 6
 selectionLabel.Parent = selectBox
 local chevron = Instance.new("ImageLabel")
 chevron.Name = "Chevron"
-chevron.Size = UDim2.fromOffset(12, 12)
-chevron.Position = UDim2.new(1, -20, 0.5, -6)
+chevron.Size = UDim2.fromOffset(14, 14)
+chevron.Position = UDim2.new(1, -22, 0.5, -7)
 chevron.BackgroundTransparency = 1
-chevron.Image = "rbxassetid://10709790948"
+chevron.Image = LucideSheet
+chevron.ImageRectSize = ChevronRectSize
+chevron.ImageRectOffset = ChevronRectOffset
 chevron.ImageColor3 = theme.TextMuted
+chevron.ScaleType = Enum.ScaleType.Fit
 chevron.Active = false
 chevron.ZIndex = 6
 chevron.Parent = selectBox
@@ -2322,7 +2332,7 @@ end
 else
 self._selected = defaultVal or rawOptions[1]
 end
-local function updateSelectionSummary()
+function self:_updateSummary()
 if self._isMulti then
 local activeList = {}
 for _, opt in ipairs(self._options) do
@@ -2364,7 +2374,7 @@ local isChecked = false
 if self._isMulti then
 isChecked = self._selected[opt] == true
 else
-isChecked = self._selected == opt
+isChecked = (self._selected == opt)
 end
 local optBtn = Instance.new("TextButton")
 optBtn.Name = "Opt_" .. optStr
@@ -2395,11 +2405,14 @@ optLabel.ZIndex = 28
 optLabel.Parent = optBtn
 local checkIcon = Instance.new("ImageLabel")
 checkIcon.Name = "Checkmark"
-checkIcon.Size = UDim2.fromOffset(12, 12)
-checkIcon.Position = UDim2.new(1, -20, 0.5, -6)
+checkIcon.Size = UDim2.fromOffset(14, 14)
+checkIcon.Position = UDim2.new(1, -22, 0.5, -7)
 checkIcon.BackgroundTransparency = 1
-checkIcon.Image = "rbxassetid://10709790644"
+checkIcon.Image = LucideSheet
+checkIcon.ImageRectSize = CheckRectSize
+checkIcon.ImageRectOffset = CheckRectOffset
 checkIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+checkIcon.ScaleType = Enum.ScaleType.Fit
 checkIcon.Visible = isChecked
 checkIcon.Active = false
 checkIcon.ZIndex = 28
@@ -2417,12 +2430,12 @@ if self._selected[item] then
 table.insert(activeList, item)
 end
 end
-updateSelectionSummary()
+self:_updateSummary()
 self:_rebuildOptions()
 task.spawn(self._callback, activeList)
 else
 self._selected = opt
-updateSelectionSummary()
+self:_updateSummary()
 self:_rebuildOptions()
 self:Close()
 task.spawn(self._callback, opt)
@@ -2442,7 +2455,7 @@ saBtn.Activated:Connect(function()
 for _, item in ipairs(self._options) do
 self._selected[item] = true
 end
-updateSelectionSummary()
+self:_updateSummary()
 self:_rebuildOptions()
 local outList = {}
 for _, item in ipairs(self._options) do
@@ -2455,13 +2468,13 @@ local clBtn = actionsBar:FindFirstChild("Clear")
 if clBtn then
 clBtn.Activated:Connect(function()
 self._selected = {}
-updateSelectionSummary()
+self:_updateSummary()
 self:_rebuildOptions()
 task.spawn(self._callback, {})
 end)
 end
 end
-updateSelectionSummary()
+self:_updateSummary()
 self:_rebuildOptions()
 local lastHeader = 0
 local function toggleDropdown()
@@ -2568,37 +2581,6 @@ local scrollHeight = math.clamp(itemCount * 28 + (itemCount - 1) * 2, 28, 140)
 self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
 local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
 self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
-end
-end
-function Dropdown:_updateSummary()
-if self._isMulti then
-local activeList = {}
-for _, opt in ipairs(self._options) do
-if self._selected[opt] then
-table.insert(activeList, tostring(opt))
-end
-end
-if #activeList == 0 then
-self._selectionLabel.Text = "Select..."
-self._selectionLabel.TextColor3 = self._theme.TextSecondary
-elseif #activeList == 1 then
-self._selectionLabel.Text = activeList[1]
-self._selectionLabel.TextColor3 = self._theme.TextPrimary
-elseif #activeList == 2 then
-self._selectionLabel.Text = activeList[1] .. ", " .. activeList[2]
-self._selectionLabel.TextColor3 = self._theme.TextPrimary
-else
-self._selectionLabel.Text = tostring(#activeList) .. " Selected"
-self._selectionLabel.TextColor3 = self._theme.TextPrimary
-end
-else
-if self._selected ~= nil then
-self._selectionLabel.Text = tostring(self._selected)
-self._selectionLabel.TextColor3 = self._theme.TextPrimary
-else
-self._selectionLabel.Text = "Select..."
-self._selectionLabel.TextColor3 = self._theme.TextSecondary
-end
 end
 end
 function Dropdown:Destroy()
@@ -2918,7 +2900,7 @@ container.Size = UDim2.new(1, 0, 0, 0)
 container.AutomaticSize = Enum.AutomaticSize.Y
 container.BackgroundColor3 = theme.Card
 container.BorderSizePixel = 0
-container.ClipsDescendants = true
+container.ClipsDescendants = false
 container.Parent = parent
 local corner = Instance.new("UICorner")
 corner.CornerRadius = theme.CornerRadius
@@ -3380,123 +3362,196 @@ end
 return ConfigService
 end
 _modules["src/services/IconService"] = function()
+local ContentProvider = game:GetService("ContentProvider")
 local IconService = {}
-local Lucide = {
-focus = "rbxassetid://10747373176",
-crosshair = "rbxassetid://10734950309",
-target = "rbxassetid://10747373176",
-aim = "rbxassetid://10747373176",
-combat = "rbxassetid://10747373176",
-binoculars = "rbxassetid://10709774640",
-spectate = "rbxassetid://10709774640",
-palette = "rbxassetid://10734951052",
-theme = "rbxassetid://10734951052",
-visuals = "rbxassetid://10734951052",
-globe = "rbxassetid://10734950450",
-universal = "rbxassetid://10734950450",
-network = "rbxassetid://10734950450",
-server = "rbxassetid://10734950450",
-user = "rbxassetid://10734952179",
-player = "rbxassetid://10734952179",
-profile = "rbxassetid://10734952179",
-zap = "rbxassetid://10734952402",
-speed = "rbxassetid://10734952402",
-shield = "rbxassetid://10734951352",
-defense = "rbxassetid://10734951352",
-parry = "rbxassetid://10734951352",
-settings = "rbxassetid://10734950020",
-gear = "rbxassetid://10734950020",
-config = "rbxassetid://10734950020",
-swords = "rbxassetid://10734951847",
-sword = "rbxassetid://10734951847",
-eye = "rbxassetid://10734950190",
-home = "rbxassetid://10734950548",
-main = "rbxassetid://10734950548",
-pin = "rbxassetid://10734952044",
-teleport = "rbxassetid://10734952044",
-map = "rbxassetid://10734951117",
-skull = "rbxassetid://10734951467",
-star = "rbxassetid://10734951670",
-sparkles = "rbxassetid://10734951722",
-fire = "rbxassetid://10734960309",
-diamond = "rbxassetid://10734949856",
-package = "rbxassetid://10734950812",
-gamepad = "rbxassetid://10734950278",
-scroll = "rbxassetid://10734951254",
-cart = "rbxassetid://10734951560",
-tools = "rbxassetid://10734952285",
-search = "rbxassetid://10734951296",
-info = "rbxassetid://10734950669",
-bell = "rbxassetid://10734949654",
-lock = "rbxassetid://10734950897",
-check = "rbxassetid://10709790644",
-chevron = "rbxassetid://10709790948",
-arrow = "rbxassetid://10709790948",
-grip = "rbxassetid://10709791523",
-refresh = "rbxassetid://10734951199",
-trash = "rbxassetid://10734952230",
-terminal = "rbxassetid://10734952110",
-sliders = "rbxassetid://10734951515",
-layers = "rbxassetid://10734950860",
+local Sheet1 = "136111683851629"
+local Sheet2 = "135883070486325"
+local DefaultSize = Vector2.new(24, 24)
+local Icons = {
+focus = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+target = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(225, 0) },
+crosshair = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(725, 75) },
+aim = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+combat = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(125, 25) },
+binoculars = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(375, 75) },
+spectate = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(375, 75) },
+palette = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
+theme = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
+visuals = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
+globe = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+universal = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+network = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+server = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+world = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+user = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
+player = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
+profile = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
+zap = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
+speed = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
+lightning = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
+shield = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
+defense = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
+parry = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
+settings = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
+gear = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
+config = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
+swords = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(125, 25) },
+sword = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(150, 0) },
+eye = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 675) },
+esp = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 675) },
+home = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+main = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+pin = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+teleport = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+["map-pin"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+map = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+skull = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(875, 700) },
+star = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(950, 925) },
+flame = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(850, 75) },
+fire = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(850, 75) },
+gem = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 775) },
+diamond = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 775) },
+package = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(550, 700) },
+gamepad = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(300, 650) },
+scroll = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(800, 675) },
+cart = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(975, 575) },
+["shopping-cart"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(975, 575) },
+wrench = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
+tools = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
+tool = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
+search = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 825) },
+info = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(150, 875) },
+information = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(150, 875) },
+bell = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(100, 325) },
+lock = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(300, 800) },
+check = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 450) },
+["chevron-down"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
+chevron = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
+arrow = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
+sliders = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(875, 475) },
+layers = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
 }
-local Emotes = {
-["🎯"] = Lucide.focus,
-["⛶"] = Lucide.focus,
-["🔭"] = Lucide.binoculars,
-["🎨"] = Lucide.palette,
-["🌐"] = Lucide.globe,
-["👤"] = Lucide.user,
-["⚡"] = Lucide.zap,
-["🛡️"] = Lucide.shield,
-["🛡"] = Lucide.shield,
-["⚙️"] = Lucide.settings,
-["⚙"] = Lucide.settings,
-["⚔️"] = Lucide.swords,
-["⚔"] = Lucide.swords,
-["👁️"] = Lucide.eye,
-["👁"] = Lucide.eye,
-["🏠"] = Lucide.home,
-["📍"] = Lucide.pin,
-["🗺️"] = Lucide.map,
-["🗺"] = Lucide.map,
-["💀"] = Lucide.skull,
-["⭐"] = Lucide.star,
-["✨"] = Lucide.sparkles,
-["🔥"] = Lucide.fire,
-["💎"] = Lucide.diamond,
-["📦"] = Lucide.package,
-["🎮"] = Lucide.gamepad,
-["📜"] = Lucide.scroll,
-["🛒"] = Lucide.cart,
-["🛠️"] = Lucide.tools,
-["🔍"] = Lucide.search,
-["ℹ️"] = Lucide.info,
-["🔔"] = Lucide.bell,
-["🔒"] = Lucide.lock,
-["✓"] = Lucide.check,
+local Aliases = {
+["target"] = "target",
+["aim"] = "focus",
+["focus"] = "focus",
+["binoculars"] = "binoculars",
+["palette"] = "palette",
+["theme"] = "palette",
+["visuals"] = "palette",
+["globe"] = "globe",
+["world"] = "globe",
+["user"] = "user",
+["player"] = "user",
+["profile"] = "user",
+["zap"] = "zap",
+["speed"] = "zap",
+["shield"] = "shield",
+["defense"] = "shield",
+["parry"] = "shield",
+["settings"] = "settings",
+["gear"] = "settings",
+["crosshair"] = "crosshair",
+["swords"] = "swords",
+["eye"] = "eye",
+["home"] = "home",
+["info"] = "info",
+["star"] = "star",
+["flame"] = "flame",
+["diamond"] = "diamond",
+["package"] = "package",
+["gamepad"] = "gamepad",
+["scroll"] = "scroll",
+["cart"] = "cart",
+["tools"] = "tools",
+["search"] = "search",
+["bell"] = "bell",
+["lock"] = "lock",
+["check"] = "check",
 }
-IconService.Lucide = Lucide
-IconService.Emotes = Emotes
-IconService.Default = Lucide.layers
+IconService.Icons = Icons
+IconService.Sheet1 = Sheet1
+IconService.Sheet2 = Sheet2
+function IconService.Preload()
+task.spawn(function()
+pcall(function()
+ContentProvider:PreloadAsync({
+"rbxassetid://" .. Sheet1,
+"rbxassetid://" .. Sheet2,
+})
+end)
+end)
+end
+function IconService.Get(name)
+if not name or name == "" then return nil end
+local s = string.lower(tostring(name))
+if Aliases[s] and Icons[Aliases[s]] then
+return Icons[Aliases[s]]
+end
+if Icons[s] then
+return Icons[s]
+end
+for k, v in pairs(Icons) do
+if string.find(s, k) or string.find(k, s) then
+return v
+end
+end
+return Icons.focus
+end
+function IconService.Apply(imageInstance, name, color)
+if not imageInstance or not (imageInstance:IsA("ImageLabel") or imageInstance:IsA("ImageButton")) then
+return
+end
+if not name or name == "" then
+return
+end
+local num = tonumber(name)
+if num then
+imageInstance.Image = "rbxassetid://" .. tostring(num)
+imageInstance.ImageRectSize = Vector2.new(0, 0)
+imageInstance.ImageRectOffset = Vector2.new(0, 0)
+if color then
+imageInstance.ImageColor3 = color
+end
+return
+end
+local str = tostring(name)
+if string.find(str, "rbxasset") or string.find(str, "http") then
+imageInstance.Image = str
+imageInstance.ImageRectSize = Vector2.new(0, 0)
+imageInstance.ImageRectOffset = Vector2.new(0, 0)
+if color then
+imageInstance.ImageColor3 = color
+end
+return
+end
+local data = IconService.Get(str)
+if data then
+imageInstance.Image = "rbxassetid://" .. data.sheet
+imageInstance.ImageRectSize = data.size
+imageInstance.ImageRectOffset = data.offset
+imageInstance.ScaleType = Enum.ScaleType.Fit
+if color then
+imageInstance.ImageColor3 = color
+end
+end
+end
 function IconService.Resolve(input)
 if not input or input == "" then return nil end
-if typeof(input) == "number" or tonumber(input) then
+local data = IconService.Get(input)
+if data then
+return "rbxassetid://" .. data.sheet
+end
+if tonumber(input) then
 return "rbxassetid://" .. tostring(input)
 end
 local s = tostring(input)
-if Emotes[s] then return Emotes[s] end
-local low = string.lower(s)
-if Lucide[low] then return Lucide[low] end
 if string.find(s, "rbxasset") or string.find(s, "http") then
 return s
 end
-local okG, getAsset = pcall(function() return getcustomasset or getsynasset end)
-if okG and typeof(getAsset) == "function" then
-local pOk, res = pcall(getAsset, s)
-if pOk and res then return res end
+return "rbxassetid://" .. Sheet1
 end
-return Lucide.layers
-end
+IconService.Preload()
 return IconService
 end
 _modules["src/services/ProfileService"] = function()
@@ -4210,7 +4265,7 @@ self._mobilePin:SetOpenState(false)
 end
 for _, tab in ipairs(self._allTabs or {}) do
 if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
-tab._layoutEngine:UpdateForDevice(self._currentDevice, true)
+tab._layoutEngine:UpdateForDevice(self._currentDevice, true, self._forceTwoColumns)
 end
 end
 end
@@ -4223,7 +4278,7 @@ self._mobilePin:SetOpenState(true)
 end
 for _, tab in ipairs(self._allTabs or {}) do
 if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
-tab._layoutEngine:UpdateForDevice(self._currentDevice, false)
+tab._layoutEngine:UpdateForDevice(self._currentDevice, false, self._forceTwoColumns)
 end
 end
 end
@@ -4308,6 +4363,9 @@ if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
 tab._layoutEngine:SetTwoColumns(enabled)
 end
 end
+if self._layoutModeDropdown then
+self._layoutModeDropdown:SetValue(enabled and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
+end
 end
 function Window:SetDevice(deviceType)
 if not self._sizeManager then return end
@@ -4329,15 +4387,7 @@ self._contentArea.Position = UDim2.new(0, sbW, 0, 0)
 end
 local dev = string.lower(preset.Name)
 local isTwoCols = (dev == "pc" or dev == "tablet")
-self._forceTwoColumns = isTwoCols
-for _, tab in ipairs(self._allTabs or {}) do
-if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
-tab._layoutEngine:SetTwoColumns(isTwoCols)
-end
-end
-if self._layoutModeDropdown then
-self._layoutModeDropdown:SetValue(isTwoCols and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
-end
+self:SetTwoColumnsMode(isTwoCols)
 if self._mobilePin and self._mobilePin.SetScale then
 self._mobilePin:SetScale(preset.Scale)
 end
@@ -4707,25 +4757,21 @@ barCorner.Parent = activeBar
 local iconLabel = nil
 local labelOffset = 10
 if iconId then
-local iconService = self._window._iconService
-local resolvedAsset = nil
-if iconService and iconService.Resolve then
-resolvedAsset = iconService.Resolve(iconId)
-else
-resolvedAsset = (typeof(iconId) == "number") and ("rbxassetid://" .. tostring(iconId)) or tostring(iconId)
-end
-if resolvedAsset then
 iconLabel = Instance.new("ImageLabel")
 iconLabel.Name = "Icon"
 iconLabel.Size = UDim2.new(0, 18, 0, 18)
 iconLabel.Position = UDim2.new(0, 10, 0.5, -9)
 iconLabel.BackgroundTransparency = 1
-iconLabel.Image = resolvedAsset
-iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
 iconLabel.ScaleType = Enum.ScaleType.Fit
 iconLabel.Parent = tabBtn
-labelOffset = 34
+local iconService = self._window._iconService
+if iconService and iconService.Apply then
+iconService.Apply(iconLabel, iconId, Color3.fromRGB(130, 140, 160))
+else
+iconLabel.Image = tostring(iconId)
+iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
 end
+labelOffset = 34
 end
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
@@ -4862,37 +4908,20 @@ local secOffset = 0
 local secIcon = sectionOptions.Icon or sectionOptions.Image
 if secIcon then
 local iconService = self._window._iconService
-local sResolved, sIsImg = nil, false
-if iconService and iconService.Resolve then
-sResolved, sIsImg = iconService.Resolve(secIcon)
-else
-sResolved = secIcon
-sIsImg = (string.find(tostring(secIcon), "rbxasset") ~= nil) or (typeof(secIcon) == "number")
-end
-if sResolved then
-if sIsImg then
 local sImg = Instance.new("ImageLabel")
 sImg.Name = "SectionIcon"
 sImg.Size = UDim2.fromOffset(14, 14)
 sImg.Position = UDim2.new(0, 0, 0.5, -7)
 sImg.BackgroundTransparency = 1
-sImg.Image = sResolved
-sImg.ImageColor3 = self._window._theme.TextPrimary
+sImg.ScaleType = Enum.ScaleType.Fit
 sImg.Parent = sHeader
+if iconService and iconService.Apply then
+iconService.Apply(sImg, secIcon, self._window._theme.TextPrimary)
 else
-local sTxt = Instance.new("TextLabel")
-sTxt.Name = "SectionIcon"
-sTxt.Size = UDim2.fromOffset(14, 14)
-sTxt.Position = UDim2.new(0, 0, 0.5, -7)
-sTxt.BackgroundTransparency = 1
-sTxt.Text = sResolved
-sTxt.TextColor3 = self._window._theme.TextPrimary
-sTxt.TextSize = 12
-sTxt.Font = self._window._theme.FontBold
-sTxt.Parent = sHeader
+sImg.Image = tostring(secIcon)
+sImg.ImageColor3 = self._window._theme.TextPrimary
 end
 secOffset = 20
-end
 end
 local sTitle = Instance.new("TextLabel")
 sTitle.Name = "Title"

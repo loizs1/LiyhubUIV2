@@ -154,55 +154,57 @@ function Layout:SetTwoColumns(enabled)
     if self._twoColumns == enabled then return end
     self._twoColumns = enabled
     
-    if enabled then
-        local children = self._singleColumn:GetChildren()
-        local validChildren = {}
-        for _, c in ipairs(children) do
-            if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
-                table.insert(validChildren, c)
+    local allCards = {}
+    local seen = {}
+    
+    local function collectFrom(container)
+        if not container then return end
+        for _, child in ipairs(container:GetChildren()) do
+            if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                if not seen[child] then
+                    seen[child] = true
+                    table.insert(allCards, child)
+                end
             end
         end
-        table.sort(validChildren, function(a, b)
-            local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
-            local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
-            return ordA < ordB
-        end)
-        for _, child in ipairs(validChildren) do
-            local side = child:GetAttribute("LayoutSide") or "Left"
+    end
+    
+    collectFrom(self._leftColumn)
+    collectFrom(self._rightColumn)
+    collectFrom(self._singleColumn)
+    
+    table.sort(allCards, function(a, b)
+        local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
+        local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
+        return ordA < ordB
+    end)
+    
+    if enabled then
+        for _, card in ipairs(allCards) do
+            local side = card:GetAttribute("LayoutSide") or "Left"
             if string.lower(side) == "right" then
-                child.Parent = self._rightColumn
+                card.Parent = self._rightColumn
             else
-                child.Parent = self._leftColumn
+                card.Parent = self._leftColumn
             end
         end
         self._dualContainer.Visible = true
         self._singleColumn.Visible = false
+        if self._leftColumn then
+            self._leftColumn.CanvasPosition = Vector2.new(0, 0)
+        end
+        if self._rightColumn then
+            self._rightColumn.CanvasPosition = Vector2.new(0, 0)
+        end
     else
-        local leftChildren = self._leftColumn:GetChildren()
-        local rightChildren = self._rightColumn:GetChildren()
-        local allChildren = {}
-        for _, c in ipairs(leftChildren) do
-            if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
-                c:SetAttribute("LayoutSide", "Left")
-                table.insert(allChildren, c)
-            end
-        end
-        for _, c in ipairs(rightChildren) do
-            if c:IsA("GuiObject") and not c:IsA("UIListLayout") and not c:IsA("UIPadding") then
-                c:SetAttribute("LayoutSide", "Right")
-                table.insert(allChildren, c)
-            end
-        end
-        table.sort(allChildren, function(a, b)
-            local ordA = a:GetAttribute("OriginalOrder") or a.LayoutOrder or 0
-            local ordB = b:GetAttribute("OriginalOrder") or b.LayoutOrder or 0
-            return ordA < ordB
-        end)
-        for _, c in ipairs(allChildren) do
-            c.Parent = self._singleColumn
+        for _, card in ipairs(allCards) do
+            card.Parent = self._singleColumn
         end
         self._dualContainer.Visible = false
         self._singleColumn.Visible = true
+        if self._singleColumn then
+            self._singleColumn.CanvasPosition = Vector2.new(0, 0)
+        end
     end
 end
 
@@ -210,7 +212,11 @@ function Layout:IsTwoColumns()
     return self._twoColumns
 end
 
-function Layout:UpdateForDevice(deviceName, isMinimized)
+function Layout:UpdateForDevice(deviceName, isMinimized, forceOverride)
+    if forceOverride ~= nil then
+        self:SetTwoColumns(forceOverride)
+        return
+    end
     local dev = string.lower(deviceName or "pc")
     if dev == "pc" or dev == "tablet" then
         self:SetTwoColumns(true)

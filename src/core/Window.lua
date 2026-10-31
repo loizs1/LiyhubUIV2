@@ -731,7 +731,7 @@ function Window:Minimize()
     end
     for _, tab in ipairs(self._allTabs or {}) do
         if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
-            tab._layoutEngine:UpdateForDevice(self._currentDevice, true)
+            tab._layoutEngine:UpdateForDevice(self._currentDevice, true, self._forceTwoColumns)
         end
     end
 end
@@ -745,7 +745,7 @@ function Window:Open()
     end
     for _, tab in ipairs(self._allTabs or {}) do
         if tab._layoutEngine and tab._layoutEngine.UpdateForDevice then
-            tab._layoutEngine:UpdateForDevice(self._currentDevice, false)
+            tab._layoutEngine:UpdateForDevice(self._currentDevice, false, self._forceTwoColumns)
         end
     end
 end
@@ -838,6 +838,9 @@ function Window:SetTwoColumnsMode(enabled)
             tab._layoutEngine:SetTwoColumns(enabled)
         end
     end
+    if self._layoutModeDropdown then
+        self._layoutModeDropdown:SetValue(enabled and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
+    end
 end
 
 function Window:SetDevice(deviceType)
@@ -860,15 +863,7 @@ function Window:SetDevice(deviceType)
     end
     local dev = string.lower(preset.Name)
     local isTwoCols = (dev == "pc" or dev == "tablet")
-    self._forceTwoColumns = isTwoCols
-    for _, tab in ipairs(self._allTabs or {}) do
-        if tab._layoutEngine and tab._layoutEngine.SetTwoColumns then
-            tab._layoutEngine:SetTwoColumns(isTwoCols)
-        end
-    end
-    if self._layoutModeDropdown then
-        self._layoutModeDropdown:SetValue(isTwoCols and "2 Column (Kiri & Kanan)" or "1 Column (1 Baris Lurus)")
-    end
+    self:SetTwoColumnsMode(isTwoCols)
     if self._mobilePin and self._mobilePin.SetScale then
         self._mobilePin:SetScale(preset.Scale)
     end
@@ -1292,25 +1287,21 @@ function TabGroup:CreateTab(options)
     local iconLabel = nil
     local labelOffset = 10
     if iconId then
+        iconLabel = Instance.new("ImageLabel")
+        iconLabel.Name = "Icon"
+        iconLabel.Size = UDim2.new(0, 18, 0, 18)
+        iconLabel.Position = UDim2.new(0, 10, 0.5, -9)
+        iconLabel.BackgroundTransparency = 1
+        iconLabel.ScaleType = Enum.ScaleType.Fit
+        iconLabel.Parent = tabBtn
         local iconService = self._window._iconService
-        local resolvedAsset = nil
-        if iconService and iconService.Resolve then
-            resolvedAsset = iconService.Resolve(iconId)
+        if iconService and iconService.Apply then
+            iconService.Apply(iconLabel, iconId, Color3.fromRGB(130, 140, 160))
         else
-            resolvedAsset = (typeof(iconId) == "number") and ("rbxassetid://" .. tostring(iconId)) or tostring(iconId)
-        end
-        if resolvedAsset then
-            iconLabel = Instance.new("ImageLabel")
-            iconLabel.Name = "Icon"
-            iconLabel.Size = UDim2.new(0, 18, 0, 18)
-            iconLabel.Position = UDim2.new(0, 10, 0.5, -9)
-            iconLabel.BackgroundTransparency = 1
-            iconLabel.Image = resolvedAsset
+            iconLabel.Image = tostring(iconId)
             iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
-            iconLabel.ScaleType = Enum.ScaleType.Fit
-            iconLabel.Parent = tabBtn
-            labelOffset = 34
         end
+        labelOffset = 34
     end
     
     local titleLabel = Instance.new("TextLabel")
@@ -1474,37 +1465,20 @@ function Tab:CreateSection(nameOrOptions)
     local secIcon = sectionOptions.Icon or sectionOptions.Image
     if secIcon then
         local iconService = self._window._iconService
-        local sResolved, sIsImg = nil, false
-        if iconService and iconService.Resolve then
-            sResolved, sIsImg = iconService.Resolve(secIcon)
+        local sImg = Instance.new("ImageLabel")
+        sImg.Name = "SectionIcon"
+        sImg.Size = UDim2.fromOffset(14, 14)
+        sImg.Position = UDim2.new(0, 0, 0.5, -7)
+        sImg.BackgroundTransparency = 1
+        sImg.ScaleType = Enum.ScaleType.Fit
+        sImg.Parent = sHeader
+        if iconService and iconService.Apply then
+            iconService.Apply(sImg, secIcon, self._window._theme.TextPrimary)
         else
-            sResolved = secIcon
-            sIsImg = (string.find(tostring(secIcon), "rbxasset") ~= nil) or (typeof(secIcon) == "number")
+            sImg.Image = tostring(secIcon)
+            sImg.ImageColor3 = self._window._theme.TextPrimary
         end
-        if sResolved then
-            if sIsImg then
-                local sImg = Instance.new("ImageLabel")
-                sImg.Name = "SectionIcon"
-                sImg.Size = UDim2.fromOffset(14, 14)
-                sImg.Position = UDim2.new(0, 0, 0.5, -7)
-                sImg.BackgroundTransparency = 1
-                sImg.Image = sResolved
-                sImg.ImageColor3 = self._window._theme.TextPrimary
-                sImg.Parent = sHeader
-            else
-                local sTxt = Instance.new("TextLabel")
-                sTxt.Name = "SectionIcon"
-                sTxt.Size = UDim2.fromOffset(14, 14)
-                sTxt.Position = UDim2.new(0, 0, 0.5, -7)
-                sTxt.BackgroundTransparency = 1
-                sTxt.Text = sResolved
-                sTxt.TextColor3 = self._window._theme.TextPrimary
-                sTxt.TextSize = 12
-                sTxt.Font = self._window._theme.FontBold
-                sTxt.Parent = sHeader
-            end
-            secOffset = 20
-        end
+        secOffset = 20
     end
     
     local sTitle = Instance.new("TextLabel")

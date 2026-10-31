@@ -33,9 +33,9 @@ local Window = LiyHubUI:CreateWindow({
     Discord = "https://discord.gg/Nr56tQJeJh",
 })
 
-local MainFeaturesGroup = Window:CreateTabGroup("Main Features")
+local MainGroup = Window:CreateTabGroup("Main Features")
 
-local MainTab = MainFeaturesGroup:CreateTab({
+local MainTab = MainGroup:CreateTab({
     Name = "Main (Mode 1)",
     Icon = "focus",
 })
@@ -65,7 +65,7 @@ FarmSection:CreateToggle({
     end
 })
 
-local farmActions = FarmSection:CreateButtonGroup({
+FarmSection:CreateButtonGroup({
     Buttons = {
         {
             Name = "Start Auto Farm",
@@ -96,7 +96,114 @@ FarmSection:CreateMultiDropdown({
     end
 })
 
-local CombatTab = MainFeaturesGroup:CreateTab({
+local EspTab = MainGroup:CreateTab({
+    Name = "Observation & ESP",
+    Icon = "binoculars",
+})
+
+local EspSec = EspTab:CreateSection("Visual ESP Engine")
+EspSec:CreateToggle({
+    Name = "Player Box ESP",
+    Desc = "Draws 2D bounding boxes around players.",
+    Default = false,
+    Callback = function(state) end
+})
+EspSec:CreateToggle({
+    Name = "Nametags & Distance",
+    Desc = "Displays billboard indicators with distance studs.",
+    Default = false,
+    Callback = function(state) end
+})
+
+local ThemeTab = MainGroup:CreateTab({
+    Name = "Themes & Visuals",
+    Icon = "palette",
+})
+local ThemeSec = ThemeTab:CreateSection("Custom Visuals")
+ThemeSec:CreateToggle({
+    Name = "Pure Contrast Mode",
+    Desc = "Enhances border highlights and backdrop blur.",
+    Default = false,
+    Callback = function(state) end
+})
+
+local WorldGroup = Window:CreateTabGroup("World & Navigation")
+
+local TeleportTab = WorldGroup:CreateTab({
+    Name = "Teleport",
+    Icon = "globe",
+})
+
+local IslandSection = TeleportTab:CreateSection("Island Waypoints")
+
+IslandSection:CreateDropdown({
+    Name = "Island",
+    Options = { "Spawn Island", "Desert Oasis", "Sky Sanctuary" },
+    Default = "Spawn Island",
+    Callback = function(island)
+    end
+})
+
+IslandSection:CreateDropdown({
+    Name = "Method",
+    Options = { "Tween Smooth", "Bypass CFrame" },
+    Default = "Tween Smooth",
+    Callback = function(method)
+    end
+})
+
+IslandSection:CreateButton({
+    Name = "Teleport to Island",
+    Desc = "Travel cleanly to the selected island coordinates.",
+    ButtonText = "Teleport",
+    Callback = function()
+    end
+})
+
+local PlayerGroup = Window:CreateTabGroup("Player Modifiers")
+
+local PlayerTab = PlayerGroup:CreateTab({
+    Name = "Local Player",
+    Icon = "user",
+})
+
+local StatSec = PlayerTab:CreateSection("Player State")
+StatSec:CreateSlider({
+    Name = "WalkSpeed Multiplier",
+    Min = 16,
+    Max = 250,
+    Default = 16,
+    Suffix = "studs/s",
+    Callback = function(val) end
+})
+StatSec:CreateSlider({
+    Name = "JumpPower Multiplier",
+    Min = 50,
+    Max = 350,
+    Default = 50,
+    Suffix = "studs",
+    Callback = function(val) end
+})
+
+local SpeedTab = PlayerGroup:CreateTab({
+    Name = "Speed & Movement",
+    Icon = "zap",
+})
+local SpeedSec = SpeedTab:CreateSection("Physics Bypass")
+SpeedSec:CreateToggle({
+    Name = "Infinite Jump",
+    Desc = "Allows airborne jump repetition without ground contact.",
+    Default = false,
+    Callback = function(s) end
+})
+SpeedSec:CreateToggle({
+    Name = "No Clip",
+    Desc = "Passes collision checks through geometry.",
+    Default = false,
+    Callback = function(s) end
+})
+
+local CombatTab = MainGroup:CreateTab({
     Name = "Combat (Mode 2)",
     Icon = "shield",
 })
@@ -129,99 +236,10 @@ AimSection:CreateSlider({
     Callback = function(val) end
 })
 
-AimSection:CreateSlider({
-    Name = "Reaction Delay",
-    Min = 0.01,
-    Max = 1.00,
-    Default = 0.08,
-    Step = 0.01,
-    Suffix = "s",
-    Callback = function(val) end
-})
-
-AimSection:CreateSlider({
-    Name = "Prediction Distance",
-    Min = 0.0,
-    Max = 50.0,
-    Default = 0.0,
-    Step = 0.1,
-    Suffix = "studs",
-    Callback = function(val) end
-})
-
-AimSection:CreateSlider({
-    Name = "Camera Smoothing",
-    Min = 0.0,
-    Max = 20.0,
-    Default = 0.0,
-    Step = 0.1,
-    Suffix = "studs",
-    Callback = function(val) end
-})
-
 AimSection:CreateDropdown({
     Name = "Target Body Part",
     Options = { "Head", "Torso", "HumanoidRootPart" },
     Default = "Head",
     Callback = function(part)
-    end
-})
-
-local WeaponSection = CombatTab:CreateSection("Weapon Modifications")
-
-WeaponSection:CreateToggle({
-    Name = "Fast Reload",
-    Desc = "Eliminates reload windup and weapon cooldowns.",
-    Default = false,
-    Callback = function(state)
-    end
-})
-
-WeaponSection:CreateToggle({
-    Name = "No Spread",
-    Desc = "Tightens weapon spread to exact pinpoint center.",
-    Default = false,
-    Callback = function(state)
-    end
-})
-
-WeaponSection:CreateMultiDropdown({
-    Name = "Weapon Buffs (Multi-Select)",
-    Options = { "Infinite Ammo", "Rapid Fire", "Explosive Bullets" },
-    Default = { "Infinite Ammo" },
-    Callback = function(selectedList)
-    end
-})
-
-local WorldGroup = Window:CreateTabGroup("World & Travel")
-
-local TeleportTab = WorldGroup:CreateTab({
-    Name = "Teleport",
-    Icon = "globe",
-})
-
-local IslandSection = TeleportTab:CreateSection("Island Waypoints")
-
-IslandSection:CreateDropdown({
-    Name = "Island",
-    Options = { "Spawn Island", "Desert Oasis", "Sky Sanctuary" },
-    Default = "Spawn Island",
-    Callback = function(island)
-    end
-})
-
-IslandSection:CreateDropdown({
-    Name = "Method",
-    Options = { "Tween Smooth", "Bypass CFrame" },
-    Default = "Tween Smooth",
-    Callback = function(method)
-    end
-})
-
-IslandSection:CreateButton({
-    Name = "Teleport to Island",
-    Desc = "Travel cleanly to the selected island coordinates.",
-    ButtonText = "Teleport",
-    Callback = function()
     end
 })

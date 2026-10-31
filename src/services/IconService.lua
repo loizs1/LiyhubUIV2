@@ -1,123 +1,205 @@
+local ContentProvider = game:GetService("ContentProvider")
+
 local IconService = {}
 
-local Lucide = {
-    focus = "rbxassetid://10747373176",
-    crosshair = "rbxassetid://10734950309",
-    target = "rbxassetid://10747373176",
-    aim = "rbxassetid://10747373176",
-    combat = "rbxassetid://10747373176",
-    binoculars = "rbxassetid://10709774640",
-    spectate = "rbxassetid://10709774640",
-    palette = "rbxassetid://10734951052",
-    theme = "rbxassetid://10734951052",
-    visuals = "rbxassetid://10734951052",
-    globe = "rbxassetid://10734950450",
-    universal = "rbxassetid://10734950450",
-    network = "rbxassetid://10734950450",
-    server = "rbxassetid://10734950450",
-    user = "rbxassetid://10734952179",
-    player = "rbxassetid://10734952179",
-    profile = "rbxassetid://10734952179",
-    zap = "rbxassetid://10734952402",
-    speed = "rbxassetid://10734952402",
-    shield = "rbxassetid://10734951352",
-    defense = "rbxassetid://10734951352",
-    parry = "rbxassetid://10734951352",
-    settings = "rbxassetid://10734950020",
-    gear = "rbxassetid://10734950020",
-    config = "rbxassetid://10734950020",
-    swords = "rbxassetid://10734951847",
-    sword = "rbxassetid://10734951847",
-    eye = "rbxassetid://10734950190",
-    home = "rbxassetid://10734950548",
-    main = "rbxassetid://10734950548",
-    pin = "rbxassetid://10734952044",
-    teleport = "rbxassetid://10734952044",
-    map = "rbxassetid://10734951117",
-    skull = "rbxassetid://10734951467",
-    star = "rbxassetid://10734951670",
-    sparkles = "rbxassetid://10734951722",
-    fire = "rbxassetid://10734960309",
-    diamond = "rbxassetid://10734949856",
-    package = "rbxassetid://10734950812",
-    gamepad = "rbxassetid://10734950278",
-    scroll = "rbxassetid://10734951254",
-    cart = "rbxassetid://10734951560",
-    tools = "rbxassetid://10734952285",
-    search = "rbxassetid://10734951296",
-    info = "rbxassetid://10734950669",
-    bell = "rbxassetid://10734949654",
-    lock = "rbxassetid://10734950897",
-    check = "rbxassetid://10709790644",
-    chevron = "rbxassetid://10709790948",
-    arrow = "rbxassetid://10709790948",
-    grip = "rbxassetid://10709791523",
-    refresh = "rbxassetid://10734951199",
-    trash = "rbxassetid://10734952230",
-    terminal = "rbxassetid://10734952110",
-    sliders = "rbxassetid://10734951515",
-    layers = "rbxassetid://10734950860",
+local Sheet1 = "136111683851629"
+local Sheet2 = "135883070486325"
+local DefaultSize = Vector2.new(24, 24)
+
+local Icons = {
+    focus = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+    target = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(225, 0) },
+    crosshair = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(725, 75) },
+    aim = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+    combat = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(125, 25) },
+    binoculars = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(375, 75) },
+    spectate = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(375, 75) },
+    palette = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
+    theme = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
+    visuals = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 825) },
+    globe = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+    universal = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+    network = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+    server = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+    world = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(425, 550) },
+    user = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
+    player = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
+    profile = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(375, 75) },
+    zap = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
+    speed = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
+    lightning = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(400, 150) },
+    shield = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
+    defense = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
+    parry = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(750, 775) },
+    settings = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
+    gear = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
+    config = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(825, 675) },
+    swords = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(125, 25) },
+    sword = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(150, 0) },
+    eye = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 675) },
+    esp = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 675) },
+    home = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+    main = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
+    pin = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+    teleport = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+    ["map-pin"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+    map = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(325, 800) },
+    skull = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(875, 700) },
+    star = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(950, 925) },
+    flame = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(850, 75) },
+    fire = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(850, 75) },
+    gem = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 775) },
+    diamond = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 775) },
+    package = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(550, 700) },
+    gamepad = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(300, 650) },
+    scroll = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(800, 675) },
+    cart = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(975, 575) },
+    ["shopping-cart"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(975, 575) },
+    wrench = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
+    tools = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
+    tool = { sheet = Sheet2, size = DefaultSize, offset = Vector2.new(50, 475) },
+    search = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 825) },
+    info = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(150, 875) },
+    information = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(150, 875) },
+    bell = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(100, 325) },
+    lock = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(300, 800) },
+    check = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(175, 450) },
+    ["chevron-down"] = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
+    chevron = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
+    arrow = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(625, 25) },
+    sliders = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(875, 475) },
+    layers = { sheet = Sheet1, size = DefaultSize, offset = Vector2.new(650, 275) },
 }
 
-local Emotes = {
-    ["🎯"] = Lucide.focus,
-    ["⛶"] = Lucide.focus,
-    ["🔭"] = Lucide.binoculars,
-    ["🎨"] = Lucide.palette,
-    ["🌐"] = Lucide.globe,
-    ["👤"] = Lucide.user,
-    ["⚡"] = Lucide.zap,
-    ["🛡️"] = Lucide.shield,
-    ["🛡"] = Lucide.shield,
-    ["⚙️"] = Lucide.settings,
-    ["⚙"] = Lucide.settings,
-    ["⚔️"] = Lucide.swords,
-    ["⚔"] = Lucide.swords,
-    ["👁️"] = Lucide.eye,
-    ["👁"] = Lucide.eye,
-    ["🏠"] = Lucide.home,
-    ["📍"] = Lucide.pin,
-    ["🗺️"] = Lucide.map,
-    ["🗺"] = Lucide.map,
-    ["💀"] = Lucide.skull,
-    ["⭐"] = Lucide.star,
-    ["✨"] = Lucide.sparkles,
-    ["🔥"] = Lucide.fire,
-    ["💎"] = Lucide.diamond,
-    ["📦"] = Lucide.package,
-    ["🎮"] = Lucide.gamepad,
-    ["📜"] = Lucide.scroll,
-    ["🛒"] = Lucide.cart,
-    ["🛠️"] = Lucide.tools,
-    ["🔍"] = Lucide.search,
-    ["ℹ️"] = Lucide.info,
-    ["🔔"] = Lucide.bell,
-    ["🔒"] = Lucide.lock,
-    ["✓"] = Lucide.check,
+local Aliases = {
+    ["target"] = "target",
+    ["aim"] = "focus",
+    ["focus"] = "focus",
+    ["binoculars"] = "binoculars",
+    ["palette"] = "palette",
+    ["theme"] = "palette",
+    ["visuals"] = "palette",
+    ["globe"] = "globe",
+    ["world"] = "globe",
+    ["user"] = "user",
+    ["player"] = "user",
+    ["profile"] = "user",
+    ["zap"] = "zap",
+    ["speed"] = "zap",
+    ["shield"] = "shield",
+    ["defense"] = "shield",
+    ["parry"] = "shield",
+    ["settings"] = "settings",
+    ["gear"] = "settings",
+    ["crosshair"] = "crosshair",
+    ["swords"] = "swords",
+    ["eye"] = "eye",
+    ["home"] = "home",
+    ["info"] = "info",
+    ["star"] = "star",
+    ["flame"] = "flame",
+    ["diamond"] = "diamond",
+    ["package"] = "package",
+    ["gamepad"] = "gamepad",
+    ["scroll"] = "scroll",
+    ["cart"] = "cart",
+    ["tools"] = "tools",
+    ["search"] = "search",
+    ["bell"] = "bell",
+    ["lock"] = "lock",
+    ["check"] = "check",
 }
 
-IconService.Lucide = Lucide
-IconService.Emotes = Emotes
-IconService.Default = Lucide.layers
+IconService.Icons = Icons
+IconService.Sheet1 = Sheet1
+IconService.Sheet2 = Sheet2
+
+function IconService.Preload()
+    task.spawn(function()
+        pcall(function()
+            ContentProvider:PreloadAsync({
+                "rbxassetid://" .. Sheet1,
+                "rbxassetid://" .. Sheet2,
+            })
+        end)
+    end)
+end
+
+function IconService.Get(name)
+    if not name or name == "" then return nil end
+    local s = string.lower(tostring(name))
+    if Aliases[s] and Icons[Aliases[s]] then
+        return Icons[Aliases[s]]
+    end
+    if Icons[s] then
+        return Icons[s]
+    end
+    for k, v in pairs(Icons) do
+        if string.find(s, k) or string.find(k, s) then
+            return v
+        end
+    end
+    return Icons.focus
+end
+
+function IconService.Apply(imageInstance, name, color)
+    if not imageInstance or not (imageInstance:IsA("ImageLabel") or imageInstance:IsA("ImageButton")) then
+        return
+    end
+    if not name or name == "" then
+        return
+    end
+    
+    local num = tonumber(name)
+    if num then
+        imageInstance.Image = "rbxassetid://" .. tostring(num)
+        imageInstance.ImageRectSize = Vector2.new(0, 0)
+        imageInstance.ImageRectOffset = Vector2.new(0, 0)
+        if color then
+            imageInstance.ImageColor3 = color
+        end
+        return
+    end
+    
+    local str = tostring(name)
+    if string.find(str, "rbxasset") or string.find(str, "http") then
+        imageInstance.Image = str
+        imageInstance.ImageRectSize = Vector2.new(0, 0)
+        imageInstance.ImageRectOffset = Vector2.new(0, 0)
+        if color then
+            imageInstance.ImageColor3 = color
+        end
+        return
+    end
+    
+    local data = IconService.Get(str)
+    if data then
+        imageInstance.Image = "rbxassetid://" .. data.sheet
+        imageInstance.ImageRectSize = data.size
+        imageInstance.ImageRectOffset = data.offset
+        imageInstance.ScaleType = Enum.ScaleType.Fit
+        if color then
+            imageInstance.ImageColor3 = color
+        end
+    end
+end
 
 function IconService.Resolve(input)
     if not input or input == "" then return nil end
-    if typeof(input) == "number" or tonumber(input) then
+    local data = IconService.Get(input)
+    if data then
+        return "rbxassetid://" .. data.sheet
+    end
+    if tonumber(input) then
         return "rbxassetid://" .. tostring(input)
     end
     local s = tostring(input)
-    if Emotes[s] then return Emotes[s] end
-    local low = string.lower(s)
-    if Lucide[low] then return Lucide[low] end
     if string.find(s, "rbxasset") or string.find(s, "http") then
         return s
     end
-    local okG, getAsset = pcall(function() return getcustomasset or getsynasset end)
-    if okG and typeof(getAsset) == "function" then
-        local pOk, res = pcall(getAsset, s)
-        if pOk and res then return res end
-    end
-    return Lucide.layers
+    return "rbxassetid://" .. Sheet1
 end
+
+IconService.Preload()
 
 return IconService

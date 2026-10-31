@@ -3,6 +3,12 @@ local TweenService = game:GetService("TweenService")
 local Dropdown = {}
 Dropdown.__index = Dropdown
 
+local LucideSheet = "rbxassetid://136111683851629"
+local ChevronRectSize = Vector2.new(24, 24)
+local ChevronRectOffset = Vector2.new(625, 25)
+local CheckRectSize = Vector2.new(24, 24)
+local CheckRectOffset = Vector2.new(175, 450)
+
 function Dropdown.new(parent, options, theme, cleanup)
     options = options or {}
     local text = options.Title or options.Name or options.Text or "Dropdown"
@@ -78,11 +84,14 @@ function Dropdown.new(parent, options, theme, cleanup)
     
     local chevron = Instance.new("ImageLabel")
     chevron.Name = "Chevron"
-    chevron.Size = UDim2.fromOffset(12, 12)
-    chevron.Position = UDim2.new(1, -20, 0.5, -6)
+    chevron.Size = UDim2.fromOffset(14, 14)
+    chevron.Position = UDim2.new(1, -22, 0.5, -7)
     chevron.BackgroundTransparency = 1
-    chevron.Image = "rbxassetid://10709790948"
+    chevron.Image = LucideSheet
+    chevron.ImageRectSize = ChevronRectSize
+    chevron.ImageRectOffset = ChevronRectOffset
     chevron.ImageColor3 = theme.TextMuted
+    chevron.ScaleType = Enum.ScaleType.Fit
     chevron.Active = false
     chevron.ZIndex = 6
     chevron.Parent = selectBox
@@ -217,7 +226,7 @@ function Dropdown.new(parent, options, theme, cleanup)
         self._selected = defaultVal or rawOptions[1]
     end
     
-    local function updateSelectionSummary()
+    function self:_updateSummary()
         if self._isMulti then
             local activeList = {}
             for _, opt in ipairs(self._options) do
@@ -261,7 +270,7 @@ function Dropdown.new(parent, options, theme, cleanup)
             if self._isMulti then
                 isChecked = self._selected[opt] == true
             else
-                isChecked = self._selected == opt
+                isChecked = (self._selected == opt)
             end
             
             local optBtn = Instance.new("TextButton")
@@ -296,11 +305,14 @@ function Dropdown.new(parent, options, theme, cleanup)
             
             local checkIcon = Instance.new("ImageLabel")
             checkIcon.Name = "Checkmark"
-            checkIcon.Size = UDim2.fromOffset(12, 12)
-            checkIcon.Position = UDim2.new(1, -20, 0.5, -6)
+            checkIcon.Size = UDim2.fromOffset(14, 14)
+            checkIcon.Position = UDim2.new(1, -22, 0.5, -7)
             checkIcon.BackgroundTransparency = 1
-            checkIcon.Image = "rbxassetid://10709790644"
+            checkIcon.Image = LucideSheet
+            checkIcon.ImageRectSize = CheckRectSize
+            checkIcon.ImageRectOffset = CheckRectOffset
             checkIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            checkIcon.ScaleType = Enum.ScaleType.Fit
             checkIcon.Visible = isChecked
             checkIcon.Active = false
             checkIcon.ZIndex = 28
@@ -320,12 +332,12 @@ function Dropdown.new(parent, options, theme, cleanup)
                             table.insert(activeList, item)
                         end
                     end
-                    updateSelectionSummary()
+                    self:_updateSummary()
                     self:_rebuildOptions()
                     task.spawn(self._callback, activeList)
                 else
                     self._selected = opt
-                    updateSelectionSummary()
+                    self:_updateSummary()
                     self:_rebuildOptions()
                     self:Close()
                     task.spawn(self._callback, opt)
@@ -347,7 +359,7 @@ function Dropdown.new(parent, options, theme, cleanup)
                 for _, item in ipairs(self._options) do
                     self._selected[item] = true
                 end
-                updateSelectionSummary()
+                self:_updateSummary()
                 self:_rebuildOptions()
                 local outList = {}
                 for _, item in ipairs(self._options) do
@@ -360,14 +372,14 @@ function Dropdown.new(parent, options, theme, cleanup)
         if clBtn then
             clBtn.Activated:Connect(function()
                 self._selected = {}
-                updateSelectionSummary()
+                self:_updateSummary()
                 self:_rebuildOptions()
                 task.spawn(self._callback, {})
             end)
         end
     end
     
-    updateSelectionSummary()
+    self:_updateSummary()
     self:_rebuildOptions()
     
     local lastHeader = 0
@@ -484,38 +496,6 @@ function Dropdown:SetOptions(newOptions)
         self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
         local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
         self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
-    end
-end
-
-function Dropdown:_updateSummary()
-    if self._isMulti then
-        local activeList = {}
-        for _, opt in ipairs(self._options) do
-            if self._selected[opt] then
-                table.insert(activeList, tostring(opt))
-            end
-        end
-        if #activeList == 0 then
-            self._selectionLabel.Text = "Select..."
-            self._selectionLabel.TextColor3 = self._theme.TextSecondary
-        elseif #activeList == 1 then
-            self._selectionLabel.Text = activeList[1]
-            self._selectionLabel.TextColor3 = self._theme.TextPrimary
-        elseif #activeList == 2 then
-            self._selectionLabel.Text = activeList[1] .. ", " .. activeList[2]
-            self._selectionLabel.TextColor3 = self._theme.TextPrimary
-        else
-            self._selectionLabel.Text = tostring(#activeList) .. " Selected"
-            self._selectionLabel.TextColor3 = self._theme.TextPrimary
-        end
-    else
-        if self._selected ~= nil then
-            self._selectionLabel.Text = tostring(self._selected)
-            self._selectionLabel.TextColor3 = self._theme.TextPrimary
-        else
-            self._selectionLabel.Text = "Select..."
-            self._selectionLabel.TextColor3 = self._theme.TextSecondary
-        end
     end
 end
 

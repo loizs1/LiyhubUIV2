@@ -29,12 +29,6 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
             uiScaleVal = ws.Scale
         end
     end
-    if uiScaleVal and uiScaleVal ~= 1 then
-        local oScale = Instance.new("UIScale")
-        oScale.Scale = uiScaleVal
-        oScale.Parent = overlay
-    end
-    
     local dialog = Instance.new("Frame")
     dialog.Name = "Dialog"
     dialog.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -45,6 +39,12 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     dialog.BorderSizePixel = 0
     dialog.ZIndex = 101
     dialog.Parent = overlay
+
+    if uiScaleVal and uiScaleVal ~= 1 then
+        local oScale = Instance.new("UIScale")
+        oScale.Scale = uiScaleVal
+        oScale.Parent = dialog
+    end
     
     local dConstraint = Instance.new("UISizeConstraint")
     dConstraint.MinSize = Vector2.new(280, 130)

@@ -36,7 +36,7 @@ function Banner.new(parent, options, theme, cleanup)
     container.AutomaticSize = Enum.AutomaticSize.Y
     container.BackgroundColor3 = theme.Card
     container.BorderSizePixel = 0
-    container.ClipsDescendants = true
+    container.ClipsDescendants = false
     container.Parent = parent
     
     local corner = Instance.new("UICorner")
