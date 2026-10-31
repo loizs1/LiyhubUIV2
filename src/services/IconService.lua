@@ -73,12 +73,40 @@ local Aliases = {
     information = "info",
     ["chevron-down"] = "chevron",
     arrow = "chevron",
+    arrowright = "chevron",
+    ["arrow-right"] = "chevron",
+    right = "chevron",
+    book = "scroll",
+    folder = "package",
+    list = "sliders",
+    sword = "swords",
+    quest = "scroll",
+    battle = "swords",
+    loot = "gem",
+    reward = "gem",
+    boss = "skull",
+    farm = "swords",
+    accept = "check",
     layers = "focus",
     dark = "moon",
     light = "sun",
 }
 
-IconService.Icons = Icons
+local IconsProxy = setmetatable({}, {
+    __index = function(_, key)
+        local s = string.lower(tostring(key))
+        if Aliases[s] then
+            return Aliases[s]
+        end
+        return tostring(key)
+    end
+})
+
+IconService.UniversalEmotes = IconsProxy
+IconService.Emotes = IconsProxy
+IconService.Icons = IconsProxy
+IconService.RawIcons = Icons
+IconService.Aliases = Aliases
 IconService.Sheet1 = Sheet1
 IconService.Sheet2 = Sheet2
 

@@ -4234,11 +4234,38 @@ tool = "wrench",
 information = "info",
 ["chevron-down"] = "chevron",
 arrow = "chevron",
+arrowright = "chevron",
+["arrow-right"] = "chevron",
+right = "chevron",
+book = "scroll",
+folder = "package",
+list = "sliders",
+sword = "swords",
+quest = "scroll",
+battle = "swords",
+loot = "gem",
+reward = "gem",
+boss = "skull",
+farm = "swords",
+accept = "check",
 layers = "focus",
 dark = "moon",
 light = "sun",
 }
-IconService.Icons = Icons
+local IconsProxy = setmetatable({}, {
+__index = function(_, key)
+local s = string.lower(tostring(key))
+if Aliases[s] then
+return Aliases[s]
+end
+return tostring(key)
+end
+})
+IconService.UniversalEmotes = IconsProxy
+IconService.Emotes = IconsProxy
+IconService.Icons = IconsProxy
+IconService.RawIcons = Icons
+IconService.Aliases = Aliases
 IconService.Sheet1 = Sheet1
 IconService.Sheet2 = Sheet2
 function IconService.Preload()
@@ -7149,7 +7176,9 @@ Name = "LiyHub UI",
 _activeWindows = {},
 _themeManager = ThemeManager,
 _sizeManager = SizeManager,
-Icons = IconService and IconService.UniversalEmotes,
+Icons = IconService and (IconService.UniversalEmotes or IconService.Icons),
+Emotes = IconService and (IconService.UniversalEmotes or IconService.Emotes or IconService.Icons),
+IconService = IconService,
 ResolveIcon = IconService and IconService.Resolve,
 Sizes = {
 PC = PC,

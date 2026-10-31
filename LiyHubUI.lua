@@ -82,9 +82,17 @@ pcall(function()
     MobilePin = safeRequire({"src", "components", "MobilePin"}) or require(script.src.components.MobilePin)
 end)
 
+local IconsProxy = setmetatable({}, {
+    __index = function(_, key)
+        return tostring(key)
+    end
+})
+
 local LiyHubUI = {
     Version = "2.2.0",
     Name = "LiyHub UI",
+    Icons = IconsProxy,
+    Emotes = IconsProxy,
     _activeWindows = {},
     _themeManager = ThemeManager,
 }
