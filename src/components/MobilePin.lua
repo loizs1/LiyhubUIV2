@@ -44,7 +44,7 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     
     local stroke = Instance.new("UIStroke")
     stroke.Name = "BorderStroke"
-    stroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+    stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
     stroke.Thickness = 1
     stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     stroke.Parent = container
@@ -182,7 +182,7 @@ function MobilePin:SetTheme(targetTheme, isDark)
         self._container.BackgroundColor3 = isDark and Color3.fromRGB(16, 17, 20) or Color3.fromRGB(255, 255, 255)
         local stroke = self._container:FindFirstChildOfClass("UIStroke")
         if stroke then
-            stroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+            stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
         end
         local logo = self._container:FindFirstChild("Logo")
         local lStroke = logo and logo:FindFirstChildOfClass("UIStroke")

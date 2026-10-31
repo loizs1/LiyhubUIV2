@@ -36,12 +36,7 @@ function ButtonGroup.new(parent, options, theme, cleanup, buttonModule)
     end
     
     if options.Buttons and type(options.Buttons) == "table" then
-        for i, btnOpt in ipairs(options.Buttons) do
-            if btnOpt.Primary == nil and btnOpt.Variant == nil then
-                if i == 1 then
-                    btnOpt.Primary = true
-                end
-            end
+        for _, btnOpt in ipairs(options.Buttons) do
             self:AddButton(btnOpt)
         end
     end
@@ -61,9 +56,6 @@ end
 
 function ButtonGroup:AddButton(options)
     options = options or {}
-    if options.Primary == nil and options.Variant == nil and #self._buttons == 0 then
-        options.Primary = true
-    end
     local btn = self._buttonCtor.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._buttons, btn)
     self:_rebalanceSizes()

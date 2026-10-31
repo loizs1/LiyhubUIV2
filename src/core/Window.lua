@@ -548,6 +548,28 @@ function Window.new(options, dependencies)
     sidebar.BorderSizePixel = 0
     sidebar.Parent = body
     
+    local sidebarCorner = Instance.new("UICorner")
+    sidebarCorner.CornerRadius = theme.WindowCornerRadius or theme.CornerRadius or UDim.new(0, 10)
+    sidebarCorner.Parent = sidebar
+
+    local sidebarFlatTop = Instance.new("Frame")
+    sidebarFlatTop.Name = "FlatTop"
+    sidebarFlatTop.Size = UDim2.new(1, 0, 0, 12)
+    sidebarFlatTop.Position = UDim2.new(0, 0, 0, 0)
+    sidebarFlatTop.BackgroundColor3 = theme.Sidebar
+    sidebarFlatTop.BorderSizePixel = 0
+    sidebarFlatTop.ZIndex = 1
+    sidebarFlatTop.Parent = sidebar
+
+    local sidebarFlatRight = Instance.new("Frame")
+    sidebarFlatRight.Name = "FlatRight"
+    sidebarFlatRight.Size = UDim2.new(0, 12, 1, 0)
+    sidebarFlatRight.Position = UDim2.new(1, -12, 0, 0)
+    sidebarFlatRight.BackgroundColor3 = theme.Sidebar
+    sidebarFlatRight.BorderSizePixel = 0
+    sidebarFlatRight.ZIndex = 1
+    sidebarFlatRight.Parent = sidebar
+    
     local tabGroupsScroll = Instance.new("ScrollingFrame")
     tabGroupsScroll.Name = "TabGroupsScroll"
     tabGroupsScroll.Size = UDim2.new(1, 0, 1, -58)
@@ -717,6 +739,8 @@ function Window.new(options, dependencies)
         _subLabel = subLabel,
         _formatHeaderTitle = formatHeaderTitle,
         _sidebar = sidebar,
+        _sidebarFlatTop = sidebarFlatTop,
+        _sidebarFlatRight = sidebarFlatRight,
         _tabGroupsScroll = tabGroupsScroll,
         _contentArea = contentArea,
         _profileCard = profileCard,
@@ -1838,6 +1862,12 @@ function Window:SetTheme(themeNameOrTable)
     if self._sidebar then
         TweenService:Create(self._sidebar, TweenInfo.new(0.2), { BackgroundColor3 = targetTheme.Sidebar }):Play()
     end
+    if self._sidebarFlatTop then
+        self._sidebarFlatTop.BackgroundColor3 = targetTheme.Sidebar
+    end
+    if self._sidebarFlatRight then
+        self._sidebarFlatRight.BackgroundColor3 = targetTheme.Sidebar
+    end
     if self._sidebarStroke then
         TweenService:Create(self._sidebarStroke, TweenInfo.new(0.2), { Color = targetTheme.Border }):Play()
     end
@@ -2126,24 +2156,18 @@ function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
                 desc.Color = targetTheme.Border
             end
         elseif desc:IsA("TextButton") and (desc.Name:find("Button_") or desc.Name == "ActionButton") then
-            if not isDark then
-                desc.BackgroundColor3 = Color3.fromRGB(18, 20, 24)
-                if desc.Name == "ActionButton" then
-                    desc.TextColor3 = Color3.fromRGB(255, 255, 255)
-                end
-                local st = desc:FindFirstChildOfClass("UIStroke")
-                if st then st.Enabled = false end
-            else
-                desc.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                if desc.Name == "ActionButton" then
-                    desc.TextColor3 = Color3.fromRGB(14, 14, 16)
-                end
-                local st = desc:FindFirstChildOfClass("UIStroke")
-                if st then st.Enabled = false end
+            desc.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+            if desc.Name == "ActionButton" then
+                desc.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+            end
+            local st = desc:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+                st.Enabled = true
             end
         elseif desc:IsA("TextLabel") then
             if desc.Name == "Label" and desc.Parent and desc.Parent:IsA("TextButton") and desc.Parent.Name:find("Button_") then
-                desc.TextColor3 = not isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(14, 14, 16)
+                desc.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
             elseif desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
                 desc.TextColor3 = targetTheme.TextPrimary
             elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" then

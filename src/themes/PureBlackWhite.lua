@@ -25,7 +25,7 @@ local PureBlackWhite = {
     Border = Color3.fromRGB(34, 34, 40),
     BorderSubtle = Color3.fromRGB(28, 28, 34),
     BorderFocus = Color3.fromRGB(75, 75, 90),
-    BorderWindow = Color3.fromRGB(255, 255, 255),
+    BorderWindow = Color3.fromRGB(42, 42, 50),
     
     TextPrimary = Color3.fromRGB(255, 255, 255),
     TextSecondary = Color3.fromRGB(160, 160, 172),
