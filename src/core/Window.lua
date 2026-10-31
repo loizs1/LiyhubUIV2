@@ -45,6 +45,11 @@ function Window.new(options, dependencies)
     local Divider = deps.Divider
     local Banner = deps.Banner
     local Progression = deps.Progression
+    local IconService = deps.IconService
+    if not IconService then
+        local iOk, iRes = pcall(function() return require(script.Parent.Parent.services.IconService) end)
+        IconService = iOk and iRes
+    end
     
     local SizeManager = deps.SizeManager
     if not SizeManager then
@@ -166,14 +171,28 @@ function Window.new(options, dependencies)
     headerFlatBottom.BorderSizePixel = 0
     headerFlatBottom.Parent = header
     
+    local logoBtn = Instance.new("TextButton")
+    logoBtn.Name = "LogoButton"
+    logoBtn.Size = UDim2.new(0, 26, 0, 26)
+    logoBtn.Position = UDim2.new(0, 14, 0.5, -13)
+    logoBtn.BackgroundTransparency = 1
+    logoBtn.AutoButtonColor = false
+    logoBtn.Text = ""
+    logoBtn.Parent = header
+    
     local logoImg = Instance.new("ImageLabel")
     logoImg.Name = "Logo"
-    logoImg.Size = UDim2.new(0, 26, 0, 26)
-    logoImg.Position = UDim2.new(0, 14, 0.5, -13)
+    logoImg.Size = UDim2.new(1, 0, 1, 0)
     logoImg.BackgroundTransparency = 1
     logoImg.Image = logoAsset or theme.DefaultLogo or "rbxasset://textures/LiyhubLogo.png"
     logoImg.ScaleType = Enum.ScaleType.Fit
-    logoImg.Parent = header
+    logoImg.Active = false
+    logoImg.Parent = logoBtn
+    
+    local logoToggleConn = logoBtn.Activated:Connect(function()
+        self:ToggleSidebar()
+    end)
+    if cleanup then cleanup:Add(logoToggleConn) end
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
@@ -427,6 +446,7 @@ function Window.new(options, dependencies)
         _mobilePin = nil,
         _sizeManager = SizeManager,
         _sizePreset = sizePreset,
+        _iconService = IconService,
         _currentDevice = sizePreset.Name,
         _baseScale = sizePreset.Scale or 1.0,
         _uiScale = windowScale,
@@ -449,6 +469,7 @@ function Window.new(options, dependencies)
             MobilePin = MobilePin,
         },
         _tabGroups = {},
+        _sidebarCollapsed = false,
         _allTabs = {},
         _activeTab = nil,
         _toggleKey = toggleKey,
@@ -741,6 +762,75 @@ function Window:Toggle()
     self:ToggleMinimize()
 end
 
+function Window:SetSidebarCollapsed(collapsed)
+    self._sidebarCollapsed = (collapsed == true)
+    local sbW = self._sidebarCollapsed and 50 or (self._sizePreset and self._sizePreset.SidebarWidth or 190)
+    
+    if self._sidebar then
+        self._sidebar.Size = UDim2.new(0, sbW, 1, 0)
+    end
+    if self._contentArea then
+        self._contentArea.Size = UDim2.new(1, -sbW, 1, 0)
+        self._contentArea.Position = UDim2.new(0, sbW, 0, 0)
+    end
+    if self._tabGroupsScroll then
+        local p = self._tabGroupsScroll:FindFirstChildOfClass("UIPadding")
+        if p then
+            p.PaddingLeft = UDim.new(0, self._sidebarCollapsed and 4 or 8)
+            p.PaddingRight = UDim.new(0, self._sidebarCollapsed and 4 or 8)
+        end
+    end
+    if self._profileCard then
+        self._profileCard.Size = self._sidebarCollapsed and UDim2.new(0, 36, 0, 36) or UDim2.new(1, -16, 0, 46)
+        self._profileCard.Position = self._sidebarCollapsed and UDim2.new(0.5, -18, 1, -44) or UDim2.new(0, 8, 1, -52)
+        local av = self._profileCard:FindFirstChild("Avatar")
+        if av then
+            av.Size = self._sidebarCollapsed and UDim2.new(0, 28, 0, 28) or UDim2.new(0, 32, 0, 32)
+            av.Position = self._sidebarCollapsed and UDim2.new(0.5, -14, 0.5, -14) or UDim2.new(0, 7, 0.5, -16)
+        end
+        local dName = self._profileCard:FindFirstChild("DisplayName")
+        local uName = self._profileCard:FindFirstChild("Username")
+        if dName then dName.Visible = not self._sidebarCollapsed end
+        if uName then uName.Visible = not self._sidebarCollapsed end
+    end
+    
+    for _, tabGroup in ipairs(self._tabGroups or {}) do
+        if tabGroup._header then
+            tabGroup._header.Visible = not self._sidebarCollapsed
+        end
+    end
+    
+    for _, tab in ipairs(self._allTabs or {}) do
+        if tab._button then
+            tab._button.Size = self._sidebarCollapsed and UDim2.new(0, 38, 0, 38) or UDim2.new(1, 0, 0, 32)
+            tab._button.Position = self._sidebarCollapsed and UDim2.new(0.5, -19, 0, 0) or UDim2.new(0, 0, 0, 0)
+            local corner = tab._button:FindFirstChildOfClass("UICorner")
+            if corner then
+                corner.CornerRadius = UDim.new(0, self._sidebarCollapsed and 8 or 6)
+            end
+        end
+        if tab._titleLabel then
+            tab._titleLabel.Visible = not self._sidebarCollapsed
+        end
+        if tab._activeBar then
+            tab._activeBar.Visible = (not self._sidebarCollapsed) and (self._activeTab == tab)
+        end
+        if tab._iconLabel then
+            tab._iconLabel.Position = self._sidebarCollapsed and UDim2.new(0.5, -9, 0.5, -9) or UDim2.new(0, 10, 0.5, -9)
+            tab._iconLabel.Size = self._sidebarCollapsed and UDim2.new(0, 18, 0, 18) or UDim2.new(0, 16, 0, 16)
+            if self._activeTab == tab then
+                tab._iconLabel.ImageColor3 = Color3.fromRGB(160, 180, 255)
+            else
+                tab._iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
+            end
+        end
+    end
+end
+
+function Window:ToggleSidebar()
+    self:SetSidebarCollapsed(not self._sidebarCollapsed)
+end
+
 function Window:SetTwoColumnsMode(enabled)
     self._forceTwoColumns = enabled
     for _, tab in ipairs(self._allTabs or {}) do
@@ -835,7 +925,7 @@ function Window:_initUniversalTabs(options)
 
     local infoTab = univGroup:CreateTab({
         Name = "Information",
-        Icon = "rbxassetid://6031075931",
+        Icon = "info",
     })
     self._infoTab = infoTab
 
@@ -868,7 +958,7 @@ function Window:_initUniversalTabs(options)
 
     local settingsTab = univGroup:CreateTab({
         Name = "Setting UI",
-        Icon = "rbxassetid://6031075936",
+        Icon = "settings",
     })
     self._settingsTab = settingsTab
 
@@ -1090,11 +1180,15 @@ function Window:CreateTabGroup(name)
     local tabGroupObj = setmetatable({
         _window = self,
         _container = groupContainer,
+        _header = gHeader,
         _tabsFrame = tabsFrame,
         _arrow = gArrow,
         _collapsed = false,
         _tabs = {},
     }, TabGroup)
+    if self._tabGroups then
+        table.insert(self._tabGroups, tabGroupObj)
+    end
     
     local lastGroupToggle = 0
     local function toggleGroup()
@@ -1198,15 +1292,25 @@ function TabGroup:CreateTab(options)
     local iconLabel = nil
     local labelOffset = 10
     if iconId then
-        iconLabel = Instance.new("ImageLabel")
-        iconLabel.Name = "Icon"
-        iconLabel.Size = UDim2.new(0, 16, 0, 16)
-        iconLabel.Position = UDim2.new(0, 10, 0.5, -8)
-        iconLabel.BackgroundTransparency = 1
-        iconLabel.Image = iconId
-        iconLabel.ImageColor3 = self._window._theme.TextSecondary
-        iconLabel.Parent = tabBtn
-        labelOffset = 32
+        local iconService = self._window._iconService
+        local resolvedAsset = nil
+        if iconService and iconService.Resolve then
+            resolvedAsset = iconService.Resolve(iconId)
+        else
+            resolvedAsset = (typeof(iconId) == "number") and ("rbxassetid://" .. tostring(iconId)) or tostring(iconId)
+        end
+        if resolvedAsset then
+            iconLabel = Instance.new("ImageLabel")
+            iconLabel.Name = "Icon"
+            iconLabel.Size = UDim2.new(0, 18, 0, 18)
+            iconLabel.Position = UDim2.new(0, 10, 0.5, -9)
+            iconLabel.BackgroundTransparency = 1
+            iconLabel.Image = resolvedAsset
+            iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
+            iconLabel.ScaleType = Enum.ScaleType.Fit
+            iconLabel.Parent = tabBtn
+            labelOffset = 34
+        end
     end
     
     local titleLabel = Instance.new("TextLabel")
@@ -1278,12 +1382,12 @@ end
 
 function Tab:_activate()
     self._button.BackgroundTransparency = 0
-    self._button.BackgroundColor3 = self._window._theme.SidebarItemActive
+    self._button.BackgroundColor3 = Color3.fromRGB(30, 36, 52)
     self._titleLabel.TextColor3 = self._window._theme.TextPrimary
     self._titleLabel.Font = self._window._theme.FontBold
-    self._activeBar.Visible = true
+    self._activeBar.Visible = not self._window._sidebarCollapsed
     if self._iconLabel then
-        self._iconLabel.ImageColor3 = self._window._theme.TextPrimary
+        self._iconLabel.ImageColor3 = Color3.fromRGB(160, 180, 255)
     end
     self._contentContainer.Visible = true
 end
@@ -1294,7 +1398,7 @@ function Tab:_deactivate()
     self._titleLabel.Font = self._window._theme.FontBold
     self._activeBar.Visible = false
     if self._iconLabel then
-        self._iconLabel.ImageColor3 = self._window._theme.TextSecondary
+        self._iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
     end
     self._contentContainer.Visible = false
 end
@@ -1366,9 +1470,47 @@ function Tab:CreateSection(nameOrOptions)
     sHeader.Text = ""
     sHeader.Parent = sectionCard
     
+    local secOffset = 0
+    local secIcon = sectionOptions.Icon or sectionOptions.Image
+    if secIcon then
+        local iconService = self._window._iconService
+        local sResolved, sIsImg = nil, false
+        if iconService and iconService.Resolve then
+            sResolved, sIsImg = iconService.Resolve(secIcon)
+        else
+            sResolved = secIcon
+            sIsImg = (string.find(tostring(secIcon), "rbxasset") ~= nil) or (typeof(secIcon) == "number")
+        end
+        if sResolved then
+            if sIsImg then
+                local sImg = Instance.new("ImageLabel")
+                sImg.Name = "SectionIcon"
+                sImg.Size = UDim2.fromOffset(14, 14)
+                sImg.Position = UDim2.new(0, 0, 0.5, -7)
+                sImg.BackgroundTransparency = 1
+                sImg.Image = sResolved
+                sImg.ImageColor3 = self._window._theme.TextPrimary
+                sImg.Parent = sHeader
+            else
+                local sTxt = Instance.new("TextLabel")
+                sTxt.Name = "SectionIcon"
+                sTxt.Size = UDim2.fromOffset(14, 14)
+                sTxt.Position = UDim2.new(0, 0, 0.5, -7)
+                sTxt.BackgroundTransparency = 1
+                sTxt.Text = sResolved
+                sTxt.TextColor3 = self._window._theme.TextPrimary
+                sTxt.TextSize = 12
+                sTxt.Font = self._window._theme.FontBold
+                sTxt.Parent = sHeader
+            end
+            secOffset = 20
+        end
+    end
+    
     local sTitle = Instance.new("TextLabel")
     sTitle.Name = "Title"
-    sTitle.Size = UDim2.new(1, -24, 1, 0)
+    sTitle.Size = UDim2.new(1, -24 - secOffset, 1, 0)
+    sTitle.Position = UDim2.new(0, secOffset, 0, 0)
     sTitle.BackgroundTransparency = 1
     sTitle.Text = string.upper(sectionName)
     sTitle.TextColor3 = self._window._theme.TextPrimary

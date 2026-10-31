@@ -1,3 +1,4 @@
+import re
 import os
 import json
 
@@ -32,6 +33,7 @@ files_to_bundle = [
     ("src/components/Banner", "src/components/Banner.lua"),
     ("src/components/Progression", "src/components/Progression.lua"),
     ("src/services/ConfigService", "src/services/ConfigService.lua"),
+    ("src/services/IconService", "src/services/IconService.lua"),
     ("src/services/ProfileService", "src/services/ProfileService.lua"),
     ("src/core/Window", "src/core/Window.lua"),
 ]
@@ -62,8 +64,12 @@ for mod_name, rel_path in files_to_bundle:
     full_path = os.path.join(base_dir, rel_path)
     with open(full_path, "r", encoding="utf-8") as f:
         content = f.read()
-    
-    bundle_code += f'\n-- Module: {mod_name}\n_modules["{mod_name}"] = function()\n'
+    content = re.sub(r'--\[\[.*?\/\/\/\]\]', '', content, flags=re.DOTALL)
+    content = re.sub(r'--\[\[.*?\]\]', '', content, flags=re.DOTALL)
+    content = re.sub(r'--[^\n]*', '', content)
+    lines = [l.rstrip() for l in content.splitlines() if l.strip()]
+    content = '\n'.join(lines)
+    bundle_code += f'\n_modules["{mod_name}"] = function()\n'
     bundle_code += content + "\nend\n"
 
 bundle_code += """
@@ -76,6 +82,7 @@ local TweenUtil = _require("src/core/Tween")
 local Layout = _require("src/core/Layout")
 local Window = _require("src/core/Window")
 local ConfigService = _require("src/services/ConfigService")
+local IconService = _require("src/services/IconService")
 local ProfileService = _require("src/services/ProfileService")
 
 local Button = _require("src/components/Button")
@@ -106,6 +113,8 @@ local LiyHubUI = {
     _activeWindows = {},
     _themeManager = ThemeManager,
     _sizeManager = SizeManager,
+    Icons = IconService and IconService.UniversalEmotes,
+    ResolveIcon = IconService and IconService.Resolve,
     Sizes = {
         PC = PC,
         Android = Android,
@@ -145,6 +154,7 @@ function LiyHubUI:CreateWindow(options)
         Banner = Banner,
         Progression = Progression,
         SizeManager = SizeManager,
+        IconService = IconService,
     }
     
     local win = Window.new(options, deps)
@@ -188,6 +198,10 @@ return LiyHubUI
 """
 
 out_bundle = os.path.join(base_dir, "LiyHubUI.bundle.lua")
+clean_bundle = re.sub(r'--\[\[.*?\]\]', '', bundle_code, flags=re.DOTALL)
+clean_bundle = re.sub(r'--[^\n]*', '', clean_bundle)
+clean_bundle = '\n'.join([l.strip() for l in clean_bundle.splitlines() if l.strip()])
+bundle_code = clean_bundle
 with open(out_bundle, "w", encoding="utf-8") as f:
     f.write(bundle_code)
 

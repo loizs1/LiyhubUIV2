@@ -37,7 +37,7 @@ local MainFeaturesGroup = Window:CreateTabGroup("Main Features")
 
 local MainTab = MainFeaturesGroup:CreateTab({
     Name = "Main (Mode 1)",
-    Icon = "rbxassetid://6031094678",
+    Icon = "focus",
 })
 
 local FarmSection = MainTab:CreateSection("Auto Farming & Quest")
@@ -98,7 +98,7 @@ FarmSection:CreateMultiDropdown({
 
 local CombatTab = MainFeaturesGroup:CreateTab({
     Name = "Combat (Mode 2)",
-    Icon = "rbxassetid://6031091004",
+    Icon = "shield",
 })
 
 local AimSection = CombatTab:CreateSection("Aimbot & Targeting")
@@ -197,7 +197,7 @@ local WorldGroup = Window:CreateTabGroup("World & Travel")
 
 local TeleportTab = WorldGroup:CreateTab({
     Name = "Teleport",
-    Icon = "rbxassetid://6031075929",
+    Icon = "globe",
 })
 
 local IslandSection = TeleportTab:CreateSection("Island Waypoints")
