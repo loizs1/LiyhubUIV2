@@ -253,6 +253,12 @@ local Stepper = LeftSec:CreateProgression({
 
 ### 2. Sections & Layout Side
 
+Supported Lucide icon names include: `"crosshair"`, `"eye"`, `"shield"`, `"user"`, `"zap"`, `"swords"`, `"settings"`, `"globe"`, `"binoculars"`, `"palette"`, `"home"`, `"pin"`, `"skull"`, `"gem"`, `"wrench"`, `"info"`, `"check"`, and 700+ more.
+
+---
+
+### 2. Sections & Layout Side
+
 #### `Tab:CreateSection(options: string | table)`
 Creates a collapsible card section within the tab.
 ```luau
