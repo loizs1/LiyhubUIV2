@@ -25,7 +25,7 @@ end
 
 function Slider.new(parent, options, theme, cleanup)
     options = options or {}
-    local text = options.Text or options.Name or "Slider"
+    local text = options.Title or options.Text or options.Name or "Slider"
     local minVal = options.Min or 0
     local maxVal = options.Max or 100
     if maxVal <= minVal then

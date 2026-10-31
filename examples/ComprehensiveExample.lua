@@ -40,6 +40,45 @@ local MainTab = MainGroup:CreateTab({
     Icon = "focus",
 })
 
+local AnnouncementSec = MainTab:CreateSection("Server Announcement")
+AnnouncementSec:CreateBanner({
+    Title = "LiyHub Announcement",
+    Content = "Welcome to LiyHub v2.2 Pure B&W edition with nested controls and modular responsive groups.",
+    Image = "rbxassetid://108339444679489",
+    Collapsible = true,
+    Default = true,
+    Buttons = {
+        {
+            Title = "Join Discord",
+            Accent = true,
+            Callback = function()
+                local setClip = setclipboard or toclipboard or (Clipboard and Clipboard.set)
+                if setClip then
+                    setClip("https://discord.gg/Nr56tQJeJh")
+                end
+                Window:Notify({
+                    Title = "Discord Invite",
+                    Content = "Discord invite copied to clipboard.",
+                    Duration = 2,
+                    Type = "Success"
+                })
+            end
+        },
+        {
+            Title = "Check Updates",
+            Accent = false,
+            Callback = function()
+                Window:Notify({
+                    Title = "System Updates",
+                    Content = "You are running the latest v2.2 build.",
+                    Duration = 2,
+                    Type = "Info"
+                })
+            end
+        }
+    }
+})
+
 local FarmSection = MainTab:CreateSection("Auto Farming & Quest")
 
 local autoFarmActive = false
@@ -50,17 +89,21 @@ local QuestProgression = FarmSection:CreateProgression({
     Title = "Quest Journey (Auto Farm)",
     Subtitle = "Automated quest and boss combat workflow",
     Steps = {
-        { Label = "Accept", Icon = "check" },
-        { Label = "Teleport", Icon = "teleport" },
-        { Label = "Farm", Icon = "swords" },
-        { Label = "Boss", Icon = "skull" },
-        { Label = "Reward", Icon = "gem" },
+        { Name = "Accept", Icon = "check" },
+        { Name = "Teleport", Icon = "teleport" },
+        { Name = "Farm", Icon = "swords" },
+        { Name = "Boss", Icon = "skull" },
+        { Name = "Reward", Icon = "gem" },
     },
     CurrentStep = 1,
-    Callback = function(stepIndex)
+    Controls = true,
+    NextText = "Next",
+    PrevText = "Previous",
+    Callback = function(stepIndex, stepData)
+        local stageName = (stepData and (stepData.Name or stepData.Label)) or stepNames[stepIndex] or tostring(stepIndex)
         Window:Notify({
             Title = "Quest Step Selected",
-            Content = "Active step set to: " .. tostring(stepNames[stepIndex] or stepIndex),
+            Content = "Stage: " .. stageName .. " (Step " .. tostring(stepIndex) .. ")",
             Duration = 1.5,
             Type = "Info"
         })
@@ -101,7 +144,7 @@ local function startAutoFarm()
     end)
 end
 
-FarmSection:CreateToggle({
+QuestProgression:CreateToggle({
     Name = "Auto Execute Step",
     Desc = "Continuously advances and completes the selected quest journey step.",
     Default = false,
@@ -111,6 +154,19 @@ FarmSection:CreateToggle({
         else
             stopAutoFarm()
         end
+    end
+})
+
+QuestProgression:CreateDropdown({
+    Name = "Quest Difficulty",
+    Options = { "Easy", "Medium", "Hard", "Nightmare" },
+    Default = "Easy",
+    Callback = function(selected)
+        Window:Notify({
+            Title = "Difficulty",
+            Content = "Quest difficulty set to: " .. tostring(selected),
+            Duration = 1.5
+        })
     end
 })
 
@@ -127,14 +183,6 @@ FarmSection:CreateButtonGroup({
     }
 })
 
-FarmSection:CreateDropdown({
-    Name = "Quest Difficulty",
-    Options = { "Easy", "Medium", "Hard", "Nightmare" },
-    Default = "Easy",
-    Callback = function(selected)
-    end
-})
-
 FarmSection:CreateMultiDropdown({
     Name = "Targets (Multi-Select)",
     Options = { "Pirate Raider", "Marine Captain", "Island Boss", "Elite Guard" },
@@ -143,35 +191,119 @@ FarmSection:CreateMultiDropdown({
     end
 })
 
-local EspTab = MainGroup:CreateTab({
-    Name = "Observation & ESP",
-    Icon = "binoculars",
+local CombatTab = MainGroup:CreateTab({
+    Name = "Dual Elements (Mode 2)",
+    Icon = "shield",
+    TwoColumns = true,
 })
 
-local EspSec = EspTab:CreateSection("Visual ESP Engine")
-EspSec:CreateToggle({
-    Name = "Player Box ESP",
-    Desc = "Draws 2D bounding boxes around players.",
-    Default = false,
-    Callback = function(state) end
-})
-EspSec:CreateToggle({
-    Name = "Nametags & Distance",
-    Desc = "Displays billboard indicators with distance studs.",
-    Default = false,
-    Callback = function(state) end
+local LeftSection = CombatTab:CreateSection({ Title = "Type: Right (1 Card Horizontal)", Side = "Left" })
+local RightSection = CombatTab:CreateSection({ Title = "Type: Down (1 Card Vertical)", Side = "Right" })
+
+LeftSection:CreateToggleGroup({
+    Direction = "Right",
+    Toggles = {
+        {
+            Title = "Auto Farm",
+            Default = false,
+            Callback = function(v) end
+        },
+        {
+            Title = "Fast Attack",
+            Default = false,
+            Callback = function(v) end
+        }
+    }
 })
 
-local ThemeTab = MainGroup:CreateTab({
-    Name = "Themes & Visuals",
-    Icon = "palette",
+LeftSection:CreateSliderGroup({
+    Direction = "Right",
+    Sliders = {
+        {
+            Title = "WalkSpeed",
+            Min = 16,
+            Max = 150,
+            Default = 60,
+            Callback = function(v) end
+        },
+        {
+            Title = "JumpPower",
+            Min = 50,
+            Max = 300,
+            Default = 150,
+            Callback = function(v) end
+        }
+    }
 })
-local ThemeSec = ThemeTab:CreateSection("Custom Visuals")
-ThemeSec:CreateToggle({
-    Name = "Pure Contrast Mode",
-    Desc = "Enhances border highlights and backdrop blur.",
-    Default = false,
-    Callback = function(state) end
+
+LeftSection:CreateInputGroup({
+    Direction = "Right",
+    Inputs = {
+        {
+            Title = "Target X",
+            Placeholder = "100",
+            Default = "100",
+            Callback = function(t) end
+        },
+        {
+            Title = "Target Y",
+            Placeholder = "250",
+            Default = "250",
+            Callback = function(t) end
+        }
+    }
+})
+
+RightSection:CreateToggleGroup({
+    Direction = "Down",
+    Toggles = {
+        {
+            Title = "Kill Aura",
+            Default = false,
+            Callback = function(v) end
+        },
+        {
+            Title = "Auto Equip",
+            Default = false,
+            Callback = function(v) end
+        }
+    }
+})
+
+RightSection:CreateSliderGroup({
+    Direction = "Down",
+    Sliders = {
+        {
+            Title = "FOV Radius",
+            Min = 0,
+            Max = 360,
+            Default = 90,
+            Callback = function(v) end
+        },
+        {
+            Title = "Smoothness",
+            Min = 1,
+            Max = 100,
+            Default = 10,
+            Callback = function(v) end
+        }
+    }
+})
+
+RightSection:CreateInputGroup({
+    Direction = "Down",
+    Inputs = {
+        {
+            Title = "Webhook URL",
+            Placeholder = "https://discord.com/api/webhooks/...",
+            Callback = function(t) end
+        },
+        {
+            Title = "Discord User ID",
+            Placeholder = "123456789",
+            Callback = function(t) end
+        }
+    }
 })
 
 local WorldGroup = Window:CreateTabGroup("World & Navigation")
@@ -207,86 +339,27 @@ IslandSection:CreateButton({
     end
 })
 
-local PlayerGroup = Window:CreateTabGroup("Player Modifiers")
-
-local PlayerTab = PlayerGroup:CreateTab({
-    Name = "Local Player",
-    Icon = "user",
+local SettingsGroup = Window:CreateTabGroup("Settings")
+local SettingsTab = SettingsGroup:CreateTab({
+    Name = "Settings & Transparency",
+    Icon = "settings",
 })
 
-local StatSec = PlayerTab:CreateSection("Player State")
-StatSec:CreateSlider({
-    Name = "WalkSpeed Multiplier",
-    Min = 16,
-    Max = 250,
-    Default = 16,
-    Suffix = "studs/s",
-    Callback = function(val) end
-})
-StatSec:CreateSlider({
-    Name = "JumpPower Multiplier",
-    Min = 50,
-    Max = 350,
-    Default = 50,
-    Suffix = "studs",
-    Callback = function(val) end
-})
-
-local SpeedTab = PlayerGroup:CreateTab({
-    Name = "Speed & Movement",
-    Icon = "zap",
-})
-local SpeedSec = SpeedTab:CreateSection("Physics Bypass")
-SpeedSec:CreateToggle({
-    Name = "Infinite Jump",
-    Desc = "Allows airborne jump repetition without ground contact.",
-    Default = false,
-    Callback = function(s) end
-})
-SpeedSec:CreateToggle({
-    Name = "No Clip",
-    Desc = "Passes collision checks through geometry.",
-    Default = false,
-    Callback = function(s) end
-})
-
-local CombatTab = MainGroup:CreateTab({
-    Name = "Combat (Mode 2)",
-    Icon = "shield",
-})
-
-local AimSection = CombatTab:CreateSection("Aimbot & Targeting")
-
-AimSection:CreateToggle({
-    Name = "Enable Silent Aim",
-    Desc = "Redirects weapon projectiles silently toward target bones.",
-    Default = false,
-    Callback = function(state)
-    end
-})
-
-AimSection:CreateSlider({
-    Name = "Aim Field of View",
-    Min = 30,
-    Max = 360,
-    Default = 220,
-    Suffix = "px",
-    Callback = function(val) end
-})
-
-AimSection:CreateSlider({
-    Name = "Hit Chance",
+local TransSec = SettingsTab:CreateSection("Interface Transparency")
+TransSec:CreateSlider({
+    Name = "Window Acrylic Transparency",
     Min = 0,
     Max = 100,
-    Default = 100,
+    Default = 0,
     Suffix = "%",
-    Callback = function(val) end
-})
-
-AimSection:CreateDropdown({
-    Name = "Target Body Part",
-    Options = { "Head", "Torso", "HumanoidRootPart" },
-    Default = "Head",
-    Callback = function(part)
+    Callback = function(val)
+        Window:SetTransparency(val / 100)
     end
 })
+
+TransSec:CreateParagraph({
+    Title = "Configuration & User Profile",
+    Content = "Click your user profile avatar card in the bottom-left sidebar to open the Profile & Config Manager modal."
+})
+
+return Window

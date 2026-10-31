@@ -26,9 +26,11 @@ function Banner.new(parent, options, theme, cleanup)
     local title = options.Title or options.Name
     local showHeader = options.ShowHeader ~= false and (title ~= nil and title ~= "")
     local titleText = title or "LiyHub Announcement"
-    local text = options.Text or options.Description or "Welcome to LiyHub v2.2 Pure B&W!"
+    local text = options.Content or options.Text or options.Description or "Welcome to LiyHub v2.2 Pure B&W!"
     local image = options.Image or options.AssetId or theme.DefaultBanner or "rbxassetid://108339444679489"
-    local defaultCollapsed = options.Collapsed == true
+    local isCollapsible = options.Collapsible ~= false
+    local defaultCollapsed = options.Collapsed == true or (options.Default == false and isCollapsible)
+    local buttons = options.Buttons
     
     local container = Instance.new("Frame")
     container.Name = "Banner"
@@ -68,7 +70,7 @@ function Banner.new(parent, options, theme, cleanup)
         header.BackgroundTransparency = 1
         header.AutoButtonColor = false
         header.Text = ""
-        header.Active = true
+        header.Active = isCollapsible
         header.Parent = container
         
         local hPad = Instance.new("UIPadding")
@@ -89,16 +91,18 @@ function Banner.new(parent, options, theme, cleanup)
         titleLabel.Active = false
         titleLabel.Parent = header
         
-        arrow = Instance.new("ImageLabel")
-        arrow.Name = "Arrow"
-        arrow.Size = UDim2.fromOffset(12, 12)
-        arrow.Position = UDim2.new(1, -20, 0.5, -6)
-        arrow.BackgroundTransparency = 1
-        arrow.Image = "rbxassetid://10709790948"
-        arrow.ImageColor3 = theme.TextMuted
-        arrow.Rotation = defaultCollapsed and 0 or 180
-        arrow.Active = false
-        arrow.Parent = header
+        if isCollapsible then
+            arrow = Instance.new("ImageLabel")
+            arrow.Name = "Arrow"
+            arrow.Size = UDim2.fromOffset(12, 12)
+            arrow.Position = UDim2.new(1, -20, 0.5, -6)
+            arrow.BackgroundTransparency = 1
+            arrow.Image = "rbxassetid://10709790948"
+            arrow.ImageColor3 = theme.TextMuted
+            arrow.Rotation = defaultCollapsed and 0 or 180
+            arrow.Active = false
+            arrow.Parent = header
+        end
     end
     
     local contentBox = Instance.new("Frame")
@@ -158,7 +162,7 @@ function Banner.new(parent, options, theme, cleanup)
     tPad.PaddingLeft = UDim.new(0, 10)
     tPad.PaddingRight = UDim.new(0, 10)
     tPad.PaddingTop = UDim.new(0, 2)
-    tPad.PaddingBottom = UDim.new(0, 8)
+    tPad.PaddingBottom = UDim.new(0, (buttons and #buttons > 0) and 2 or 8)
     tPad.Parent = textContainer
     
     local descLabel = Instance.new("TextLabel")
@@ -175,6 +179,65 @@ function Banner.new(parent, options, theme, cleanup)
     descLabel.Active = false
     descLabel.Parent = textContainer
     
+    local btnConns = {}
+    if buttons and type(buttons) == "table" and #buttons > 0 then
+        local btnRow = Instance.new("Frame")
+        btnRow.Name = "ButtonRow"
+        btnRow.Size = UDim2.new(1, -20, 0, 28)
+        btnRow.Position = UDim2.new(0, 10, 0, 0)
+        btnRow.BackgroundTransparency = 1
+        btnRow.Parent = contentBox
+        
+        local bPad = Instance.new("UIPadding")
+        bPad.PaddingBottom = UDim.new(0, 8)
+        bPad.Parent = btnRow
+        
+        local bList = Instance.new("UIListLayout")
+        bList.FillDirection = Enum.FillDirection.Horizontal
+        bList.SortOrder = Enum.SortOrder.LayoutOrder
+        bList.Padding = UDim.new(0, 8)
+        bList.Parent = btnRow
+        
+        local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
+        local count = #buttons
+        local gapTotal = (count - 1) * 8
+        local widthScale = 1 / count
+        
+        for _, bData in ipairs(buttons) do
+            local bTitle = bData.Title or bData.Text or bData.Name or "Action"
+            local bCallback = bData.Callback or function() end
+            local isAccent = bData.Accent == true
+            
+            local bAction = Instance.new("TextButton")
+            bAction.Name = "Btn_" .. bTitle
+            bAction.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
+            bAction.BackgroundColor3 = isAccent and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243))
+            bAction.TextColor3 = isAccent and (isDark and Color3.fromRGB(18, 20, 24) or Color3.fromRGB(255, 255, 255)) or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24))
+            bAction.Font = theme.FontBold
+            bAction.Text = bTitle
+            bAction.TextSize = theme.FontSizeSmall
+            bAction.AutoButtonColor = false
+            bAction.Parent = btnRow
+            
+            local bCorner = Instance.new("UICorner")
+            bCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 4)
+            bCorner.Parent = bAction
+            
+            local bStroke = Instance.new("UIStroke")
+            bStroke.Name = "ButtonStroke"
+            bStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+            bStroke.Thickness = 1
+            bStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            bStroke.Parent = bAction
+            
+            local bConn = bAction.Activated:Connect(function()
+                task.spawn(bCallback)
+            end)
+            table.insert(btnConns, bConn)
+            if cleanup then cleanup:Add(bConn) end
+        end
+    end
+    
     local self = setmetatable({
         _container = container,
         _header = header,
@@ -187,9 +250,10 @@ function Banner.new(parent, options, theme, cleanup)
         _collapsed = defaultCollapsed,
         _toggleConn = nil,
         _absConn = absConn,
+        _btnConns = btnConns,
     }, Banner)
     
-    if header then
+    if header and isCollapsible then
         local lastToggle = 0
         local function doToggle()
             local now = os.clock()
@@ -238,6 +302,12 @@ function Banner:Destroy()
     if self._absConn and self._absConn.Connected then
         self._absConn:Disconnect()
         self._absConn = nil
+    end
+    if self._btnConns then
+        for _, c in ipairs(self._btnConns) do
+            if c and c.Connected then c:Disconnect() end
+        end
+        self._btnConns = {}
     end
     if self._container then
         self._container:Destroy()

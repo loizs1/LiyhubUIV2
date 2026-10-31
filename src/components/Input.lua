@@ -5,7 +5,7 @@ Input.__index = Input
 
 function Input.new(parent, options, theme, cleanup)
     options = options or {}
-    local text = options.Text or options.Name or "Input"
+    local text = options.Title or options.Text or options.Name or "Input"
     local placeholder = options.Placeholder or "Type here..."
     local defaultText = options.Default or ""
     local clearOnFocus = options.ClearOnFocus == true

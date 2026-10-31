@@ -5,7 +5,7 @@ Toggle.__index = Toggle
 
 function Toggle.new(parent, options, theme, cleanup)
     options = options or {}
-    local text = options.Text or options.Name or "Toggle"
+    local text = options.Title or options.Text or options.Name or "Toggle"
     local desc = options.Desc or options.Description
     local defaultState = options.Default == true
     local callback = options.Callback or options.OnChange or function() end

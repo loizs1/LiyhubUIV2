@@ -9,6 +9,7 @@ SliderGroup.__index = SliderGroup
 function SliderGroup.new(parent, options, theme, cleanup, sliderModule)
     options = options or {}
     local sliderCtor = sliderModule or Slider
+    local isDown = options.Direction == "Down"
     
     local container = Instance.new("Frame")
     container.Name = "SliderGroup"
@@ -21,6 +22,15 @@ function SliderGroup.new(parent, options, theme, cleanup, sliderModule)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = theme.CornerRadius
     corner.Parent = container
+
+    if theme.UseStrokes then
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "BorderStroke"
+        stroke.Color = theme.Border
+        stroke.Thickness = 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = container
+    end
     
     local padding = Instance.new("UIPadding")
     padding.PaddingTop = UDim.new(0, 6)
@@ -30,8 +40,9 @@ function SliderGroup.new(parent, options, theme, cleanup, sliderModule)
     padding.Parent = container
     
     local list = Instance.new("UIListLayout")
+    list.FillDirection = isDown and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal
     list.SortOrder = Enum.SortOrder.LayoutOrder
-    list.Padding = UDim.new(0, 4)
+    list.Padding = UDim.new(0, 6)
     list.Parent = container
     
     local self = setmetatable({
@@ -40,6 +51,7 @@ function SliderGroup.new(parent, options, theme, cleanup, sliderModule)
         _theme = theme,
         _cleanup = cleanup,
         _sliderCtor = sliderCtor,
+        _isDown = isDown,
     }, SliderGroup)
     
     if cleanup then
@@ -55,9 +67,26 @@ function SliderGroup.new(parent, options, theme, cleanup, sliderModule)
     return self
 end
 
+function SliderGroup:_rebalanceSizes()
+    local count = #self._sliders
+    if count == 0 then return end
+    if self._isDown then
+        for _, s in ipairs(self._sliders) do
+            s._container.Size = UDim2.new(1, 0, 0, 56)
+        end
+    else
+        local gapTotal = (count - 1) * 6
+        local widthScale = 1 / count
+        for _, s in ipairs(self._sliders) do
+            s._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 0, 56)
+        end
+    end
+end
+
 function SliderGroup:AddSlider(options)
     local s = self._sliderCtor.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._sliders, s)
+    self:_rebalanceSizes()
     return s
 end
 

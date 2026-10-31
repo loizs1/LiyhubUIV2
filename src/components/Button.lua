@@ -161,16 +161,22 @@ function Button.new(parent, options, theme, cleanup)
     
     local label = Instance.new("TextLabel")
     label.Name = "Label"
-    label.Size = UDim2.new(1, -16, 1, 0)
-    label.Position = UDim2.new(0, 8, 0, 0)
+    label.Size = UDim2.new(1, -8, 1, 0)
+    label.Position = UDim2.new(0, 4, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = defaultTextCol
     label.Font = theme.FontBold
+    label.TextScaled = true
     label.TextSize = theme.FontSizeRegular
     label.TextXAlignment = Enum.TextXAlignment.Center
     label.Active = false
     label.Parent = container
+
+    local sizeConstraint = Instance.new("UITextSizeConstraint")
+    sizeConstraint.MinTextSize = 9
+    sizeConstraint.MaxTextSize = options.TextSize or (theme.FontSizeRegular or 13)
+    sizeConstraint.Parent = label
     
     self = setmetatable({
         _container = container,

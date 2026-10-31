@@ -121,44 +121,6 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     btnLayout.Parent = btnRow
     
     local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
-    local cancelBtn = Instance.new("TextButton")
-    cancelBtn.Name = "CancelButton"
-    cancelBtn.Size = UDim2.new(0, 90, 1, 0)
-    cancelBtn.BackgroundColor3 = isDark and theme.Element or Color3.fromRGB(236, 238, 243)
-    cancelBtn.AutoButtonColor = false
-    cancelBtn.Text = cancelText
-    cancelBtn.TextColor3 = isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24)
-    cancelBtn.Font = theme.FontBold
-    cancelBtn.TextSize = theme.FontSizeSmall
-    cancelBtn.BorderSizePixel = 0
-    cancelBtn.ZIndex = 103
-    cancelBtn.Parent = btnRow
-    
-    local cCorner = Instance.new("UICorner")
-    cCorner.CornerRadius = theme.SmallCornerRadius
-    cCorner.Parent = cancelBtn
-    
-    local confirmBtn = Instance.new("TextButton")
-    confirmBtn.Name = "ConfirmButton"
-    confirmBtn.Size = UDim2.new(0, 90, 1, 0)
-    confirmBtn.BackgroundColor3 = isDark and theme.ElementActive or Color3.fromRGB(18, 20, 24)
-    confirmBtn.AutoButtonColor = false
-    confirmBtn.Text = confirmText
-    confirmBtn.TextColor3 = isDark and theme.TextPrimary or Color3.fromRGB(255, 255, 255)
-    confirmBtn.Font = theme.FontBold
-    confirmBtn.TextSize = theme.FontSizeSmall
-    confirmBtn.BorderSizePixel = 0
-    confirmBtn.ZIndex = 103
-    confirmBtn.Parent = btnRow
-    
-    local cfCorner = Instance.new("UICorner")
-    cfCorner.CornerRadius = theme.SmallCornerRadius
-    cfCorner.Parent = confirmBtn
-    
-    TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
-        BackgroundTransparency = 0.5
-    }):Play()
-    
     local isClosing = false
     local function close(callback)
         if isClosing then return end
@@ -176,17 +138,95 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
             end
         end)
     end
+
+    if options.Buttons and type(options.Buttons) == "table" and #options.Buttons > 0 then
+        for _, bData in ipairs(options.Buttons) do
+            local bText = bData.Text or bData.Title or "Button"
+            local bVariant = bData.Variant or (bData.Accent and "Primary" or "Secondary")
+            local bCb = bData.Callback or function() end
+            local isPrimary = (bVariant == "Primary")
+            
+            local btn = Instance.new("TextButton")
+            btn.Name = "ModalBtn_" .. bText
+            btn.Size = UDim2.new(0, math.clamp(#bText * 9 + 20, 80, 160), 1, 0)
+            btn.BackgroundColor3 = isPrimary and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and theme.Element or Color3.fromRGB(236, 238, 243))
+            btn.TextColor3 = isPrimary and (isDark and Color3.fromRGB(18, 20, 24) or Color3.fromRGB(255, 255, 255)) or (isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24))
+            btn.Font = theme.FontBold
+            btn.Text = bText
+            btn.TextSize = theme.FontSizeSmall
+            btn.BorderSizePixel = 0
+            btn.AutoButtonColor = false
+            btn.ZIndex = 103
+            btn.Parent = btnRow
+
+            local bCorner = Instance.new("UICorner")
+            bCorner.CornerRadius = theme.SmallCornerRadius
+            bCorner.Parent = btn
+
+            local bStroke = Instance.new("UIStroke")
+            bStroke.Name = "ButtonStroke"
+            bStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+            bStroke.Thickness = 1
+            bStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            bStroke.Parent = btn
+
+            local conn = btn.Activated:Connect(function()
+                close(bCb)
+            end)
+            if cleanup then cleanup:Add(conn) end
+        end
+    else
+        local cancelBtn = Instance.new("TextButton")
+        cancelBtn.Name = "CancelButton"
+        cancelBtn.Size = UDim2.new(0, 90, 1, 0)
+        cancelBtn.BackgroundColor3 = isDark and theme.Element or Color3.fromRGB(236, 238, 243)
+        cancelBtn.AutoButtonColor = false
+        cancelBtn.Text = cancelText
+        cancelBtn.TextColor3 = isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24)
+        cancelBtn.Font = theme.FontBold
+        cancelBtn.TextSize = theme.FontSizeSmall
+        cancelBtn.BorderSizePixel = 0
+        cancelBtn.ZIndex = 103
+        cancelBtn.Parent = btnRow
+        
+        local cCorner = Instance.new("UICorner")
+        cCorner.CornerRadius = theme.SmallCornerRadius
+        cCorner.Parent = cancelBtn
+        
+        local confirmBtn = Instance.new("TextButton")
+        confirmBtn.Name = "ConfirmButton"
+        confirmBtn.Size = UDim2.new(0, 90, 1, 0)
+        confirmBtn.BackgroundColor3 = isDark and theme.ElementActive or Color3.fromRGB(18, 20, 24)
+        confirmBtn.AutoButtonColor = false
+        confirmBtn.Text = confirmText
+        confirmBtn.TextColor3 = isDark and theme.TextPrimary or Color3.fromRGB(255, 255, 255)
+        confirmBtn.Font = theme.FontBold
+        confirmBtn.TextSize = theme.FontSizeSmall
+        confirmBtn.BorderSizePixel = 0
+        confirmBtn.ZIndex = 103
+        confirmBtn.Parent = btnRow
+        
+        local cfCorner = Instance.new("UICorner")
+        cfCorner.CornerRadius = theme.SmallCornerRadius
+        cfCorner.Parent = confirmBtn
+
+        local cfConn = confirmBtn.Activated:Connect(function()
+            close(onConfirm)
+        end)
+        local ccConn = cancelBtn.Activated:Connect(function()
+            close(onCancel)
+        end)
+        if cleanup then
+            cleanup:Add(cfConn)
+            cleanup:Add(ccConn)
+        end
+    end
     
-    local cfConn = confirmBtn.Activated:Connect(function()
-        close(onConfirm)
-    end)
-    local ccConn = cancelBtn.Activated:Connect(function()
-        close(onCancel)
-    end)
+    TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
+        BackgroundTransparency = 0.5
+    }):Play()
     
     if cleanup then
-        cleanup:Add(cfConn)
-        cleanup:Add(ccConn)
         cleanup:Add(overlay)
     end
 end

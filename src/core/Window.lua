@@ -1306,6 +1306,28 @@ function Window:ShowProfileModal()
     })
 end
 
+function Window:SetTransparency(alpha)
+    local val = math.clamp(tonumber(alpha) or 0, 0, 1)
+    if self._mainFrame then
+        self._mainFrame.BackgroundTransparency = val
+    end
+    if self._sidebar then
+        self._sidebar.BackgroundTransparency = math.clamp(val * 0.75, 0, 1)
+    end
+    if self._header then
+        self._header.BackgroundTransparency = math.clamp(val * 0.5, 0, 1)
+    end
+end
+
+function Window:SetGroupTransparency(alpha)
+    local val = math.clamp(tonumber(alpha) or 0, 0, 1)
+    if self._mainFrame and self._mainFrame:IsA("CanvasGroup") then
+        self._mainFrame.GroupTransparency = val
+    else
+        self:SetTransparency(val)
+    end
+end
+
 function Window:GetUniversalGroup()
     return self._universalGroup
 end
@@ -2407,7 +2429,7 @@ function Tab:CreateBanner(options)
 end
 
 function Tab:CreateSection(nameOrOptions)
-    local sectionName = type(nameOrOptions) == "table" and (nameOrOptions.Name or nameOrOptions.Text) or tostring(nameOrOptions)
+    local sectionName = type(nameOrOptions) == "table" and (nameOrOptions.Title or nameOrOptions.Name or nameOrOptions.Text or "Section") or tostring(nameOrOptions)
     local sectionOptions = type(nameOrOptions) == "table" and nameOrOptions or {}
     
     local sectionParent = self._layoutEngine:GetSectionParent(sectionOptions)
@@ -2930,7 +2952,8 @@ function Section:CreateProgression(options)
         self._body,
         options,
         self._window._theme,
-        self._window._cleanup
+        self._window._cleanup,
+        self._window._components
     )
     table.insert(self._components, prg)
     return prg
@@ -2984,5 +3007,13 @@ Section.AddRow = Section.CreateRow
 Section.AddLabel = Section.CreateLabel
 Section.AddTextbox = Section.CreateInput
 Section.CreateTextbox = Section.CreateInput
+Section.CreateSliders = Section.CreateSliderGroup
+Section.CreateInputs = Section.CreateInputGroup
+Section.CreateToggles = Section.CreateToggleGroup
+Section.CreateButtons = Section.CreateButtonGroup
+Section.AddSliders = Section.CreateSliderGroup
+Section.AddInputs = Section.CreateInputGroup
+Section.AddToggles = Section.CreateToggleGroup
+Section.AddButtons = Section.CreateButtonGroup
 
 return Window

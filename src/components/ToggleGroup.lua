@@ -9,16 +9,20 @@ ToggleGroup.__index = ToggleGroup
 function ToggleGroup.new(parent, options, theme, cleanup, toggleModule)
     options = options or {}
     local toggleCtor = toggleModule or Toggle
+    local isDown = options.Direction == "Down"
     
     local row = Instance.new("Frame")
     row.Name = "ToggleGroup"
-    row.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
+    row.Size = isDown and UDim2.new(1, 0, 0, 0) or UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
+    if isDown then
+        row.AutomaticSize = Enum.AutomaticSize.Y
+    end
     row.BackgroundTransparency = 1
     row.BorderSizePixel = 0
     row.Parent = parent
     
     local layout = Instance.new("UIListLayout")
-    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.FillDirection = isDown and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Padding = UDim.new(0, 6)
     layout.Parent = row
@@ -29,6 +33,7 @@ function ToggleGroup.new(parent, options, theme, cleanup, toggleModule)
         _theme = theme,
         _cleanup = cleanup,
         _toggleCtor = toggleCtor,
+        _isDown = isDown,
     }, ToggleGroup)
     
     if cleanup then
@@ -47,10 +52,16 @@ end
 function ToggleGroup:_rebalanceSizes()
     local count = #self._toggles
     if count == 0 then return end
-    local gapTotal = (count - 1) * 6
-    local widthScale = 1 / count
-    for _, t in ipairs(self._toggles) do
-        t._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
+    if self._isDown then
+        for _, t in ipairs(self._toggles) do
+            t._container.Size = UDim2.new(1, 0, 0, self._theme.SmallElementHeight or 34)
+        end
+    else
+        local gapTotal = (count - 1) * 6
+        local widthScale = 1 / count
+        for _, t in ipairs(self._toggles) do
+            t._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
+        end
     end
 end
 
