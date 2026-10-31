@@ -212,12 +212,17 @@ LiyHubUI.Create = LiyHubUI.CreateWindow
 return LiyHubUI
 """
 
-out_bundle = os.path.join(base_dir, "LiyHubUI.bundle.lua")
 clean_bundle = re.sub(r'--\[\[.*?\]\]', '', bundle_code, flags=re.DOTALL)
 clean_bundle = re.sub(r'--[^\n]*', '', clean_bundle)
 clean_bundle = '\n'.join([l.strip() for l in clean_bundle.splitlines() if l.strip()])
 bundle_code = clean_bundle
+
+out_bundle = os.path.join(base_dir, "LiyHubUI.bundle.lua")
+out_bundle_luau = os.path.join(base_dir, "LiyHubUI.bundle.luau")
+
 with open(out_bundle, "w", encoding="utf-8") as f:
     f.write(bundle_code)
+with open(out_bundle_luau, "w", encoding="utf-8") as f:
+    f.write(bundle_code)
 
-print(f"Bundle built successfully: {os.path.getsize(out_bundle)} bytes")
+print(f"Bundle built successfully: {os.path.getsize(out_bundle)} bytes (.lua and .luau)")

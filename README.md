@@ -62,7 +62,7 @@ LiyhubUI V2 is an enterprise-grade graphical user interface engine engineered fo
 Load LiyhubUI directly into any executor workspace:
 
 ```luau
-local Liyhub = loadstring(game:HttpGet("https://raw.githubusercontent.com/loizs1/LiyhubUI/main/LiyhubUI.bundle.luau"))()
+local Liyhub = loadstring(game:HttpGet("https://raw.githubusercontent.com/loizs1/LiyhubUIV2/main/LiyHubUI.bundle.luau"))()
 
 local Window = Liyhub:CreateWindow({
     Title = "Liyhub",
@@ -549,45 +549,40 @@ actionRow:AddKeybind({ Name = "Parry Key", Default = Enum.KeyCode.F, Callback = 
 The Progression component provides an animated multi-step workflow container with step status dots, connecting progress lines, Lucide icons, previous/next controls, and **nested interactive components** embedded directly inside the card.
 
 ```luau
-local questProg = LeftSec:CreateProgression({
-    Title = "Quest Journey (Auto Farm)",
-    Subtitle = "Automated quest and boss combat workflow",
+local pipelineProg = LeftSec:CreateProgression({
+    Title = "Process Pipeline",
+    Subtitle = "Multi-step sequential workflow progression",
     CurrentStep = 1,
     Controls = true,
     NextText = "Next",
     PrevText = "Previous",
     Steps = {
-        { Name = "Accept", Icon = "check" },
-        { Name = "Teleport", Icon = "teleport" },
-        { Name = "Farm", Icon = "swords" },
-        { Name = "Boss", Icon = "skull" },
-        { Name = "Reward", Icon = "gem" },
+        { Name = "Initialize", Icon = "check" },
+        { Name = "Configure",  Icon = "settings" },
+        { Name = "Process",    Icon = "zap" },
+        { Name = "Verify",     Icon = "shield" },
+        { Name = "Complete",   Icon = "gem" },
     },
     Callback = function(stepIndex: number, stepData: table)
-        -- Step changed callback
     end
 })
 
--- Nested Toggle inside the Progression Card:
-local autoToggle = questProg:CreateToggle({
-    Name = "Auto Execute Step",
-    Desc = "Continuously advance through quest steps automatically.",
+local autoToggle = pipelineProg:CreateToggle({
+    Name = "Auto Advance",
+    Desc = "Continuously advance through pipeline steps automatically.",
     Default = false,
     Callback = function(state: boolean)
-        -- Start/stop auto execution
     end
 })
 
--- Nested Dropdown inside the Progression Card:
-local diffDropdown = questProg:CreateDropdown({
-    Name = "Quest Difficulty",
-    Options = { "Easy", "Medium", "Hard", "Nightmare" },
-    Default = "Easy",
-    Callback = function(diff: string) end
+local modeDropdown = pipelineProg:CreateDropdown({
+    Name = "Execution Mode",
+    Options = { "Standard", "High-Throughput", "Strict Validation" },
+    Default = "Standard",
+    Callback = function(mode: string) end
 })
 
--- Nested Slider inside the Progression Card:
-local speedSlider = questProg:CreateSlider({
+local speedSlider = pipelineProg:CreateSlider({
     Name = "Step Interval",
     Min = 1,
     Max = 10,
@@ -596,11 +591,10 @@ local speedSlider = questProg:CreateSlider({
     Callback = function(sec: number) end
 })
 
--- Programmatic Navigation Controls:
-questProg:Next()            -- Advances to next step
-questProg:Previous()        -- Returns to previous step
-questProg:SetStep(3)        -- Jumps directly to step 3
-local curStep = questProg:GetStep()
+pipelineProg:Next()            -- Advances to next step
+pipelineProg:Previous()        -- Returns to previous step
+pipelineProg:SetStep(3)        -- Jumps directly to step 3
+local curStep = pipelineProg:GetStep()
 ```
 
 ---
