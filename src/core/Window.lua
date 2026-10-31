@@ -1004,7 +1004,8 @@ function Window:_initUniversalTabs(options)
     local bannerTitle = options.BannerTitle or "LiyHub Announcement"
     local bannerDesc = options.BannerDesc or "Universal high-performance script framework engineered by Than & aeris. Minimalist pure B&W design, vector typography, and native stealth architecture."
 
-    local univGroup = self:CreateTabGroup("Universal")
+    local univGroupName = options.UniversalGroupName or options.UniversalTitle or "Liyhub"
+    local univGroup = self:CreateTabGroup(univGroupName)
     self._universalGroup = univGroup
 
     local userTab = univGroup:CreateTab({
