@@ -16,10 +16,10 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     local container = Instance.new("TextButton")
     container.Name = "LiyHub_MobilePin"
-    container.Size = UDim2.new(0, 0, 0, 36)
+    container.Size = UDim2.new(0, 0, 0, 32)
     container.AutomaticSize = Enum.AutomaticSize.X
     container.Position = initialPos
-    container.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
+    container.BackgroundColor3 = isDark and Color3.fromRGB(16, 17, 20) or Color3.fromRGB(255, 255, 255)
     container.AutoButtonColor = false
     container.Text = ""
     container.BorderSizePixel = 0
@@ -33,8 +33,8 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     corner.Parent = container
     
     local sizeConstraint = Instance.new("UISizeConstraint")
-    sizeConstraint.MinSize = Vector2.new(130, 36)
-    sizeConstraint.MaxSize = Vector2.new(280, 44)
+    sizeConstraint.MinSize = Vector2.new(110, 32)
+    sizeConstraint.MaxSize = Vector2.new(240, 36)
     sizeConstraint.Parent = container
     
     local pinScale = Instance.new("UIScale")
@@ -42,60 +42,49 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     pinScale.Scale = 1.0
     pinScale.Parent = container
     
-    if theme.UseStrokes then
-        local stroke = Instance.new("UIStroke")
-        stroke.Name = "BorderStroke"
-        stroke.Color = isDark and (theme.BorderWindow or Color3.fromRGB(45, 45, 55)) or theme.Border
-        stroke.Thickness = 1
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Parent = container
-    end
-    
-    local iconBg = Instance.new("Frame")
-    iconBg.Name = "IconBg"
-    iconBg.Size = UDim2.new(0, 24, 0, 24)
-    iconBg.Position = UDim2.new(0, 8, 0.5, -12)
-    iconBg.BackgroundColor3 = isDark and (theme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
-    iconBg.BorderSizePixel = 0
-    iconBg.ZIndex = 1000000
-    iconBg.ClipsDescendants = true
-    iconBg.Active = false
-    iconBg.Parent = container
-    
-    local ibCorner = Instance.new("UICorner")
-    ibCorner.CornerRadius = UDim.new(1, 0)
-    ibCorner.Parent = iconBg
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "BorderStroke"
+    stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
+    stroke.Thickness = 1
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = container
     
     local iconImg = Instance.new("ImageLabel")
     iconImg.Name = "Logo"
-    iconImg.Size = UDim2.new(1, 0, 1, 0)
+    iconImg.Size = UDim2.fromOffset(20, 20)
+    iconImg.Position = UDim2.new(0, 6, 0.5, -10)
     iconImg.BackgroundTransparency = 1
     iconImg.Image = options.Logo or theme.DefaultLogo or "rbxassetid://126257104774952"
     iconImg.ScaleType = Enum.ScaleType.Fit
+    iconImg.BorderSizePixel = 0
     iconImg.Active = false
     iconImg.ZIndex = 1000001
-    iconImg.Parent = iconBg
+    iconImg.Parent = container
+
+    local iconCorner = Instance.new("UICorner")
+    iconCorner.CornerRadius = UDim.new(0, 5)
+    iconCorner.Parent = iconImg
     
     local textContainer = Instance.new("Frame")
     textContainer.Name = "TextContainer"
     textContainer.Size = UDim2.new(0, 0, 1, 0)
     textContainer.AutomaticSize = Enum.AutomaticSize.X
-    textContainer.Position = UDim2.new(0, 38, 0, 0)
+    textContainer.Position = UDim2.new(0, 32, 0, 0)
     textContainer.BackgroundTransparency = 1
     textContainer.Parent = container
     
     local pad = Instance.new("UIPadding")
-    pad.PaddingRight = UDim.new(0, 16)
+    pad.PaddingRight = UDim.new(0, 12)
     pad.Parent = textContainer
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(0, 0, 0, 16)
+    titleLabel.Size = UDim2.new(0, 0, 0, 15)
     titleLabel.AutomaticSize = Enum.AutomaticSize.X
-    titleLabel.Position = UDim2.new(0, 0, 0, 4)
+    titleLabel.Position = UDim2.new(0, 0, 0, 2)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = titleText
-    titleLabel.TextColor3 = theme.TextPrimary
+    titleLabel.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
     titleLabel.Font = theme.FontBold
     titleLabel.TextSize = 11
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -107,10 +96,10 @@ function MobilePin.new(screenGui, window, options, theme, cleanup)
     subLabel.Name = "Subtitle"
     subLabel.Size = UDim2.new(0, 0, 0, 12)
     subLabel.AutomaticSize = Enum.AutomaticSize.X
-    subLabel.Position = UDim2.new(0, 0, 0, 18)
+    subLabel.Position = UDim2.new(0, 0, 0, 16)
     subLabel.BackgroundTransparency = 1
     subLabel.Text = closeSubText
-    subLabel.TextColor3 = theme.TextMuted
+    subLabel.TextColor3 = isDark and Color3.fromRGB(130, 140, 160) or Color3.fromRGB(130, 136, 148)
     subLabel.Font = theme.FontRegular
     subLabel.TextSize = 9
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -183,21 +172,17 @@ end
 function MobilePin:SetTheme(targetTheme, isDark)
     self._theme = targetTheme
     if self._container then
-        self._container.BackgroundColor3 = isDark and (targetTheme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
+        self._container.BackgroundColor3 = isDark and Color3.fromRGB(16, 17, 20) or Color3.fromRGB(255, 255, 255)
         local stroke = self._container:FindFirstChildOfClass("UIStroke")
         if stroke then
-            stroke.Color = isDark and (targetTheme.BorderWindow or Color3.fromRGB(45, 45, 55)) or targetTheme.Border
+            stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
         end
     end
-    local iconBg = self._container and self._container:FindFirstChild("IconBg")
-    if iconBg then
-        iconBg.BackgroundColor3 = isDark and (targetTheme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
-    end
     if self._titleLabel then
-        self._titleLabel.TextColor3 = targetTheme.TextPrimary
+        self._titleLabel.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
     end
     if self._subLabel then
-        self._subLabel.TextColor3 = targetTheme.TextMuted
+        self._subLabel.TextColor3 = isDark and Color3.fromRGB(130, 140, 160) or Color3.fromRGB(130, 136, 148)
     end
 end
 

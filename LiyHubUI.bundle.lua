@@ -1039,10 +1039,10 @@ local userText = options.User or ""
 local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local container = Instance.new("TextButton")
 container.Name = "LiyHub_MobilePin"
-container.Size = UDim2.new(0, 0, 0, 36)
+container.Size = UDim2.new(0, 0, 0, 32)
 container.AutomaticSize = Enum.AutomaticSize.X
 container.Position = initialPos
-container.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
+container.BackgroundColor3 = isDark and Color3.fromRGB(16, 17, 20) or Color3.fromRGB(255, 255, 255)
 container.AutoButtonColor = false
 container.Text = ""
 container.BorderSizePixel = 0
@@ -1054,61 +1054,51 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(1, 0)
 corner.Parent = container
 local sizeConstraint = Instance.new("UISizeConstraint")
-sizeConstraint.MinSize = Vector2.new(130, 36)
-sizeConstraint.MaxSize = Vector2.new(280, 44)
+sizeConstraint.MinSize = Vector2.new(110, 32)
+sizeConstraint.MaxSize = Vector2.new(240, 36)
 sizeConstraint.Parent = container
 local pinScale = Instance.new("UIScale")
 pinScale.Name = "PinScale"
 pinScale.Scale = 1.0
 pinScale.Parent = container
-if theme.UseStrokes then
 local stroke = Instance.new("UIStroke")
 stroke.Name = "BorderStroke"
-stroke.Color = isDark and (theme.BorderWindow or Color3.fromRGB(45, 45, 55)) or theme.Border
+stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
 stroke.Thickness = 1
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = container
-end
-local iconBg = Instance.new("Frame")
-iconBg.Name = "IconBg"
-iconBg.Size = UDim2.new(0, 24, 0, 24)
-iconBg.Position = UDim2.new(0, 8, 0.5, -12)
-iconBg.BackgroundColor3 = isDark and (theme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
-iconBg.BorderSizePixel = 0
-iconBg.ZIndex = 1000000
-iconBg.ClipsDescendants = true
-iconBg.Active = false
-iconBg.Parent = container
-local ibCorner = Instance.new("UICorner")
-ibCorner.CornerRadius = UDim.new(1, 0)
-ibCorner.Parent = iconBg
 local iconImg = Instance.new("ImageLabel")
 iconImg.Name = "Logo"
-iconImg.Size = UDim2.new(1, 0, 1, 0)
+iconImg.Size = UDim2.fromOffset(20, 20)
+iconImg.Position = UDim2.new(0, 6, 0.5, -10)
 iconImg.BackgroundTransparency = 1
 iconImg.Image = options.Logo or theme.DefaultLogo or "rbxassetid://126257104774952"
 iconImg.ScaleType = Enum.ScaleType.Fit
+iconImg.BorderSizePixel = 0
 iconImg.Active = false
 iconImg.ZIndex = 1000001
-iconImg.Parent = iconBg
+iconImg.Parent = container
+local iconCorner = Instance.new("UICorner")
+iconCorner.CornerRadius = UDim.new(0, 5)
+iconCorner.Parent = iconImg
 local textContainer = Instance.new("Frame")
 textContainer.Name = "TextContainer"
 textContainer.Size = UDim2.new(0, 0, 1, 0)
 textContainer.AutomaticSize = Enum.AutomaticSize.X
-textContainer.Position = UDim2.new(0, 38, 0, 0)
+textContainer.Position = UDim2.new(0, 32, 0, 0)
 textContainer.BackgroundTransparency = 1
 textContainer.Parent = container
 local pad = Instance.new("UIPadding")
-pad.PaddingRight = UDim.new(0, 16)
+pad.PaddingRight = UDim.new(0, 12)
 pad.Parent = textContainer
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(0, 0, 0, 16)
+titleLabel.Size = UDim2.new(0, 0, 0, 15)
 titleLabel.AutomaticSize = Enum.AutomaticSize.X
-titleLabel.Position = UDim2.new(0, 0, 0, 4)
+titleLabel.Position = UDim2.new(0, 0, 0, 2)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = titleText
-titleLabel.TextColor3 = theme.TextPrimary
+titleLabel.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 titleLabel.Font = theme.FontBold
 titleLabel.TextSize = 11
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1119,10 +1109,10 @@ local subLabel = Instance.new("TextLabel")
 subLabel.Name = "Subtitle"
 subLabel.Size = UDim2.new(0, 0, 0, 12)
 subLabel.AutomaticSize = Enum.AutomaticSize.X
-subLabel.Position = UDim2.new(0, 0, 0, 18)
+subLabel.Position = UDim2.new(0, 0, 0, 16)
 subLabel.BackgroundTransparency = 1
 subLabel.Text = closeSubText
-subLabel.TextColor3 = theme.TextMuted
+subLabel.TextColor3 = isDark and Color3.fromRGB(130, 140, 160) or Color3.fromRGB(130, 136, 148)
 subLabel.Font = theme.FontRegular
 subLabel.TextSize = 9
 subLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1188,21 +1178,17 @@ end
 function MobilePin:SetTheme(targetTheme, isDark)
 self._theme = targetTheme
 if self._container then
-self._container.BackgroundColor3 = isDark and (targetTheme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
+self._container.BackgroundColor3 = isDark and Color3.fromRGB(16, 17, 20) or Color3.fromRGB(255, 255, 255)
 local stroke = self._container:FindFirstChildOfClass("UIStroke")
 if stroke then
-stroke.Color = isDark and (targetTheme.BorderWindow or Color3.fromRGB(45, 45, 55)) or targetTheme.Border
+stroke.Color = isDark and Color3.fromRGB(36, 38, 46) or Color3.fromRGB(220, 224, 232)
 end
-end
-local iconBg = self._container and self._container:FindFirstChild("IconBg")
-if iconBg then
-iconBg.BackgroundColor3 = isDark and (targetTheme.Element or Color3.fromRGB(24, 24, 29)) or Color3.fromRGB(240, 243, 248)
 end
 if self._titleLabel then
-self._titleLabel.TextColor3 = targetTheme.TextPrimary
+self._titleLabel.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 end
 if self._subLabel then
-self._subLabel.TextColor3 = targetTheme.TextMuted
+self._subLabel.TextColor3 = isDark and Color3.fromRGB(130, 140, 160) or Color3.fromRGB(130, 136, 148)
 end
 end
 function MobilePin:SetVisible(visible)
@@ -4211,87 +4197,41 @@ headerFlatBottom.Position = UDim2.new(0, 0, 1, -10)
 headerFlatBottom.BackgroundColor3 = theme.Header
 headerFlatBottom.BorderSizePixel = 0
 headerFlatBottom.Parent = header
-local isDarkInitial = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local logoBtn = Instance.new("TextButton")
 logoBtn.Name = "LogoButton"
-logoBtn.Size = UDim2.new(0, 28, 0, 28)
-logoBtn.Position = UDim2.new(0, 14, 0.5, -14)
+logoBtn.Size = UDim2.new(0, 26, 0, 26)
+logoBtn.Position = UDim2.new(0, 14, 0.5, -13)
 logoBtn.BackgroundTransparency = 1
 logoBtn.AutoButtonColor = false
 logoBtn.Text = ""
 logoBtn.Active = true
 logoBtn.Parent = header
-local logoBadge = Instance.new("Frame")
-logoBadge.Name = "LogoBadge"
-logoBadge.Size = UDim2.fromOffset(28, 28)
-logoBadge.AnchorPoint = Vector2.new(0.5, 0.5)
-logoBadge.Position = UDim2.new(0.5, 0, 0.5, 0)
-logoBadge.BackgroundColor3 = isDarkInitial and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(242, 245, 250)
-logoBadge.BorderSizePixel = 0
-logoBadge.ClipsDescendants = true
-logoBadge.Active = false
-logoBadge.Parent = logoBtn
-local lbCorner = Instance.new("UICorner")
-lbCorner.CornerRadius = UDim.new(0, 7)
-lbCorner.Parent = logoBadge
-local lbStroke = Instance.new("UIStroke")
-lbStroke.Name = "LogoStroke"
-lbStroke.Color = isDarkInitial and Color3.fromRGB(38, 42, 54) or Color3.fromRGB(216, 220, 230)
-lbStroke.Thickness = 1
-lbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-lbStroke.Parent = logoBadge
-local lbGradient = Instance.new("UIGradient")
-lbGradient.Name = "LogoGradient"
-lbGradient.Color = ColorSequence.new({
-ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 215, 225))
-})
-lbGradient.Rotation = 90
-lbGradient.Parent = logoBadge
 local logoAsset = options.Logo or theme.DefaultLogo or "rbxassetid://126257104774952"
 local logoImg = Instance.new("ImageLabel")
 logoImg.Name = "LogoImage"
-logoImg.Size = UDim2.new(1, -6, 1, -6)
-logoImg.AnchorPoint = Vector2.new(0.5, 0.5)
-logoImg.Position = UDim2.new(0.5, 0, 0.5, 0)
+logoImg.Size = UDim2.new(1, 0, 1, 0)
 logoImg.BackgroundTransparency = 1
 logoImg.Image = logoAsset
 logoImg.ScaleType = Enum.ScaleType.Fit
 logoImg.BorderSizePixel = 0
 logoImg.Active = false
-logoImg.Parent = logoBadge
-local liCorner = Instance.new("UICorner")
-liCorner.CornerRadius = UDim.new(0, 5)
-liCorner.Parent = logoImg
+logoImg.Parent = logoBtn
+local logoCorner = Instance.new("UICorner")
+logoCorner.CornerRadius = UDim.new(0, 6)
+logoCorner.Parent = logoImg
 local logoToggleConn = logoBtn.Activated:Connect(function()
 self:ToggleSidebar()
 end)
 local lbEnterConn = logoBtn.MouseEnter:Connect(function()
-local isCurDark = (self._currentThemeMode ~= "Light")
-local hovBg = isCurDark and Color3.fromRGB(28, 32, 42) or Color3.fromRGB(232, 236, 244)
-local hovSt = isCurDark and Color3.fromRGB(56, 64, 82) or Color3.fromRGB(180, 186, 200)
-TweenService:Create(logoBadge, TweenInfo.new(0.12), { BackgroundColor3 = hovBg, Size = UDim2.fromOffset(29, 29) }):Play()
-TweenService:Create(lbStroke, TweenInfo.new(0.12), { Color = hovSt }):Play()
+TweenService:Create(logoImg, TweenInfo.new(0.12), { ImageTransparency = 0.15 }):Play()
 end)
 local lbLeaveConn = logoBtn.MouseLeave:Connect(function()
-local isCurDark = (self._currentThemeMode ~= "Light")
-local normBg = isCurDark and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(242, 245, 250)
-local normSt = isCurDark and Color3.fromRGB(38, 42, 54) or Color3.fromRGB(216, 220, 230)
-TweenService:Create(logoBadge, TweenInfo.new(0.12), { BackgroundColor3 = normBg, Size = UDim2.fromOffset(28, 28) }):Play()
-TweenService:Create(lbStroke, TweenInfo.new(0.12), { Color = normSt }):Play()
-end)
-local lbDownConn = logoBtn.MouseButton1Down:Connect(function()
-TweenService:Create(logoBadge, TweenInfo.new(0.08), { Size = UDim2.fromOffset(26, 26) }):Play()
-end)
-local lbUpConn = logoBtn.MouseButton1Up:Connect(function()
-TweenService:Create(logoBadge, TweenInfo.new(0.08), { Size = UDim2.fromOffset(28, 28) }):Play()
+TweenService:Create(logoImg, TweenInfo.new(0.12), { ImageTransparency = 0 }):Play()
 end)
 if cleanup then
 cleanup:Add(logoToggleConn)
 cleanup:Add(lbEnterConn)
 cleanup:Add(lbLeaveConn)
-cleanup:Add(lbDownConn)
-cleanup:Add(lbUpConn)
 cleanup:Add(logoBtn)
 end
 local headerDivider = Instance.new("Frame")
@@ -4304,7 +4244,7 @@ headerDivider.Parent = header
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, -165, 0, 18)
-titleLabel.Position = UDim2.new(0, 48, 0, 7)
+titleLabel.Position = UDim2.new(0, 46, 0, 7)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = titleText
 titleLabel.TextColor3 = theme.TextPrimary
@@ -4316,7 +4256,7 @@ titleLabel.Parent = header
 local subLabel = Instance.new("TextLabel")
 subLabel.Name = "Subtitle"
 subLabel.Size = UDim2.new(1, -165, 0, 14)
-subLabel.Position = UDim2.new(0, 48, 0, 25)
+subLabel.Position = UDim2.new(0, 46, 0, 25)
 subLabel.BackgroundTransparency = 1
 subLabel.Text = subtitleText
 subLabel.TextColor3 = theme.TextMuted
@@ -5754,12 +5694,6 @@ if av then av.BackgroundColor3 = targetTheme.Header end
 end
 if self._themeBtn then
 self._themeBtn.BackgroundColor3 = btnBg
-end
-if self._logoBadge then
-self._logoBadge.BackgroundColor3 = isDark and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(242, 245, 250)
-end
-if self._logoStroke then
-self._logoStroke.Color = isDark and Color3.fromRGB(38, 42, 54) or Color3.fromRGB(216, 220, 230)
 end
 if self._minBtn then
 self._minBtn.BackgroundColor3 = btnBg

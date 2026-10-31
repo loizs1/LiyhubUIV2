@@ -183,94 +183,44 @@ function Window.new(options, dependencies)
     headerFlatBottom.BorderSizePixel = 0
     headerFlatBottom.Parent = header
     
-    local isDarkInitial = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     local logoBtn = Instance.new("TextButton")
     logoBtn.Name = "LogoButton"
-    logoBtn.Size = UDim2.new(0, 28, 0, 28)
-    logoBtn.Position = UDim2.new(0, 14, 0.5, -14)
+    logoBtn.Size = UDim2.new(0, 26, 0, 26)
+    logoBtn.Position = UDim2.new(0, 14, 0.5, -13)
     logoBtn.BackgroundTransparency = 1
     logoBtn.AutoButtonColor = false
     logoBtn.Text = ""
     logoBtn.Active = true
     logoBtn.Parent = header
     
-    local logoBadge = Instance.new("Frame")
-    logoBadge.Name = "LogoBadge"
-    logoBadge.Size = UDim2.fromOffset(28, 28)
-    logoBadge.AnchorPoint = Vector2.new(0.5, 0.5)
-    logoBadge.Position = UDim2.new(0.5, 0, 0.5, 0)
-    logoBadge.BackgroundColor3 = isDarkInitial and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(242, 245, 250)
-    logoBadge.BorderSizePixel = 0
-    logoBadge.ClipsDescendants = true
-    logoBadge.Active = false
-    logoBadge.Parent = logoBtn
-
-    local lbCorner = Instance.new("UICorner")
-    lbCorner.CornerRadius = UDim.new(0, 7)
-    lbCorner.Parent = logoBadge
-
-    local lbStroke = Instance.new("UIStroke")
-    lbStroke.Name = "LogoStroke"
-    lbStroke.Color = isDarkInitial and Color3.fromRGB(38, 42, 54) or Color3.fromRGB(216, 220, 230)
-    lbStroke.Thickness = 1
-    lbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    lbStroke.Parent = logoBadge
-
-    local lbGradient = Instance.new("UIGradient")
-    lbGradient.Name = "LogoGradient"
-    lbGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 215, 225))
-    })
-    lbGradient.Rotation = 90
-    lbGradient.Parent = logoBadge
-
     local logoAsset = options.Logo or theme.DefaultLogo or "rbxassetid://126257104774952"
     local logoImg = Instance.new("ImageLabel")
     logoImg.Name = "LogoImage"
-    logoImg.Size = UDim2.new(1, -6, 1, -6)
-    logoImg.AnchorPoint = Vector2.new(0.5, 0.5)
-    logoImg.Position = UDim2.new(0.5, 0, 0.5, 0)
+    logoImg.Size = UDim2.new(1, 0, 1, 0)
     logoImg.BackgroundTransparency = 1
     logoImg.Image = logoAsset
     logoImg.ScaleType = Enum.ScaleType.Fit
     logoImg.BorderSizePixel = 0
     logoImg.Active = false
-    logoImg.Parent = logoBadge
+    logoImg.Parent = logoBtn
 
-    local liCorner = Instance.new("UICorner")
-    liCorner.CornerRadius = UDim.new(0, 5)
-    liCorner.Parent = logoImg
+    local logoCorner = Instance.new("UICorner")
+    logoCorner.CornerRadius = UDim.new(0, 6)
+    logoCorner.Parent = logoImg
     
     local logoToggleConn = logoBtn.Activated:Connect(function()
         self:ToggleSidebar()
     end)
     local lbEnterConn = logoBtn.MouseEnter:Connect(function()
-        local isCurDark = (self._currentThemeMode ~= "Light")
-        local hovBg = isCurDark and Color3.fromRGB(28, 32, 42) or Color3.fromRGB(232, 236, 244)
-        local hovSt = isCurDark and Color3.fromRGB(56, 64, 82) or Color3.fromRGB(180, 186, 200)
-        TweenService:Create(logoBadge, TweenInfo.new(0.12), { BackgroundColor3 = hovBg, Size = UDim2.fromOffset(29, 29) }):Play()
-        TweenService:Create(lbStroke, TweenInfo.new(0.12), { Color = hovSt }):Play()
+        TweenService:Create(logoImg, TweenInfo.new(0.12), { ImageTransparency = 0.15 }):Play()
     end)
     local lbLeaveConn = logoBtn.MouseLeave:Connect(function()
-        local isCurDark = (self._currentThemeMode ~= "Light")
-        local normBg = isCurDark and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(242, 245, 250)
-        local normSt = isCurDark and Color3.fromRGB(38, 42, 54) or Color3.fromRGB(216, 220, 230)
-        TweenService:Create(logoBadge, TweenInfo.new(0.12), { BackgroundColor3 = normBg, Size = UDim2.fromOffset(28, 28) }):Play()
-        TweenService:Create(lbStroke, TweenInfo.new(0.12), { Color = normSt }):Play()
-    end)
-    local lbDownConn = logoBtn.MouseButton1Down:Connect(function()
-        TweenService:Create(logoBadge, TweenInfo.new(0.08), { Size = UDim2.fromOffset(26, 26) }):Play()
-    end)
-    local lbUpConn = logoBtn.MouseButton1Up:Connect(function()
-        TweenService:Create(logoBadge, TweenInfo.new(0.08), { Size = UDim2.fromOffset(28, 28) }):Play()
+        TweenService:Create(logoImg, TweenInfo.new(0.12), { ImageTransparency = 0 }):Play()
     end)
     if cleanup then
         cleanup:Add(logoToggleConn)
         cleanup:Add(lbEnterConn)
         cleanup:Add(lbLeaveConn)
-        cleanup:Add(lbDownConn)
-        cleanup:Add(lbUpConn)
         cleanup:Add(logoBtn)
     end
     
@@ -285,7 +235,7 @@ function Window.new(options, dependencies)
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
     titleLabel.Size = UDim2.new(1, -165, 0, 18)
-    titleLabel.Position = UDim2.new(0, 48, 0, 7)
+    titleLabel.Position = UDim2.new(0, 46, 0, 7)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = titleText
     titleLabel.TextColor3 = theme.TextPrimary
@@ -298,7 +248,7 @@ function Window.new(options, dependencies)
     local subLabel = Instance.new("TextLabel")
     subLabel.Name = "Subtitle"
     subLabel.Size = UDim2.new(1, -165, 0, 14)
-    subLabel.Position = UDim2.new(0, 48, 0, 25)
+    subLabel.Position = UDim2.new(0, 46, 0, 25)
     subLabel.BackgroundTransparency = 1
     subLabel.Text = subtitleText
     subLabel.TextColor3 = theme.TextMuted
@@ -1878,12 +1828,7 @@ function Window:SetTheme(themeNameOrTable)
     if self._themeBtn then
         self._themeBtn.BackgroundColor3 = btnBg
     end
-    if self._logoBadge then
-        self._logoBadge.BackgroundColor3 = isDark and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(242, 245, 250)
-    end
-    if self._logoStroke then
-        self._logoStroke.Color = isDark and Color3.fromRGB(38, 42, 54) or Color3.fromRGB(216, 220, 230)
-    end
+
     if self._minBtn then
         self._minBtn.BackgroundColor3 = btnBg
         local line = self._minBtn:FindFirstChild("IconLine")
