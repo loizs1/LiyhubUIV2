@@ -10,6 +10,7 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     local cancelText = options.CancelText or "Cancel"
     local onConfirm = options.OnConfirm or function() end
     local onCancel = options.OnCancel or function() end
+    local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     
     local overlay = Instance.new("TextButton")
     overlay.Name = "ModalOverlay"
@@ -35,7 +36,7 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     dialog.Position = UDim2.new(0.5, 0, 0.5, 0)
     dialog.Size = UDim2.new(0.85, 0, 0, 0)
     dialog.AutomaticSize = Enum.AutomaticSize.Y
-    dialog.BackgroundColor3 = theme.Header
+    dialog.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
     dialog.BorderSizePixel = 0
     dialog.ZIndex = 101
     dialog.Parent = overlay
@@ -64,26 +65,24 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     dList.Parent = dialog
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = theme.CornerRadius
+    corner.CornerRadius = theme.CornerRadius or UDim.new(0, 7)
     corner.Parent = dialog
     
-    if theme.UseStrokes then
-        local stroke = Instance.new("UIStroke")
-        stroke.Name = "DialogStroke"
-        stroke.Color = theme.BorderWindow or theme.Border
-        stroke.Thickness = 1
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Parent = dialog
-    end
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "DialogStroke"
+    stroke.Color = isDark and (theme.BorderWindow or theme.Border or Color3.fromRGB(42, 42, 50)) or Color3.fromRGB(218, 222, 230)
+    stroke.Thickness = 1
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = dialog
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
     titleLabel.Size = UDim2.new(1, 0, 0, 22)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
-    titleLabel.TextColor3 = theme.TextPrimary
-    titleLabel.Font = theme.FontBold
-    titleLabel.TextSize = theme.FontSizeTitle
+    titleLabel.TextColor3 = isDark and (theme.TextPrimary or Color3.fromRGB(255, 255, 255)) or Color3.fromRGB(18, 20, 24)
+    titleLabel.Font = theme.FontBold or Enum.Font.GothamBold
+    titleLabel.TextSize = theme.FontSizeTitle or 15
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     titleLabel.LayoutOrder = 1
@@ -96,9 +95,9 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     msgLabel.AutomaticSize = Enum.AutomaticSize.Y
     msgLabel.BackgroundTransparency = 1
     msgLabel.Text = message
-    msgLabel.TextColor3 = theme.TextSecondary
-    msgLabel.Font = theme.FontRegular
-    msgLabel.TextSize = theme.FontSizeRegular
+    msgLabel.TextColor3 = isDark and (theme.TextSecondary or Color3.fromRGB(160, 160, 172)) or Color3.fromRGB(80, 85, 96)
+    msgLabel.Font = theme.FontRegular or Enum.Font.GothamMedium
+    msgLabel.TextSize = theme.FontSizeRegular or 12
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
     msgLabel.TextYAlignment = Enum.TextYAlignment.Top
     msgLabel.TextWrapped = true
@@ -120,12 +119,11 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
     btnLayout.Padding = UDim.new(0, 8)
     btnLayout.Parent = btnRow
     
-    local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     local isClosing = false
     local function close(callback)
         if isClosing then return end
         isClosing = true
-        local t = TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
+        local t = TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast or 0.15), {
             BackgroundTransparency = 1
         })
         t:Play()
@@ -149,23 +147,23 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
             local btn = Instance.new("TextButton")
             btn.Name = "ModalBtn_" .. bText
             btn.Size = UDim2.new(0, math.clamp(#bText * 9 + 20, 80, 160), 1, 0)
-            btn.BackgroundColor3 = isPrimary and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and theme.Element or Color3.fromRGB(236, 238, 243))
-            btn.TextColor3 = isPrimary and (isDark and Color3.fromRGB(18, 20, 24) or Color3.fromRGB(255, 255, 255)) or (isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24))
-            btn.Font = theme.FontBold
+            btn.BackgroundColor3 = isPrimary and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243))
+            btn.TextColor3 = isPrimary and (isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)) or (isDark and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(18, 20, 24))
+            btn.Font = theme.FontBold or Enum.Font.GothamBold
             btn.Text = bText
-            btn.TextSize = theme.FontSizeSmall
+            btn.TextSize = theme.FontSizeSmall or 10
             btn.BorderSizePixel = 0
             btn.AutoButtonColor = false
             btn.ZIndex = 103
             btn.Parent = btnRow
 
             local bCorner = Instance.new("UICorner")
-            bCorner.CornerRadius = theme.SmallCornerRadius
+            bCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
             bCorner.Parent = btn
 
             local bStroke = Instance.new("UIStroke")
             bStroke.Name = "ButtonStroke"
-            bStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+            bStroke.Color = isPrimary and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(42, 42, 50) or Color3.fromRGB(218, 222, 230))
             bStroke.Thickness = 1
             bStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             bStroke.Parent = btn
@@ -179,36 +177,50 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
         local cancelBtn = Instance.new("TextButton")
         cancelBtn.Name = "CancelButton"
         cancelBtn.Size = UDim2.new(0, 90, 1, 0)
-        cancelBtn.BackgroundColor3 = isDark and theme.Element or Color3.fromRGB(236, 238, 243)
+        cancelBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
         cancelBtn.AutoButtonColor = false
         cancelBtn.Text = cancelText
-        cancelBtn.TextColor3 = isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24)
-        cancelBtn.Font = theme.FontBold
-        cancelBtn.TextSize = theme.FontSizeSmall
+        cancelBtn.TextColor3 = isDark and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(18, 20, 24)
+        cancelBtn.Font = theme.FontBold or Enum.Font.GothamBold
+        cancelBtn.TextSize = theme.FontSizeSmall or 10
         cancelBtn.BorderSizePixel = 0
         cancelBtn.ZIndex = 103
         cancelBtn.Parent = btnRow
         
         local cCorner = Instance.new("UICorner")
-        cCorner.CornerRadius = theme.SmallCornerRadius
+        cCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
         cCorner.Parent = cancelBtn
+
+        local cStroke = Instance.new("UIStroke")
+        cStroke.Name = "ButtonStroke"
+        cStroke.Color = isDark and Color3.fromRGB(42, 42, 50) or Color3.fromRGB(218, 222, 230)
+        cStroke.Thickness = 1
+        cStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        cStroke.Parent = cancelBtn
         
         local confirmBtn = Instance.new("TextButton")
         confirmBtn.Name = "ConfirmButton"
         confirmBtn.Size = UDim2.new(0, 90, 1, 0)
-        confirmBtn.BackgroundColor3 = isDark and theme.ElementActive or Color3.fromRGB(18, 20, 24)
+        confirmBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
         confirmBtn.AutoButtonColor = false
         confirmBtn.Text = confirmText
-        confirmBtn.TextColor3 = isDark and theme.TextPrimary or Color3.fromRGB(255, 255, 255)
-        confirmBtn.Font = theme.FontBold
-        confirmBtn.TextSize = theme.FontSizeSmall
+        confirmBtn.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
+        confirmBtn.Font = theme.FontBold or Enum.Font.GothamBold
+        confirmBtn.TextSize = theme.FontSizeSmall or 10
         confirmBtn.BorderSizePixel = 0
         confirmBtn.ZIndex = 103
         confirmBtn.Parent = btnRow
         
         local cfCorner = Instance.new("UICorner")
-        cfCorner.CornerRadius = theme.SmallCornerRadius
+        cfCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
         cfCorner.Parent = confirmBtn
+
+        local cfStroke = Instance.new("UIStroke")
+        cfStroke.Name = "ButtonStroke"
+        cfStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        cfStroke.Thickness = 1
+        cfStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        cfStroke.Parent = confirmBtn
 
         local cfConn = confirmBtn.Activated:Connect(function()
             close(onConfirm)
@@ -222,8 +234,8 @@ function Modal.ShowConfirmation(parentScreenGui, options, theme, cleanup)
         end
     end
     
-    TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
-        BackgroundTransparency = 0.5
+    TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast or 0.15), {
+        BackgroundTransparency = isDark and 0.5 or 0.65
     }):Play()
     
     if cleanup then
@@ -236,6 +248,7 @@ function Modal.Notify(parentScreenGui, options, theme, cleanup)
     local title = options.Title or "Notification"
     local message = options.Content or options.Message or ""
     local duration = options.Duration or 3.0
+    local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     
     local holder = parentScreenGui:FindFirstChild("NotificationHolder")
     if not holder then
@@ -259,7 +272,7 @@ function Modal.Notify(parentScreenGui, options, theme, cleanup)
     toast.Name = "Toast"
     toast.Size = UDim2.new(1, 0, 0, 48)
     toast.Position = UDim2.new(1, 300, 0, 0)
-    toast.BackgroundColor3 = theme.Header
+    toast.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
     toast.BorderSizePixel = 0
     toast.ClipsDescendants = true
     toast.ZIndex = 91
@@ -269,20 +282,18 @@ function Modal.Notify(parentScreenGui, options, theme, cleanup)
     corner.CornerRadius = theme.CornerRadius or UDim.new(0, 7)
     corner.Parent = toast
     
-    if theme.UseStrokes then
-        local stroke = Instance.new("UIStroke")
-        stroke.Name = "ToastStroke"
-        stroke.Color = theme.BorderWindow or theme.Border
-        stroke.Thickness = 1
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Parent = toast
-    end
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "ToastStroke"
+    stroke.Color = isDark and (theme.BorderWindow or theme.Border or Color3.fromRGB(42, 42, 50)) or Color3.fromRGB(218, 222, 230)
+    stroke.Thickness = 1
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = toast
     
     local bar = Instance.new("Frame")
     bar.Name = "Bar"
     bar.Size = UDim2.new(0, 3, 1, -12)
     bar.Position = UDim2.new(0, 5, 0, 6)
-    bar.BackgroundColor3 = theme.Accent
+    bar.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
     bar.BorderSizePixel = 0
     bar.ZIndex = 92
     bar.Parent = toast
@@ -297,9 +308,9 @@ function Modal.Notify(parentScreenGui, options, theme, cleanup)
     titleLabel.Position = UDim2.new(0, 14, 0, 8)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
-    titleLabel.TextColor3 = theme.TextPrimary
-    titleLabel.Font = theme.FontBold
-    titleLabel.TextSize = theme.FontSizeSmall
+    titleLabel.TextColor3 = isDark and (theme.TextPrimary or Color3.fromRGB(255, 255, 255)) or Color3.fromRGB(18, 20, 24)
+    titleLabel.Font = theme.FontBold or Enum.Font.GothamBold
+    titleLabel.TextSize = theme.FontSizeSmall or 10
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     titleLabel.ZIndex = 92
@@ -311,8 +322,8 @@ function Modal.Notify(parentScreenGui, options, theme, cleanup)
     msgLabel.Position = UDim2.new(0, 14, 0, 26)
     msgLabel.BackgroundTransparency = 1
     msgLabel.Text = message
-    msgLabel.TextColor3 = theme.TextSecondary
-    msgLabel.Font = theme.FontRegular
+    msgLabel.TextColor3 = isDark and (theme.TextSecondary or Color3.fromRGB(160, 160, 172)) or Color3.fromRGB(80, 85, 96)
+    msgLabel.Font = theme.FontRegular or Enum.Font.GothamMedium
     msgLabel.TextSize = 10
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
     msgLabel.TextTruncate = Enum.TextTruncate.AtEnd

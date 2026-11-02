@@ -728,6 +728,15 @@ function Window.new(options, dependencies)
     gripIcon.Active = false
     gripIcon.Parent = resizeGrip
     
+    if deps.ThemeManager and deps.ThemeManager.Subscribe then
+        local unsub = deps.ThemeManager:Subscribe(function(newTheme)
+            if self and not self._destroyed then
+                self:SetTheme(newTheme, true)
+            end
+        end)
+        if cleanup then cleanup:Add(unsub) end
+    end
+
     self = setmetatable({
         _screenGui = screenGui,
         _mainFrame = mainFrame,
@@ -1375,11 +1384,41 @@ function Window:_initUniversalTabs(options)
     local accountStatusStr = isRobloxPremium and "Roblox Premium" or "Standard Account"
 
     local genv = (getgenv and getgenv()) or {}
-    local drmKey = genv.LiyHubKey or _G.LiyHubKey or shared.LiyHubKey or "FREE-FOR-ALL"
-    local drmTier = genv.LiyHubTier or _G.LiyHubTier or shared.LiyHubTier or (genv.LiyHubIsPremium and "VIP" or "Freemium")
-    local drmRemaining = genv.LiyHubRemainingTime or (genv.LiyHubRemainingSeconds and string.format("%dh %dm", math.floor(genv.LiyHubRemainingSeconds / 3600), math.floor((genv.LiyHubRemainingSeconds % 3600) / 60))) or "Lifetime"
-    local isDrmPremium = (genv.LiyHubIsPremium == true) or (_G.LiyHubIsPremium == true) or string.find(string.lower(tostring(drmTier)), "premium") ~= nil or string.find(string.lower(tostring(drmTier)), "vip") ~= nil
-    local drmStatusStr = isDrmPremium and "Premium Active" or "Freemium Active"
+    local httpService = game:GetService("HttpService")
+    local serverUrl = options.ServerUrl or options.AuthUrl or genv.LiyHubServerUrl or _G.LiyHubServerUrl or "http://localhost:3000"
+
+    local function resolveKeyCandidate()
+        if options.Key and options.Key ~= "" then return options.Key end
+        if options.LicenseKey and options.LicenseKey ~= "" then return options.LicenseKey end
+        local candidates = { "LiyHubKey", "script_key", "ScriptKey", "SCRIPT_KEY", "Key", "key" }
+        if getgenv then
+            local g = getgenv()
+            for _, k in ipairs(candidates) do
+                if g[k] and type(g[k]) == "string" and #g[k] >= 4 and not string.find(g[k], "://") then
+                    return g[k]
+                end
+            end
+        end
+        if _G then
+            for _, k in ipairs(candidates) do
+                if _G[k] and type(_G[k]) == "string" and #_G[k] >= 4 and not string.find(_G[k], "://") then
+                    return _G[k]
+                end
+            end
+        end
+        if isfile and readfile and isfile("liyhub_key.txt") then
+            local fContent = readfile("liyhub_key.txt")
+            if fContent and type(fContent) == "string" and #fContent >= 4 then
+                return string.gsub(fContent, "^%s*(.-)%s*$", "%1")
+            end
+        end
+        return nil
+    end
+
+    local drmKey = resolveKeyCandidate()
+    local drmTier = genv.LiyHubTier or _G.LiyHubTier or (drmKey and "Checking..." or "Unlicensed")
+    local drmRemaining = genv.LiyHubRemainingTime or (drmKey and "Checking..." or "N/A")
+    local drmStatusStr = drmKey and "Validating Server..." or "Server Verification Required"
 
     local executionsCount = genv.LiyHubExecutionCount or _G.LiyHubExecutionCount
     if not executionsCount then
@@ -1480,22 +1519,110 @@ function Window:_initUniversalTabs(options)
     })
 
     local drmSec = userTab:CreateSection("DRM License & Security")
-    drmSec:CreateParagraph({
+    local drmParagraph = drmSec:CreateParagraph({
         Title = "Tier: " .. tostring(drmTier) .. " (" .. drmStatusStr .. ")",
-        Content = string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s", tostring(drmKey), tostring(drmRemaining), tostring(executionsCount) .. (tonumber(executionsCount) == 1 and " execution" or " executions")),
+        Content = string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s", tostring(drmKey or "No Key Detected"), tostring(drmRemaining), tostring(executionsCount) .. " executions"),
     })
+
+    local function updateDrmDisplay(key, tier, status, remaining, count)
+        drmKey = key
+        drmTier = tier
+        drmStatusStr = status
+        drmRemaining = remaining
+        executionsCount = count
+        drmParagraph:SetTitle(string.format("Tier: %s (%s)", tostring(tier), tostring(status)))
+        drmParagraph:SetContent(string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s", tostring(key), tostring(remaining), tostring(count) .. " executions"))
+    end
+
+    local function verifyKeyWithServer(keyToTest, onDone)
+        task.spawn(function()
+            local hwid = (gethwid and gethwid()) or (identify_executor and identify_executor()) or (RbxAnalyticsService and RbxAnalyticsService:GetClientId()) or tostring(realPlayer and realPlayer.UserId or "0")
+            local requestFn = (syn and syn.request) or (http and http.request) or request or http_request
+            local responseBody = nil
+            local reqUrl = string.format("%s/api/v1/validate?projectId=%s&scriptId=%s&key=%s&hwid=%s&executor=%s&username=%s&userId=%s&accountAge=%s&placeId=%s&jobId=%s&gameId=%s&timestamp=%s",
+                serverUrl,
+                httpService:UrlEncode("default"),
+                httpService:UrlEncode(tostring(game.PlaceId)),
+                httpService:UrlEncode(tostring(keyToTest or "")),
+                httpService:UrlEncode(tostring(hwid)),
+                httpService:UrlEncode(tostring(executorName)),
+                httpService:UrlEncode(tostring(rawName)),
+                tostring(userIdStr),
+                tostring(accountAgeStr),
+                tostring(placeIdNum),
+                httpService:UrlEncode(tostring(serverJobId)),
+                tostring(gameIdNum),
+                tostring(os.time())
+            )
+            if requestFn then
+                local okReq, res = pcall(requestFn, {
+                    Url = reqUrl,
+                    Method = "GET",
+                    Headers = { ["Content-Type"] = "application/json" }
+                })
+                if okReq and res then
+                    responseBody = res.Body or res.body or res.data
+                end
+            end
+            if not responseBody then
+                pcall(function()
+                    responseBody = game:HttpGet(reqUrl)
+                end)
+            end
+            local parsed = nil
+            if responseBody then
+                pcall(function() parsed = httpService:JSONDecode(responseBody) end)
+            end
+            if parsed and (parsed.authorized or parsed.success) then
+                local tier = parsed.tier or (parsed.isPremium and "VIP" or "Premium")
+                local isPrem = parsed.isPremium == true or tier == "VIP"
+                local activeStr = isPrem and "VIP Active" or "Premium Active"
+                local rem = parsed.expiresFormatted or "Lifetime"
+                local execs = parsed.executionCount or 1
+                if genv then
+                    genv.LiyHubKey = keyToTest
+                    genv.LiyHubTier = tier
+                    genv.LiyHubIsPremium = isPrem
+                    genv.LiyHubRemainingTime = rem
+                    genv.LiyHubExecutionCount = execs
+                end
+                updateDrmDisplay(keyToTest, tier, activeStr, rem, execs)
+                if onDone then onDone(true, parsed) end
+            else
+                local errMsg = (parsed and parsed.message) or "Key Expired / Server Unreachable"
+                updateDrmDisplay(keyToTest or "Invalid", "Unlicensed", errMsg, "Expired", 0)
+                if onDone then onDone(false, parsed) end
+            end
+        end)
+    end
+
+    if drmKey and drmKey ~= "" then
+        verifyKeyWithServer(drmKey)
+    else
+        updateDrmDisplay("No Key Detected", "Unlicensed", "Server Verification Required", "N/A", 0)
+    end
+
     drmSec:CreateButton({
-        Name = "Copy License Key",
-        Desc = tostring(drmKey),
-        ButtonText = "Copy",
+        Name = "Verify License Key",
+        Desc = "Check key status directly against Liyhub DRM server.",
+        ButtonText = "Verify",
         Callback = function()
-            local copyFn = setclipboard or toclipboard or (Clipboard and Clipboard.set)
-            if copyFn then
-                copyFn(tostring(drmKey))
+            local curKey = resolveKeyCandidate()
+            if curKey then
+                verifyKeyWithServer(curKey, function(ok)
+                    self:Notify({
+                        Title = ok and "DRM Verified" or "Verification Failed",
+                        Content = ok and "License verified by server!" or "License rejected by server.",
+                        Duration = 2.5,
+                        Type = ok and "Success" or "Error"
+                    })
+                end)
+            else
                 self:Notify({
-                    Title = "Copied",
-                    Content = "License key copied to clipboard!",
-                    Duration = 2,
+                    Title = "No Key Found",
+                    Content = "Please set getgenv().LiyHubKey or save liyhub_key.txt first.",
+                    Duration = 3,
+                    Type = "Warning"
                 })
             end
         end,
@@ -1831,7 +1958,7 @@ function Window:ToggleTheme()
     end
 end
 
-function Window:SetTheme(themeNameOrTable)
+function Window:SetTheme(themeNameOrTable, skipBroadcast)
     local ThemeManager = self._themeManager
     if not ThemeManager then
         local okTM, resTM = pcall(function() return require(script.Parent.Parent.themes.ThemeManager) end)
@@ -1983,13 +2110,19 @@ function Window:SetTheme(themeNameOrTable)
             self:_applyThemeToBanner(banner, targetTheme, isDark)
         end
     end
+
+    if not skipBroadcast and self._themeManager and self._themeManager.SetTheme then
+        pcall(function()
+            self._themeManager.CurrentTheme = targetTheme
+        end)
+    end
 end
 
 function Window:_applyThemeToProgression(prg, targetTheme, isDark)
     if not prg or not prg._container then return end
     prg._theme = targetTheme
     prg._accentColor = targetTheme.AccentStep or (isDark and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 130, 220))
-    prg._container.BackgroundColor3 = targetTheme.Card
+    prg._container.BackgroundColor3 = isDark and (targetTheme.Card or Color3.fromRGB(18, 18, 22)) or Color3.fromRGB(255, 255, 255)
     local stroke = prg._container:FindFirstChildOfClass("UIStroke")
     if stroke then
         stroke.Color = targetTheme.Border
@@ -2045,19 +2178,12 @@ function Window:_applyThemeToProgression(prg, targetTheme, isDark)
             node.Label.TextColor3 = targetLabelColor
         end
     end
+    for _, nestedComp in ipairs(prg._nestedComponents or {}) do
+        self:_applyThemeToComponent(nestedComp, targetTheme, isDark)
+    end
     local nested = prg._container:FindFirstChild("NestedContent")
     if nested then
-        for _, child in ipairs(nested:GetChildren()) do
-            if child:IsA("GuiObject") then
-                if child.Name:find("Toggle_") or child.Name:find("Dropdown_") or child.Name:find("Slider_") or child.Name:find("Button_") or child.Name:find("Input_") then
-                    child.BackgroundColor3 = targetTheme.Element
-                    local st = child:FindFirstChildOfClass("UIStroke")
-                    if st then st.Color = targetTheme.Border end
-                    local t = child:FindFirstChild("Title") or child:FindFirstChild("Label") or child:FindFirstChild("Text")
-                    if t and t:IsA("TextLabel") then t.TextColor3 = targetTheme.TextPrimary end
-                end
-            end
-        end
+        self:_walkAndThemeDescendants(nested, targetTheme, isDark)
     end
 end
 
@@ -2133,53 +2259,20 @@ function Window:_applyThemeToComponent(comp, targetTheme, isDark)
         self:_applyThemeToProgression(comp, targetTheme, isDark)
         return
     end
-    if comp._container then
-        local c = comp._container
-        if c:IsA("GuiObject") then
-            if comp._isPrimary then
-                c.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
-            elseif comp._isPrimary == false or c.Name:find("ActionRow_") or c.Name:find("Paragraph_") or c.Name:find("Toggle_") or c.Name:find("Slider_") or c.Name:find("Input_") or c.Name:find("Keybind_") or c.Name:find("Button_") then
-                c.BackgroundColor3 = targetTheme.Element
-            end
-        end
-        local cStroke = c:FindFirstChildOfClass("UIStroke")
-        if cStroke then
-            cStroke.Color = targetTheme.Border
-        end
-    end
-
-    if comp._actionBtn then
-        comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-        comp._actionBtn.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
-    end
-
-    if comp._label and comp._container and comp._container:IsA("TextButton") then
-        if not isDark then
-            comp._container.BackgroundColor3 = Color3.fromRGB(18, 20, 24)
-            comp._label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            local st = comp._container:FindFirstChildOfClass("UIStroke")
-            if st then st.Enabled = false end
-        else
-            local isPri = comp._isPrimary
-            comp._container.BackgroundColor3 = isPri and Color3.fromRGB(255, 255, 255) or targetTheme.Element
-            comp._label.TextColor3 = isPri and Color3.fromRGB(14, 14, 16) or targetTheme.TextPrimary
-            local st = comp._container:FindFirstChildOfClass("UIStroke")
-            if st then
-                st.Enabled = not isPri
-                st.Color = targetTheme.Border
-            end
-        end
-    end
-
-    if comp._titleLabel then
-        comp._titleLabel.TextColor3 = targetTheme.TextPrimary
-    end
-
-    if comp._contentLabel then
-        comp._contentLabel.TextColor3 = targetTheme.TextSecondary
-    end
 
     if comp._switch then
+        comp._container.BackgroundColor3 = targetTheme.Element
+        local st = comp._container:FindFirstChildOfClass("UIStroke")
+        if st then
+            st.Enabled = true
+            st.Color = targetTheme.Border
+        end
+        if comp._label then
+            comp._label.TextColor3 = targetTheme.TextPrimary
+        end
+        if comp._descLabel then
+            comp._descLabel.TextColor3 = targetTheme.TextMuted
+        end
         local active = comp._state == true
         comp._switch.BackgroundColor3 = active and targetTheme.ToggleActive or targetTheme.ToggleInactive
         if comp._switchStroke then
@@ -2188,9 +2281,21 @@ function Window:_applyThemeToComponent(comp, targetTheme, isDark)
         if comp._knob then
             comp._knob.BackgroundColor3 = active and targetTheme.ToggleKnob or targetTheme.ToggleKnobInactive
         end
+        return
     end
 
     if comp._track then
+        if comp._container then
+            comp._container.BackgroundColor3 = targetTheme.Element
+            local st = comp._container:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Enabled = true
+                st.Color = targetTheme.Border
+            end
+        end
+        if comp._label then
+            comp._label.TextColor3 = targetTheme.TextPrimary
+        end
         comp._track.BackgroundColor3 = isDark and Color3.fromRGB(20, 22, 30) or Color3.fromRGB(222, 226, 234)
         if comp._trackStroke then
             comp._trackStroke.Color = isDark and Color3.fromRGB(36, 40, 56) or Color3.fromRGB(205, 210, 220)
@@ -2198,25 +2303,78 @@ function Window:_applyThemeToComponent(comp, targetTheme, isDark)
         if comp._fill then
             comp._fill.BackgroundColor3 = targetTheme.SliderFill
         end
+        if comp._knob then
+            comp._knob.BackgroundColor3 = targetTheme.TextPrimary
+        end
         local valLabel = comp._track:FindFirstChild("Value")
         if valLabel then
             valLabel.TextColor3 = targetTheme.TextPrimary
         end
+        return
     end
 
-    if comp._boxBg then
-        comp._boxBg.BackgroundColor3 = targetTheme.Card
-        local bStroke = comp._boxBg:FindFirstChildOfClass("UIStroke")
-        if bStroke then
-            bStroke.Color = targetTheme.Border
+    if comp._boxBg or comp._textBox then
+        if comp._container then
+            comp._container.BackgroundColor3 = targetTheme.Element
+            local st = comp._container:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Enabled = true
+                st.Color = targetTheme.Border
+            end
         end
+        if comp._label then
+            comp._label.TextColor3 = targetTheme.TextPrimary
+        end
+        if comp._boxBg then
+            comp._boxBg.BackgroundColor3 = targetTheme.Card
+            local bStroke = comp._boxBg:FindFirstChildOfClass("UIStroke")
+            if bStroke then
+                bStroke.Color = targetTheme.Border
+            end
+        end
+        if comp._textBox then
+            comp._textBox.TextColor3 = targetTheme.TextPrimary
+            comp._textBox.PlaceholderColor3 = targetTheme.TextMuted
+        end
+        return
     end
-    if comp._textBox then
-        comp._textBox.TextColor3 = targetTheme.TextPrimary
-        comp._textBox.PlaceholderColor3 = targetTheme.TextMuted
+
+    if comp._keyButton then
+        if comp._container then
+            comp._container.BackgroundColor3 = targetTheme.Element
+            local st = comp._container:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Enabled = true
+                st.Color = targetTheme.Border
+            end
+        end
+        if comp._label then
+            comp._label.TextColor3 = targetTheme.TextPrimary
+        end
+        comp._keyButton.BackgroundColor3 = targetTheme.Card
+        comp._keyButton.TextColor3 = targetTheme.TextPrimary
+        local kbStroke = comp._keyButton:FindFirstChildOfClass("UIStroke")
+        if kbStroke then
+            kbStroke.Color = targetTheme.Border
+        end
+        return
     end
 
     if comp._selectBox then
+        if comp._container then
+            comp._container.BackgroundColor3 = targetTheme.Element
+            local st = comp._container:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Enabled = true
+                st.Color = targetTheme.Border
+            end
+        end
+        if comp._titleLabel then
+            comp._titleLabel.TextColor3 = targetTheme.TextPrimary
+        end
+        if comp._label then
+            comp._label.TextColor3 = targetTheme.TextPrimary
+        end
         comp._selectBox.BackgroundColor3 = targetTheme.Element
         local sbStroke = comp._selectBox:FindFirstChildOfClass("UIStroke")
         if sbStroke then
@@ -2228,22 +2386,72 @@ function Window:_applyThemeToComponent(comp, targetTheme, isDark)
         if comp._chevron then
             comp._chevron.ImageColor3 = targetTheme.TextMuted
         end
+        if comp._listContainer then
+            comp._listContainer.BackgroundColor3 = targetTheme.Card
+            local lcStroke = comp._listContainer:FindFirstChildOfClass("UIStroke")
+            if lcStroke then
+                lcStroke.Color = targetTheme.Border
+            end
+        end
+        return
     end
-    if comp._listContainer then
-        comp._listContainer.BackgroundColor3 = targetTheme.Card
-        local lcStroke = comp._listContainer:FindFirstChildOfClass("UIStroke")
-        if lcStroke then
-            lcStroke.Color = targetTheme.Border
+
+    if comp._actionBtn then
+        if comp._container then
+            comp._container.BackgroundColor3 = targetTheme.Element
+            local st = comp._container:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Enabled = true
+                st.Color = targetTheme.Border
+            end
+        end
+        if comp._titleLabel then
+            comp._titleLabel.TextColor3 = targetTheme.TextPrimary
+        end
+        if comp._descLabel then
+            comp._descLabel.TextColor3 = targetTheme.TextMuted
+        end
+        comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+        comp._actionBtn.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        if comp._actionStroke then
+            comp._actionStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        end
+        return
+    end
+
+    if comp._container and comp._container:IsA("TextButton") then
+        local isPri = comp._isPrimary
+        comp._container.BackgroundColor3 = isPri and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243))
+        if comp._label then
+            comp._label.TextColor3 = isPri and (isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)) or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24))
+        end
+        local st = comp._container:FindFirstChildOfClass("UIStroke")
+        if st then
+            st.Enabled = true
+            st.Color = isPri and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24))
+        end
+        return
+    end
+
+    if comp._container then
+        local c = comp._container
+        if c:IsA("GuiObject") then
+            c.BackgroundColor3 = targetTheme.Element
+        end
+        local cStroke = c:FindFirstChildOfClass("UIStroke")
+        if cStroke then
+            cStroke.Color = targetTheme.Border
         end
     end
 
-    if comp._keyButton then
-        comp._keyButton.BackgroundColor3 = targetTheme.Card
-        comp._keyButton.TextColor3 = targetTheme.TextPrimary
-        local kbStroke = comp._keyButton:FindFirstChildOfClass("UIStroke")
-        if kbStroke then
-            kbStroke.Color = targetTheme.Border
-        end
+    if comp._label then
+        comp._label.TextColor3 = targetTheme.TextPrimary
+    end
+    if comp._titleLabel then
+        comp._titleLabel.TextColor3 = targetTheme.TextPrimary
+    end
+    if comp._contentLabel then
+        comp._contentLabel.TextColor3 = targetTheme.TextSecondary
     end
 
     if comp._items then
@@ -2268,7 +2476,7 @@ function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
             if s then s.Color = targetTheme.Border end
         end
         if desc:IsA("UIStroke") then
-            if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" then
+            if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" or desc.Name == "DialogStroke" then
                 desc.Color = targetTheme.Border
             end
         elseif desc:IsA("TextButton") and (desc.Name:find("Button_") or desc.Name == "ActionButton") then
@@ -2282,13 +2490,9 @@ function Window:_walkAndThemeDescendants(rootInstance, targetTheme, isDark)
                 st.Enabled = true
             end
         elseif desc:IsA("TextLabel") then
-            if desc.Name == "Label" and desc.Parent and desc.Parent:IsA("TextButton") and desc.Parent.Name:find("Button_") then
-                desc.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-            elseif desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
+            if desc.Name == "Label" or desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" or desc.Name == "Value" then
                 desc.TextColor3 = targetTheme.TextPrimary
-            elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" then
-                desc.TextColor3 = targetTheme.TextSecondary
-            elseif desc.Name == "SelectionLabel" then
+            elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" or desc.Name == "SelectionLabel" then
                 desc.TextColor3 = targetTheme.TextSecondary
             end
         elseif desc:IsA("ImageLabel") then

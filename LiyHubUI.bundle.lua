@@ -763,6 +763,7 @@ local confirmText = options.ConfirmText or "Confirm"
 local cancelText = options.CancelText or "Cancel"
 local onConfirm = options.OnConfirm or function() end
 local onCancel = options.OnCancel or function() end
+local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local overlay = Instance.new("TextButton")
 overlay.Name = "ModalOverlay"
 overlay.Size = UDim2.new(1, 0, 1, 0)
@@ -786,7 +787,7 @@ dialog.AnchorPoint = Vector2.new(0.5, 0.5)
 dialog.Position = UDim2.new(0.5, 0, 0.5, 0)
 dialog.Size = UDim2.new(0.85, 0, 0, 0)
 dialog.AutomaticSize = Enum.AutomaticSize.Y
-dialog.BackgroundColor3 = theme.Header
+dialog.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
 dialog.BorderSizePixel = 0
 dialog.ZIndex = 101
 dialog.Parent = overlay
@@ -810,24 +811,22 @@ dList.SortOrder = Enum.SortOrder.LayoutOrder
 dList.Padding = UDim.new(0, 10)
 dList.Parent = dialog
 local corner = Instance.new("UICorner")
-corner.CornerRadius = theme.CornerRadius
+corner.CornerRadius = theme.CornerRadius or UDim.new(0, 7)
 corner.Parent = dialog
-if theme.UseStrokes then
 local stroke = Instance.new("UIStroke")
 stroke.Name = "DialogStroke"
-stroke.Color = theme.BorderWindow or theme.Border
+stroke.Color = isDark and (theme.BorderWindow or theme.Border or Color3.fromRGB(42, 42, 50)) or Color3.fromRGB(218, 222, 230)
 stroke.Thickness = 1
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = dialog
-end
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, 0, 0, 22)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = title
-titleLabel.TextColor3 = theme.TextPrimary
-titleLabel.Font = theme.FontBold
-titleLabel.TextSize = theme.FontSizeTitle
+titleLabel.TextColor3 = isDark and (theme.TextPrimary or Color3.fromRGB(255, 255, 255)) or Color3.fromRGB(18, 20, 24)
+titleLabel.Font = theme.FontBold or Enum.Font.GothamBold
+titleLabel.TextSize = theme.FontSizeTitle or 15
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 titleLabel.LayoutOrder = 1
@@ -839,9 +838,9 @@ msgLabel.Size = UDim2.new(1, 0, 0, 0)
 msgLabel.AutomaticSize = Enum.AutomaticSize.Y
 msgLabel.BackgroundTransparency = 1
 msgLabel.Text = message
-msgLabel.TextColor3 = theme.TextSecondary
-msgLabel.Font = theme.FontRegular
-msgLabel.TextSize = theme.FontSizeRegular
+msgLabel.TextColor3 = isDark and (theme.TextSecondary or Color3.fromRGB(160, 160, 172)) or Color3.fromRGB(80, 85, 96)
+msgLabel.Font = theme.FontRegular or Enum.Font.GothamMedium
+msgLabel.TextSize = theme.FontSizeRegular or 12
 msgLabel.TextXAlignment = Enum.TextXAlignment.Left
 msgLabel.TextYAlignment = Enum.TextYAlignment.Top
 msgLabel.TextWrapped = true
@@ -860,12 +859,11 @@ btnLayout.FillDirection = Enum.FillDirection.Horizontal
 btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 btnLayout.Padding = UDim.new(0, 8)
 btnLayout.Parent = btnRow
-local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local isClosing = false
 local function close(callback)
 if isClosing then return end
 isClosing = true
-local t = TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
+local t = TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast or 0.15), {
 BackgroundTransparency = 1
 })
 t:Play()
@@ -887,21 +885,21 @@ local isPrimary = (bVariant == "Primary")
 local btn = Instance.new("TextButton")
 btn.Name = "ModalBtn_" .. bText
 btn.Size = UDim2.new(0, math.clamp(#bText * 9 + 20, 80, 160), 1, 0)
-btn.BackgroundColor3 = isPrimary and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and theme.Element or Color3.fromRGB(236, 238, 243))
-btn.TextColor3 = isPrimary and (isDark and Color3.fromRGB(18, 20, 24) or Color3.fromRGB(255, 255, 255)) or (isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24))
-btn.Font = theme.FontBold
+btn.BackgroundColor3 = isPrimary and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243))
+btn.TextColor3 = isPrimary and (isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)) or (isDark and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(18, 20, 24))
+btn.Font = theme.FontBold or Enum.Font.GothamBold
 btn.Text = bText
-btn.TextSize = theme.FontSizeSmall
+btn.TextSize = theme.FontSizeSmall or 10
 btn.BorderSizePixel = 0
 btn.AutoButtonColor = false
 btn.ZIndex = 103
 btn.Parent = btnRow
 local bCorner = Instance.new("UICorner")
-bCorner.CornerRadius = theme.SmallCornerRadius
+bCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
 bCorner.Parent = btn
 local bStroke = Instance.new("UIStroke")
 bStroke.Name = "ButtonStroke"
-bStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+bStroke.Color = isPrimary and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(42, 42, 50) or Color3.fromRGB(218, 222, 230))
 bStroke.Thickness = 1
 bStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 bStroke.Parent = btn
@@ -914,33 +912,45 @@ else
 local cancelBtn = Instance.new("TextButton")
 cancelBtn.Name = "CancelButton"
 cancelBtn.Size = UDim2.new(0, 90, 1, 0)
-cancelBtn.BackgroundColor3 = isDark and theme.Element or Color3.fromRGB(236, 238, 243)
+cancelBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
 cancelBtn.AutoButtonColor = false
 cancelBtn.Text = cancelText
-cancelBtn.TextColor3 = isDark and theme.TextSecondary or Color3.fromRGB(18, 20, 24)
-cancelBtn.Font = theme.FontBold
-cancelBtn.TextSize = theme.FontSizeSmall
+cancelBtn.TextColor3 = isDark and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(18, 20, 24)
+cancelBtn.Font = theme.FontBold or Enum.Font.GothamBold
+cancelBtn.TextSize = theme.FontSizeSmall or 10
 cancelBtn.BorderSizePixel = 0
 cancelBtn.ZIndex = 103
 cancelBtn.Parent = btnRow
 local cCorner = Instance.new("UICorner")
-cCorner.CornerRadius = theme.SmallCornerRadius
+cCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
 cCorner.Parent = cancelBtn
+local cStroke = Instance.new("UIStroke")
+cStroke.Name = "ButtonStroke"
+cStroke.Color = isDark and Color3.fromRGB(42, 42, 50) or Color3.fromRGB(218, 222, 230)
+cStroke.Thickness = 1
+cStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+cStroke.Parent = cancelBtn
 local confirmBtn = Instance.new("TextButton")
 confirmBtn.Name = "ConfirmButton"
 confirmBtn.Size = UDim2.new(0, 90, 1, 0)
-confirmBtn.BackgroundColor3 = isDark and theme.ElementActive or Color3.fromRGB(18, 20, 24)
+confirmBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 confirmBtn.AutoButtonColor = false
 confirmBtn.Text = confirmText
-confirmBtn.TextColor3 = isDark and theme.TextPrimary or Color3.fromRGB(255, 255, 255)
-confirmBtn.Font = theme.FontBold
-confirmBtn.TextSize = theme.FontSizeSmall
+confirmBtn.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
+confirmBtn.Font = theme.FontBold or Enum.Font.GothamBold
+confirmBtn.TextSize = theme.FontSizeSmall or 10
 confirmBtn.BorderSizePixel = 0
 confirmBtn.ZIndex = 103
 confirmBtn.Parent = btnRow
 local cfCorner = Instance.new("UICorner")
-cfCorner.CornerRadius = theme.SmallCornerRadius
+cfCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
 cfCorner.Parent = confirmBtn
+local cfStroke = Instance.new("UIStroke")
+cfStroke.Name = "ButtonStroke"
+cfStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+cfStroke.Thickness = 1
+cfStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+cfStroke.Parent = confirmBtn
 local cfConn = confirmBtn.Activated:Connect(function()
 close(onConfirm)
 end)
@@ -952,8 +962,8 @@ cleanup:Add(cfConn)
 cleanup:Add(ccConn)
 end
 end
-TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast), {
-BackgroundTransparency = 0.5
+TweenService:Create(overlay, TweenInfo.new(theme.AnimationFast or 0.15), {
+BackgroundTransparency = isDark and 0.5 or 0.65
 }):Play()
 if cleanup then
 cleanup:Add(overlay)
@@ -964,6 +974,7 @@ options = options or {}
 local title = options.Title or "Notification"
 local message = options.Content or options.Message or ""
 local duration = options.Duration or 3.0
+local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local holder = parentScreenGui:FindFirstChild("NotificationHolder")
 if not holder then
 holder = Instance.new("Frame")
@@ -984,7 +995,7 @@ local toast = Instance.new("Frame")
 toast.Name = "Toast"
 toast.Size = UDim2.new(1, 0, 0, 48)
 toast.Position = UDim2.new(1, 300, 0, 0)
-toast.BackgroundColor3 = theme.Header
+toast.BackgroundColor3 = isDark and (theme.Header or Color3.fromRGB(16, 16, 19)) or Color3.fromRGB(255, 255, 255)
 toast.BorderSizePixel = 0
 toast.ClipsDescendants = true
 toast.ZIndex = 91
@@ -992,19 +1003,17 @@ toast.Parent = holder
 local corner = Instance.new("UICorner")
 corner.CornerRadius = theme.CornerRadius or UDim.new(0, 7)
 corner.Parent = toast
-if theme.UseStrokes then
 local stroke = Instance.new("UIStroke")
 stroke.Name = "ToastStroke"
-stroke.Color = theme.BorderWindow or theme.Border
+stroke.Color = isDark and (theme.BorderWindow or theme.Border or Color3.fromRGB(42, 42, 50)) or Color3.fromRGB(218, 222, 230)
 stroke.Thickness = 1
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = toast
-end
 local bar = Instance.new("Frame")
 bar.Name = "Bar"
 bar.Size = UDim2.new(0, 3, 1, -12)
 bar.Position = UDim2.new(0, 5, 0, 6)
-bar.BackgroundColor3 = theme.Accent
+bar.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 bar.BorderSizePixel = 0
 bar.ZIndex = 92
 bar.Parent = toast
@@ -1017,9 +1026,9 @@ titleLabel.Size = UDim2.new(1, -20, 0, 16)
 titleLabel.Position = UDim2.new(0, 14, 0, 8)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = title
-titleLabel.TextColor3 = theme.TextPrimary
-titleLabel.Font = theme.FontBold
-titleLabel.TextSize = theme.FontSizeSmall
+titleLabel.TextColor3 = isDark and (theme.TextPrimary or Color3.fromRGB(255, 255, 255)) or Color3.fromRGB(18, 20, 24)
+titleLabel.Font = theme.FontBold or Enum.Font.GothamBold
+titleLabel.TextSize = theme.FontSizeSmall or 10
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 titleLabel.ZIndex = 92
@@ -1030,8 +1039,8 @@ msgLabel.Size = UDim2.new(1, -20, 0, 14)
 msgLabel.Position = UDim2.new(0, 14, 0, 26)
 msgLabel.BackgroundTransparency = 1
 msgLabel.Text = message
-msgLabel.TextColor3 = theme.TextSecondary
-msgLabel.Font = theme.FontRegular
+msgLabel.TextColor3 = isDark and (theme.TextSecondary or Color3.fromRGB(160, 160, 172)) or Color3.fromRGB(80, 85, 96)
+msgLabel.Font = theme.FontRegular or Enum.Font.GothamMedium
 msgLabel.TextSize = 10
 msgLabel.TextXAlignment = Enum.TextXAlignment.Left
 msgLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -3694,6 +3703,7 @@ local Progression = {}
 Progression.__index = Progression
 function Progression.new(parent, options, theme, cleanup, componentRegistry)
 options = options or {}
+local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
 local titleText = options.Title or options.Name or "Progression"
 local subtitleText = options.Subtitle or options.SubTitle or "Step workflow progression"
 local steps = options.Steps or {
@@ -3713,21 +3723,19 @@ local container = Instance.new("Frame")
 container.Name = "Progression_" .. titleText
 container.Size = UDim2.new(1, 0, 0, 0)
 container.AutomaticSize = Enum.AutomaticSize.Y
-container.BackgroundColor3 = theme.Card
+container.BackgroundColor3 = isDark and (theme.Card or Color3.fromRGB(18, 18, 22)) or Color3.fromRGB(255, 255, 255)
 container.BorderSizePixel = 0
 container.ClipsDescendants = false
 container.Parent = parent
 local corner = Instance.new("UICorner")
-corner.CornerRadius = theme.CornerRadius
+corner.CornerRadius = theme.CornerRadius or UDim.new(0, 7)
 corner.Parent = container
-if theme.UseStrokes then
 local stroke = Instance.new("UIStroke")
 stroke.Name = "BorderStroke"
-stroke.Color = theme.Border
+stroke.Color = isDark and (theme.Border or Color3.fromRGB(34, 34, 40)) or Color3.fromRGB(218, 222, 230)
 stroke.Thickness = 1
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = container
-end
 local padding = Instance.new("UIPadding")
 padding.PaddingTop = UDim.new(0, 10)
 padding.PaddingBottom = UDim.new(0, 12)
@@ -3749,9 +3757,9 @@ titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, 0, 0, 16)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = titleText
-titleLabel.TextColor3 = theme.TextPrimary
-titleLabel.Font = theme.FontBold
-titleLabel.TextSize = theme.FontSizeRegular
+titleLabel.TextColor3 = isDark and (theme.TextPrimary or Color3.fromRGB(255, 255, 255)) or Color3.fromRGB(18, 20, 24)
+titleLabel.Font = theme.FontBold or Enum.Font.GothamBold
+titleLabel.TextSize = theme.FontSizeRegular or 12
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Active = false
 titleLabel.Parent = headerFrame
@@ -3761,9 +3769,9 @@ subLabel.Size = UDim2.new(1, 0, 0, 14)
 subLabel.Position = UDim2.new(0, 0, 0, 17)
 subLabel.BackgroundTransparency = 1
 subLabel.Text = subtitleText
-subLabel.TextColor3 = theme.TextMuted
-subLabel.Font = theme.FontRegular
-subLabel.TextSize = theme.FontSizeSmall
+subLabel.TextColor3 = isDark and (theme.TextMuted or Color3.fromRGB(110, 110, 122)) or Color3.fromRGB(130, 136, 148)
+subLabel.Font = theme.FontRegular or Enum.Font.GothamMedium
+subLabel.TextSize = theme.FontSizeSmall or 10
 subLabel.TextXAlignment = Enum.TextXAlignment.Left
 subLabel.Active = false
 subLabel.Parent = headerFrame
@@ -3779,7 +3787,7 @@ lineBg.Name = "LineBg"
 lineBg.AnchorPoint = Vector2.new(0, 0.5)
 lineBg.Size = UDim2.new((numSteps - 1) / numSteps, 0, 0, 2)
 lineBg.Position = UDim2.new(0.5 / numSteps, 0, 0, 13)
-lineBg.BackgroundColor3 = theme.SliderTrack
+lineBg.BackgroundColor3 = isDark and (theme.SliderTrack or Color3.fromRGB(34, 34, 42)) or Color3.fromRGB(220, 224, 232)
 lineBg.BorderSizePixel = 0
 lineBg.ZIndex = 1
 lineBg.Parent = stepperFrame
@@ -3800,7 +3808,7 @@ nodeBtn.Name = "Node_" .. tostring(i)
 nodeBtn.AnchorPoint = Vector2.new(0.5, 0.5)
 nodeBtn.Size = UDim2.new(0, 26, 0, 26)
 nodeBtn.Position = UDim2.new((i - 0.5) / numSteps, 0, 0, 13)
-nodeBtn.BackgroundColor3 = (i == initialStep) and accentColor or ((i < initialStep) and Color3.fromRGB(35, 75, 125) or theme.SliderTrack)
+nodeBtn.BackgroundColor3 = (i == initialStep) and accentColor or ((i < initialStep) and (isDark and Color3.fromRGB(35, 75, 125) or Color3.fromRGB(180, 210, 245)) or (isDark and Color3.fromRGB(34, 34, 42) or Color3.fromRGB(220, 224, 232)))
 nodeBtn.AutoButtonColor = false
 nodeBtn.Text = ""
 nodeBtn.BorderSizePixel = 0
@@ -3819,7 +3827,7 @@ icon.Active = false
 icon.ZIndex = 3
 icon.Parent = nodeBtn
 local rawIcon = stepData.Icon or stepData.icon or "check"
-local initColor = (i <= initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
+local initColor = (i <= initialStep) and Color3.fromRGB(255, 255, 255) or (isDark and Color3.fromRGB(110, 110, 122) or Color3.fromRGB(130, 136, 148))
 if IconService and IconService.Apply then
 IconService.Apply(icon, rawIcon, initColor)
 else
@@ -3834,8 +3842,8 @@ stepLbl.Position = UDim2.new((i - 0.5) / numSteps, 0, 0, 29)
 stepLbl.BackgroundTransparency = 1
 stepLbl.AutoButtonColor = false
 stepLbl.Text = stepData.Name or stepData.Label or ("Step " .. tostring(i))
-stepLbl.TextColor3 = (i == initialStep) and accentColor or theme.TextMuted
-stepLbl.Font = (i == initialStep) and theme.FontBold or theme.FontRegular
+stepLbl.TextColor3 = (i == initialStep) and accentColor or (isDark and Color3.fromRGB(110, 110, 122) or Color3.fromRGB(130, 136, 148))
+stepLbl.Font = (i == initialStep) and (theme.FontBold or Enum.Font.GothamBold) or (theme.FontRegular or Enum.Font.GothamMedium)
 stepLbl.TextSize = 10
 stepLbl.TextXAlignment = Enum.TextXAlignment.Center
 stepLbl.TextTruncate = Enum.TextTruncate.None
@@ -3866,11 +3874,11 @@ cLayout.Parent = controlsFrame
 local prevBtn = Instance.new("TextButton")
 prevBtn.Name = "PrevButton"
 prevBtn.Size = UDim2.new(0.5, -4, 1, 0)
-prevBtn.BackgroundColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+prevBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
 prevBtn.Text = prevText
-prevBtn.TextColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-prevBtn.Font = theme.FontBold
-prevBtn.TextSize = theme.FontSizeSmall
+prevBtn.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+prevBtn.Font = theme.FontBold or Enum.Font.GothamBold
+prevBtn.TextSize = theme.FontSizeSmall or 10
 prevBtn.AutoButtonColor = false
 prevBtn.Parent = controlsFrame
 local pCorner = Instance.new("UICorner")
@@ -3878,18 +3886,18 @@ pCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 4)
 pCorner.Parent = prevBtn
 local pStroke = Instance.new("UIStroke")
 pStroke.Name = "ButtonStroke"
-pStroke.Color = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+pStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 pStroke.Thickness = 1
 pStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 pStroke.Parent = prevBtn
 local nextBtn = Instance.new("TextButton")
 nextBtn.Name = "NextButton"
 nextBtn.Size = UDim2.new(0.5, -4, 1, 0)
-nextBtn.BackgroundColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+nextBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
 nextBtn.Text = nextText
-nextBtn.TextColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-nextBtn.Font = theme.FontBold
-nextBtn.TextSize = theme.FontSizeSmall
+nextBtn.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+nextBtn.Font = theme.FontBold or Enum.Font.GothamBold
+nextBtn.TextSize = theme.FontSizeSmall or 10
 nextBtn.AutoButtonColor = false
 nextBtn.Parent = controlsFrame
 local nCorner = Instance.new("UICorner")
@@ -3897,7 +3905,7 @@ nCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 4)
 nCorner.Parent = nextBtn
 local nStroke = Instance.new("UIStroke")
 nStroke.Name = "ButtonStroke"
-nStroke.Color = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+nStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 nStroke.Thickness = 1
 nStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 nStroke.Parent = nextBtn
@@ -3925,6 +3933,7 @@ _lineFill = lineFill,
 _numSteps = numSteps,
 _callback = onStepChanged,
 _components = componentRegistry or {},
+_nestedComponents = {},
 _cleanup = cleanup,
 _conns = {},
 }, Progression)
@@ -3971,17 +3980,18 @@ self._currentStep = math.clamp(stepIndex, 1, #self._steps)
 local numSteps = self._numSteps
 local progressRel = numSteps > 1 and ((self._currentStep - 1) / (numSteps - 1)) or 0
 if self._lineFill then
-TweenService:Create(self._lineFill, TweenInfo.new(self._theme.AnimationFast), {
+TweenService:Create(self._lineFill, TweenInfo.new((self._theme and self._theme.AnimationFast) or 0.15), {
 Size = UDim2.new(progressRel * ((numSteps - 1) / numSteps), 0, 0, 2)
 }):Play()
 end
+local isDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
 for i, node in ipairs(self._stepNodes) do
 local isActive = (i == self._currentStep)
 local isCompleted = (i < self._currentStep)
-local targetColor = isActive and self._accentColor or (isCompleted and Color3.fromRGB(35, 75, 125) or self._theme.SliderTrack)
-local targetIconColor = (isActive or isCompleted) and Color3.fromRGB(255, 255, 255) or self._theme.TextMuted
-local targetLabelColor = isActive and self._accentColor or (isCompleted and Color3.fromRGB(180, 205, 235) or self._theme.TextMuted)
-TweenService:Create(node.Button, TweenInfo.new(self._theme.AnimationFast), {
+local targetColor = isActive and self._accentColor or (isCompleted and (isDark and Color3.fromRGB(35, 75, 125) or Color3.fromRGB(180, 210, 245)) or (self._theme.SliderTrack or Color3.fromRGB(220, 224, 232)))
+local targetIconColor = (isActive or isCompleted) and Color3.fromRGB(255, 255, 255) or (self._theme.TextMuted or Color3.fromRGB(130, 136, 148))
+local targetLabelColor = isActive and self._accentColor or (isCompleted and (isDark and Color3.fromRGB(180, 205, 235) or Color3.fromRGB(60, 100, 160)) or (self._theme.TextMuted or Color3.fromRGB(130, 136, 148)))
+TweenService:Create(node.Button, TweenInfo.new((self._theme and self._theme.AnimationFast) or 0.15), {
 BackgroundColor3 = targetColor
 }):Play()
 if IconService and IconService.Apply then
@@ -3990,7 +4000,7 @@ else
 node.Icon.ImageColor3 = targetIconColor
 end
 node.Label.TextColor3 = targetLabelColor
-node.Label.Font = isActive and self._theme.FontBold or self._theme.FontRegular
+node.Label.Font = isActive and (self._theme.FontBold or Enum.Font.GothamBold) or (self._theme.FontRegular or Enum.Font.GothamMedium)
 end
 task.spawn(self._callback, self._currentStep, self._steps[self._currentStep])
 end
@@ -4013,7 +4023,9 @@ if not toggleCtor then
 pcall(function() toggleCtor = _require("src/components/Toggle") end)
 end
 if toggleCtor then
-return toggleCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+local t = toggleCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+table.insert(self._nestedComponents, t)
+return t
 end
 return nil
 end
@@ -4023,7 +4035,9 @@ if not dropdownCtor then
 pcall(function() dropdownCtor = _require("src/components/Dropdown") end)
 end
 if dropdownCtor then
-return dropdownCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+local d = dropdownCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+table.insert(self._nestedComponents, d)
+return d
 end
 return nil
 end
@@ -4033,7 +4047,9 @@ if not sliderCtor then
 pcall(function() sliderCtor = _require("src/components/Slider") end)
 end
 if sliderCtor then
-return sliderCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+local s = sliderCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+table.insert(self._nestedComponents, s)
+return s
 end
 return nil
 end
@@ -4043,7 +4059,9 @@ if not buttonCtor then
 pcall(function() buttonCtor = _require("src/components/Button") end)
 end
 if buttonCtor then
-return buttonCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+local b = buttonCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+table.insert(self._nestedComponents, b)
+return b
 end
 return nil
 end
@@ -4053,21 +4071,11 @@ if not inputCtor then
 pcall(function() inputCtor = _require("src/components/Input") end)
 end
 if inputCtor then
-return inputCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+local inp = inputCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+table.insert(self._nestedComponents, inp)
+return inp
 end
 return nil
-end
-function Progression:Destroy()
-if self._conns then
-for _, c in ipairs(self._conns) do
-if c and c.Connected then c:Disconnect() end
-end
-self._conns = {}
-end
-if self._container then
-self._container:Destroy()
-self._container = nil
-end
 end
 return Progression
 end
@@ -5062,6 +5070,14 @@ gripIcon.ImageTransparency = 0.45
 gripIcon.ZIndex = 51
 gripIcon.Active = false
 gripIcon.Parent = resizeGrip
+if deps.ThemeManager and deps.ThemeManager.Subscribe then
+local unsub = deps.ThemeManager:Subscribe(function(newTheme)
+if self and not self._destroyed then
+self:SetTheme(newTheme, true)
+end
+end)
+if cleanup then cleanup:Add(unsub) end
+end
 self = setmetatable({
 _screenGui = screenGui,
 _mainFrame = mainFrame,
@@ -5657,11 +5673,39 @@ local accountAgeStr = realPlayer and (tostring(realPlayer.AccountAge) .. " days"
 local isRobloxPremium = realPlayer and (realPlayer.MembershipType == Enum.MembershipType.Premium)
 local accountStatusStr = isRobloxPremium and "Roblox Premium" or "Standard Account"
 local genv = (getgenv and getgenv()) or {}
-local drmKey = genv.LiyHubKey or _G.LiyHubKey or shared.LiyHubKey or "FREE-FOR-ALL"
-local drmTier = genv.LiyHubTier or _G.LiyHubTier or shared.LiyHubTier or (genv.LiyHubIsPremium and "VIP" or "Freemium")
-local drmRemaining = genv.LiyHubRemainingTime or (genv.LiyHubRemainingSeconds and string.format("%dh %dm", math.floor(genv.LiyHubRemainingSeconds / 3600), math.floor((genv.LiyHubRemainingSeconds % 3600) / 60))) or "Lifetime"
-local isDrmPremium = (genv.LiyHubIsPremium == true) or (_G.LiyHubIsPremium == true) or string.find(string.lower(tostring(drmTier)), "premium") ~= nil or string.find(string.lower(tostring(drmTier)), "vip") ~= nil
-local drmStatusStr = isDrmPremium and "Premium Active" or "Freemium Active"
+local httpService = game:GetService("HttpService")
+local serverUrl = options.ServerUrl or options.AuthUrl or genv.LiyHubServerUrl or _G.LiyHubServerUrl or "http://localhost:3000"
+local function resolveKeyCandidate()
+if options.Key and options.Key ~= "" then return options.Key end
+if options.LicenseKey and options.LicenseKey ~= "" then return options.LicenseKey end
+local candidates = { "LiyHubKey", "script_key", "ScriptKey", "SCRIPT_KEY", "Key", "key" }
+if getgenv then
+local g = getgenv()
+for _, k in ipairs(candidates) do
+if g[k] and type(g[k]) == "string" and #g[k] >= 4 and not string.find(g[k], "://") then
+return g[k]
+end
+end
+end
+if _G then
+for _, k in ipairs(candidates) do
+if _G[k] and type(_G[k]) == "string" and #_G[k] >= 4 and not string.find(_G[k], "://") then
+return _G[k]
+end
+end
+end
+if isfile and readfile and isfile("liyhub_key.txt") then
+local fContent = readfile("liyhub_key.txt")
+if fContent and type(fContent) == "string" and #fContent >= 4 then
+return string.gsub(fContent, "^%s*(.-)%s*$", "%1")
+end
+end
+return nil
+end
+local drmKey = resolveKeyCandidate()
+local drmTier = genv.LiyHubTier or _G.LiyHubTier or (drmKey and "Checking..." or "Unlicensed")
+local drmRemaining = genv.LiyHubRemainingTime or (drmKey and "Checking..." or "N/A")
+local drmStatusStr = drmKey and "Validating Server..." or "Server Verification Required"
 local executionsCount = genv.LiyHubExecutionCount or _G.LiyHubExecutionCount
 if not executionsCount then
 local trackedCount = 1
@@ -5756,22 +5800,106 @@ end
 end,
 })
 local drmSec = userTab:CreateSection("DRM License & Security")
-drmSec:CreateParagraph({
+local drmParagraph = drmSec:CreateParagraph({
 Title = "Tier: " .. tostring(drmTier) .. " (" .. drmStatusStr .. ")",
-Content = string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s", tostring(drmKey), tostring(drmRemaining), tostring(executionsCount) .. (tonumber(executionsCount) == 1 and " execution" or " executions")),
+Content = string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s", tostring(drmKey or "No Key Detected"), tostring(drmRemaining), tostring(executionsCount) .. " executions"),
 })
+local function updateDrmDisplay(key, tier, status, remaining, count)
+drmKey = key
+drmTier = tier
+drmStatusStr = status
+drmRemaining = remaining
+executionsCount = count
+drmParagraph:SetTitle(string.format("Tier: %s (%s)", tostring(tier), tostring(status)))
+drmParagraph:SetContent(string.format("License Key: %s\nValid Time: %s\nTotal Executions: %s", tostring(key), tostring(remaining), tostring(count) .. " executions"))
+end
+local function verifyKeyWithServer(keyToTest, onDone)
+task.spawn(function()
+local hwid = (gethwid and gethwid()) or (identify_executor and identify_executor()) or (RbxAnalyticsService and RbxAnalyticsService:GetClientId()) or tostring(realPlayer and realPlayer.UserId or "0")
+local requestFn = (syn and syn.request) or (http and http.request) or request or http_request
+local responseBody = nil
+local reqUrl = string.format("%s/api/v1/validate?projectId=%s&scriptId=%s&key=%s&hwid=%s&executor=%s&username=%s&userId=%s&accountAge=%s&placeId=%s&jobId=%s&gameId=%s&timestamp=%s",
+serverUrl,
+httpService:UrlEncode("default"),
+httpService:UrlEncode(tostring(game.PlaceId)),
+httpService:UrlEncode(tostring(keyToTest or "")),
+httpService:UrlEncode(tostring(hwid)),
+httpService:UrlEncode(tostring(executorName)),
+httpService:UrlEncode(tostring(rawName)),
+tostring(userIdStr),
+tostring(accountAgeStr),
+tostring(placeIdNum),
+httpService:UrlEncode(tostring(serverJobId)),
+tostring(gameIdNum),
+tostring(os.time())
+)
+if requestFn then
+local okReq, res = pcall(requestFn, {
+Url = reqUrl,
+Method = "GET",
+Headers = { ["Content-Type"] = "application/json" }
+})
+if okReq and res then
+responseBody = res.Body or res.body or res.data
+end
+end
+if not responseBody then
+pcall(function()
+responseBody = game:HttpGet(reqUrl)
+end)
+end
+local parsed = nil
+if responseBody then
+pcall(function() parsed = httpService:JSONDecode(responseBody) end)
+end
+if parsed and (parsed.authorized or parsed.success) then
+local tier = parsed.tier or (parsed.isPremium and "VIP" or "Premium")
+local isPrem = parsed.isPremium == true or tier == "VIP"
+local activeStr = isPrem and "VIP Active" or "Premium Active"
+local rem = parsed.expiresFormatted or "Lifetime"
+local execs = parsed.executionCount or 1
+if genv then
+genv.LiyHubKey = keyToTest
+genv.LiyHubTier = tier
+genv.LiyHubIsPremium = isPrem
+genv.LiyHubRemainingTime = rem
+genv.LiyHubExecutionCount = execs
+end
+updateDrmDisplay(keyToTest, tier, activeStr, rem, execs)
+if onDone then onDone(true, parsed) end
+else
+local errMsg = (parsed and parsed.message) or "Key Expired / Server Unreachable"
+updateDrmDisplay(keyToTest or "Invalid", "Unlicensed", errMsg, "Expired", 0)
+if onDone then onDone(false, parsed) end
+end
+end)
+end
+if drmKey and drmKey ~= "" then
+verifyKeyWithServer(drmKey)
+else
+updateDrmDisplay("No Key Detected", "Unlicensed", "Server Verification Required", "N/A", 0)
+end
 drmSec:CreateButton({
-Name = "Copy License Key",
-Desc = tostring(drmKey),
-ButtonText = "Copy",
+Name = "Verify License Key",
+Desc = "Check key status directly against Liyhub DRM server.",
+ButtonText = "Verify",
 Callback = function()
-local copyFn = setclipboard or toclipboard or (Clipboard and Clipboard.set)
-if copyFn then
-copyFn(tostring(drmKey))
+local curKey = resolveKeyCandidate()
+if curKey then
+verifyKeyWithServer(curKey, function(ok)
 self:Notify({
-Title = "Copied",
-Content = "License key copied to clipboard!",
-Duration = 2,
+Title = ok and "DRM Verified" or "Verification Failed",
+Content = ok and "License verified by server!" or "License rejected by server.",
+Duration = 2.5,
+Type = ok and "Success" or "Error"
+})
+end)
+else
+self:Notify({
+Title = "No Key Found",
+Content = "Please set getgenv().LiyHubKey or save liyhub_key.txt first.",
+Duration = 3,
+Type = "Warning"
 })
 end
 end,
@@ -6075,7 +6203,7 @@ else
 self:SetTheme("Light")
 end
 end
-function Window:SetTheme(themeNameOrTable)
+function Window:SetTheme(themeNameOrTable, skipBroadcast)
 local ThemeManager = self._themeManager
 if not ThemeManager then
 local okTM, resTM = pcall(function() return require(script.Parent.Parent.themes.ThemeManager) end)
@@ -6212,12 +6340,17 @@ for _, banner in ipairs(tab._banners or {}) do
 self:_applyThemeToBanner(banner, targetTheme, isDark)
 end
 end
+if not skipBroadcast and self._themeManager and self._themeManager.SetTheme then
+pcall(function()
+self._themeManager.CurrentTheme = targetTheme
+end)
+end
 end
 function Window:_applyThemeToProgression(prg, targetTheme, isDark)
 if not prg or not prg._container then return end
 prg._theme = targetTheme
 prg._accentColor = targetTheme.AccentStep or (isDark and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(0, 130, 220))
-prg._container.BackgroundColor3 = targetTheme.Card
+prg._container.BackgroundColor3 = isDark and (targetTheme.Card or Color3.fromRGB(18, 18, 22)) or Color3.fromRGB(255, 255, 255)
 local stroke = prg._container:FindFirstChildOfClass("UIStroke")
 if stroke then
 stroke.Color = targetTheme.Border
@@ -6273,19 +6406,12 @@ end
 node.Label.TextColor3 = targetLabelColor
 end
 end
+for _, nestedComp in ipairs(prg._nestedComponents or {}) do
+self:_applyThemeToComponent(nestedComp, targetTheme, isDark)
+end
 local nested = prg._container:FindFirstChild("NestedContent")
 if nested then
-for _, child in ipairs(nested:GetChildren()) do
-if child:IsA("GuiObject") then
-if child.Name:find("Toggle_") or child.Name:find("Dropdown_") or child.Name:find("Slider_") or child.Name:find("Button_") or child.Name:find("Input_") then
-child.BackgroundColor3 = targetTheme.Element
-local st = child:FindFirstChildOfClass("UIStroke")
-if st then st.Color = targetTheme.Border end
-local t = child:FindFirstChild("Title") or child:FindFirstChild("Label") or child:FindFirstChild("Text")
-if t and t:IsA("TextLabel") then t.TextColor3 = targetTheme.TextPrimary end
-end
-end
-end
+self:_walkAndThemeDescendants(nested, targetTheme, isDark)
 end
 end
 function Window:_applyThemeToBanner(banner, targetTheme, isDark)
@@ -6357,48 +6483,19 @@ if comp._container and comp._container.Name:find("Progression") then
 self:_applyThemeToProgression(comp, targetTheme, isDark)
 return
 end
-if comp._container then
-local c = comp._container
-if c:IsA("GuiObject") then
-if comp._isPrimary then
-c.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 22, 26)
-elseif comp._isPrimary == false or c.Name:find("ActionRow_") or c.Name:find("Paragraph_") or c.Name:find("Toggle_") or c.Name:find("Slider_") or c.Name:find("Input_") or c.Name:find("Keybind_") or c.Name:find("Button_") then
-c.BackgroundColor3 = targetTheme.Element
-end
-end
-local cStroke = c:FindFirstChildOfClass("UIStroke")
-if cStroke then
-cStroke.Color = targetTheme.Border
-end
-end
-if comp._actionBtn then
-comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-comp._actionBtn.TextColor3 = isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)
-end
-if comp._label and comp._container and comp._container:IsA("TextButton") then
-if not isDark then
-comp._container.BackgroundColor3 = Color3.fromRGB(18, 20, 24)
-comp._label.TextColor3 = Color3.fromRGB(255, 255, 255)
-local st = comp._container:FindFirstChildOfClass("UIStroke")
-if st then st.Enabled = false end
-else
-local isPri = comp._isPrimary
-comp._container.BackgroundColor3 = isPri and Color3.fromRGB(255, 255, 255) or targetTheme.Element
-comp._label.TextColor3 = isPri and Color3.fromRGB(14, 14, 16) or targetTheme.TextPrimary
+if comp._switch then
+comp._container.BackgroundColor3 = targetTheme.Element
 local st = comp._container:FindFirstChildOfClass("UIStroke")
 if st then
-st.Enabled = not isPri
+st.Enabled = true
 st.Color = targetTheme.Border
 end
+if comp._label then
+comp._label.TextColor3 = targetTheme.TextPrimary
 end
+if comp._descLabel then
+comp._descLabel.TextColor3 = targetTheme.TextMuted
 end
-if comp._titleLabel then
-comp._titleLabel.TextColor3 = targetTheme.TextPrimary
-end
-if comp._contentLabel then
-comp._contentLabel.TextColor3 = targetTheme.TextSecondary
-end
-if comp._switch then
 local active = comp._state == true
 comp._switch.BackgroundColor3 = active and targetTheme.ToggleActive or targetTheme.ToggleInactive
 if comp._switchStroke then
@@ -6407,8 +6504,20 @@ end
 if comp._knob then
 comp._knob.BackgroundColor3 = active and targetTheme.ToggleKnob or targetTheme.ToggleKnobInactive
 end
+return
 end
 if comp._track then
+if comp._container then
+comp._container.BackgroundColor3 = targetTheme.Element
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then
+st.Enabled = true
+st.Color = targetTheme.Border
+end
+end
+if comp._label then
+comp._label.TextColor3 = targetTheme.TextPrimary
+end
 comp._track.BackgroundColor3 = isDark and Color3.fromRGB(20, 22, 30) or Color3.fromRGB(222, 226, 234)
 if comp._trackStroke then
 comp._trackStroke.Color = isDark and Color3.fromRGB(36, 40, 56) or Color3.fromRGB(205, 210, 220)
@@ -6416,10 +6525,26 @@ end
 if comp._fill then
 comp._fill.BackgroundColor3 = targetTheme.SliderFill
 end
+if comp._knob then
+comp._knob.BackgroundColor3 = targetTheme.TextPrimary
+end
 local valLabel = comp._track:FindFirstChild("Value")
 if valLabel then
 valLabel.TextColor3 = targetTheme.TextPrimary
 end
+return
+end
+if comp._boxBg or comp._textBox then
+if comp._container then
+comp._container.BackgroundColor3 = targetTheme.Element
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then
+st.Enabled = true
+st.Color = targetTheme.Border
+end
+end
+if comp._label then
+comp._label.TextColor3 = targetTheme.TextPrimary
 end
 if comp._boxBg then
 comp._boxBg.BackgroundColor3 = targetTheme.Card
@@ -6432,7 +6557,43 @@ if comp._textBox then
 comp._textBox.TextColor3 = targetTheme.TextPrimary
 comp._textBox.PlaceholderColor3 = targetTheme.TextMuted
 end
+return
+end
+if comp._keyButton then
+if comp._container then
+comp._container.BackgroundColor3 = targetTheme.Element
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then
+st.Enabled = true
+st.Color = targetTheme.Border
+end
+end
+if comp._label then
+comp._label.TextColor3 = targetTheme.TextPrimary
+end
+comp._keyButton.BackgroundColor3 = targetTheme.Card
+comp._keyButton.TextColor3 = targetTheme.TextPrimary
+local kbStroke = comp._keyButton:FindFirstChildOfClass("UIStroke")
+if kbStroke then
+kbStroke.Color = targetTheme.Border
+end
+return
+end
 if comp._selectBox then
+if comp._container then
+comp._container.BackgroundColor3 = targetTheme.Element
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then
+st.Enabled = true
+st.Color = targetTheme.Border
+end
+end
+if comp._titleLabel then
+comp._titleLabel.TextColor3 = targetTheme.TextPrimary
+end
+if comp._label then
+comp._label.TextColor3 = targetTheme.TextPrimary
+end
 comp._selectBox.BackgroundColor3 = targetTheme.Element
 local sbStroke = comp._selectBox:FindFirstChildOfClass("UIStroke")
 if sbStroke then
@@ -6444,7 +6605,6 @@ end
 if comp._chevron then
 comp._chevron.ImageColor3 = targetTheme.TextMuted
 end
-end
 if comp._listContainer then
 comp._listContainer.BackgroundColor3 = targetTheme.Card
 local lcStroke = comp._listContainer:FindFirstChildOfClass("UIStroke")
@@ -6452,13 +6612,61 @@ if lcStroke then
 lcStroke.Color = targetTheme.Border
 end
 end
-if comp._keyButton then
-comp._keyButton.BackgroundColor3 = targetTheme.Card
-comp._keyButton.TextColor3 = targetTheme.TextPrimary
-local kbStroke = comp._keyButton:FindFirstChildOfClass("UIStroke")
-if kbStroke then
-kbStroke.Color = targetTheme.Border
+return
 end
+if comp._actionBtn then
+if comp._container then
+comp._container.BackgroundColor3 = targetTheme.Element
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then
+st.Enabled = true
+st.Color = targetTheme.Border
+end
+end
+if comp._titleLabel then
+comp._titleLabel.TextColor3 = targetTheme.TextPrimary
+end
+if comp._descLabel then
+comp._descLabel.TextColor3 = targetTheme.TextMuted
+end
+comp._actionBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+comp._actionBtn.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+if comp._actionStroke then
+comp._actionStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+end
+return
+end
+if comp._container and comp._container:IsA("TextButton") then
+local isPri = comp._isPrimary
+comp._container.BackgroundColor3 = isPri and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243))
+if comp._label then
+comp._label.TextColor3 = isPri and (isDark and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(255, 255, 255)) or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24))
+end
+local st = comp._container:FindFirstChildOfClass("UIStroke")
+if st then
+st.Enabled = true
+st.Color = isPri and (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24))
+end
+return
+end
+if comp._container then
+local c = comp._container
+if c:IsA("GuiObject") then
+c.BackgroundColor3 = targetTheme.Element
+end
+local cStroke = c:FindFirstChildOfClass("UIStroke")
+if cStroke then
+cStroke.Color = targetTheme.Border
+end
+end
+if comp._label then
+comp._label.TextColor3 = targetTheme.TextPrimary
+end
+if comp._titleLabel then
+comp._titleLabel.TextColor3 = targetTheme.TextPrimary
+end
+if comp._contentLabel then
+comp._contentLabel.TextColor3 = targetTheme.TextSecondary
 end
 if comp._items then
 for _, item in ipairs(comp._items) do
@@ -6480,7 +6688,7 @@ local s = desc:FindFirstChildOfClass("UIStroke")
 if s then s.Color = targetTheme.Border end
 end
 if desc:IsA("UIStroke") then
-if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" then
+if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" or desc.Name == "DialogStroke" then
 desc.Color = targetTheme.Border
 end
 elseif desc:IsA("TextButton") and (desc.Name:find("Button_") or desc.Name == "ActionButton") then
@@ -6494,13 +6702,9 @@ st.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24
 st.Enabled = true
 end
 elseif desc:IsA("TextLabel") then
-if desc.Name == "Label" and desc.Parent and desc.Parent:IsA("TextButton") and desc.Parent.Name:find("Button_") then
-desc.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-elseif desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
+if desc.Name == "Label" or desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" or desc.Name == "Value" then
 desc.TextColor3 = targetTheme.TextPrimary
-elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" then
-desc.TextColor3 = targetTheme.TextSecondary
-elseif desc.Name == "SelectionLabel" then
+elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" or desc.Name == "SelectionLabel" then
 desc.TextColor3 = targetTheme.TextSecondary
 end
 elseif desc:IsA("ImageLabel") then

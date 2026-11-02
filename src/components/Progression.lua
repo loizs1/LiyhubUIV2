@@ -15,6 +15,7 @@ Progression.__index = Progression
 
 function Progression.new(parent, options, theme, cleanup, componentRegistry)
     options = options or {}
+    local isDark = (theme.IsLight ~= true and theme.Name ~= "Pure White")
     local titleText = options.Title or options.Name or "Progression"
     local subtitleText = options.Subtitle or options.SubTitle or "Step workflow progression"
     local steps = options.Steps or {
@@ -35,23 +36,21 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
     container.Name = "Progression_" .. titleText
     container.Size = UDim2.new(1, 0, 0, 0)
     container.AutomaticSize = Enum.AutomaticSize.Y
-    container.BackgroundColor3 = theme.Card
+    container.BackgroundColor3 = isDark and (theme.Card or Color3.fromRGB(18, 18, 22)) or Color3.fromRGB(255, 255, 255)
     container.BorderSizePixel = 0
     container.ClipsDescendants = false
     container.Parent = parent
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = theme.CornerRadius
+    corner.CornerRadius = theme.CornerRadius or UDim.new(0, 7)
     corner.Parent = container
     
-    if theme.UseStrokes then
-        local stroke = Instance.new("UIStroke")
-        stroke.Name = "BorderStroke"
-        stroke.Color = theme.Border
-        stroke.Thickness = 1
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Parent = container
-    end
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "BorderStroke"
+    stroke.Color = isDark and (theme.Border or Color3.fromRGB(34, 34, 40)) or Color3.fromRGB(218, 222, 230)
+    stroke.Thickness = 1
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = container
     
     local padding = Instance.new("UIPadding")
     padding.PaddingTop = UDim.new(0, 10)
@@ -77,9 +76,9 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
     titleLabel.Size = UDim2.new(1, 0, 0, 16)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = titleText
-    titleLabel.TextColor3 = theme.TextPrimary
-    titleLabel.Font = theme.FontBold
-    titleLabel.TextSize = theme.FontSizeRegular
+    titleLabel.TextColor3 = isDark and (theme.TextPrimary or Color3.fromRGB(255, 255, 255)) or Color3.fromRGB(18, 20, 24)
+    titleLabel.Font = theme.FontBold or Enum.Font.GothamBold
+    titleLabel.TextSize = theme.FontSizeRegular or 12
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Active = false
     titleLabel.Parent = headerFrame
@@ -90,9 +89,9 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
     subLabel.Position = UDim2.new(0, 0, 0, 17)
     subLabel.BackgroundTransparency = 1
     subLabel.Text = subtitleText
-    subLabel.TextColor3 = theme.TextMuted
-    subLabel.Font = theme.FontRegular
-    subLabel.TextSize = theme.FontSizeSmall
+    subLabel.TextColor3 = isDark and (theme.TextMuted or Color3.fromRGB(110, 110, 122)) or Color3.fromRGB(130, 136, 148)
+    subLabel.Font = theme.FontRegular or Enum.Font.GothamMedium
+    subLabel.TextSize = theme.FontSizeSmall or 10
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
     subLabel.Active = false
     subLabel.Parent = headerFrame
@@ -110,7 +109,7 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
     lineBg.AnchorPoint = Vector2.new(0, 0.5)
     lineBg.Size = UDim2.new((numSteps - 1) / numSteps, 0, 0, 2)
     lineBg.Position = UDim2.new(0.5 / numSteps, 0, 0, 13)
-    lineBg.BackgroundColor3 = theme.SliderTrack
+    lineBg.BackgroundColor3 = isDark and (theme.SliderTrack or Color3.fromRGB(34, 34, 42)) or Color3.fromRGB(220, 224, 232)
     lineBg.BorderSizePixel = 0
     lineBg.ZIndex = 1
     lineBg.Parent = stepperFrame
@@ -134,7 +133,7 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         nodeBtn.AnchorPoint = Vector2.new(0.5, 0.5)
         nodeBtn.Size = UDim2.new(0, 26, 0, 26)
         nodeBtn.Position = UDim2.new((i - 0.5) / numSteps, 0, 0, 13)
-        nodeBtn.BackgroundColor3 = (i == initialStep) and accentColor or ((i < initialStep) and Color3.fromRGB(35, 75, 125) or theme.SliderTrack)
+        nodeBtn.BackgroundColor3 = (i == initialStep) and accentColor or ((i < initialStep) and (isDark and Color3.fromRGB(35, 75, 125) or Color3.fromRGB(180, 210, 245)) or (isDark and Color3.fromRGB(34, 34, 42) or Color3.fromRGB(220, 224, 232)))
         nodeBtn.AutoButtonColor = false
         nodeBtn.Text = ""
         nodeBtn.BorderSizePixel = 0
@@ -156,7 +155,7 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         icon.Parent = nodeBtn
 
         local rawIcon = stepData.Icon or stepData.icon or "check"
-        local initColor = (i <= initialStep) and Color3.fromRGB(255, 255, 255) or theme.TextMuted
+        local initColor = (i <= initialStep) and Color3.fromRGB(255, 255, 255) or (isDark and Color3.fromRGB(110, 110, 122) or Color3.fromRGB(130, 136, 148))
         if IconService and IconService.Apply then
             IconService.Apply(icon, rawIcon, initColor)
         else
@@ -172,8 +171,8 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         stepLbl.BackgroundTransparency = 1
         stepLbl.AutoButtonColor = false
         stepLbl.Text = stepData.Name or stepData.Label or ("Step " .. tostring(i))
-        stepLbl.TextColor3 = (i == initialStep) and accentColor or theme.TextMuted
-        stepLbl.Font = (i == initialStep) and theme.FontBold or theme.FontRegular
+        stepLbl.TextColor3 = (i == initialStep) and accentColor or (isDark and Color3.fromRGB(110, 110, 122) or Color3.fromRGB(130, 136, 148))
+        stepLbl.Font = (i == initialStep) and (theme.FontBold or Enum.Font.GothamBold) or (theme.FontRegular or Enum.Font.GothamMedium)
         stepLbl.TextSize = 10
         stepLbl.TextXAlignment = Enum.TextXAlignment.Center
         stepLbl.TextTruncate = Enum.TextTruncate.None
@@ -208,11 +207,11 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         local prevBtn = Instance.new("TextButton")
         prevBtn.Name = "PrevButton"
         prevBtn.Size = UDim2.new(0.5, -4, 1, 0)
-        prevBtn.BackgroundColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+        prevBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
         prevBtn.Text = prevText
-        prevBtn.TextColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-        prevBtn.Font = theme.FontBold
-        prevBtn.TextSize = theme.FontSizeSmall
+        prevBtn.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        prevBtn.Font = theme.FontBold or Enum.Font.GothamBold
+        prevBtn.TextSize = theme.FontSizeSmall or 10
         prevBtn.AutoButtonColor = false
         prevBtn.Parent = controlsFrame
         
@@ -222,7 +221,7 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         
         local pStroke = Instance.new("UIStroke")
         pStroke.Name = "ButtonStroke"
-        pStroke.Color = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        pStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
         pStroke.Thickness = 1
         pStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         pStroke.Parent = prevBtn
@@ -230,11 +229,11 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         local nextBtn = Instance.new("TextButton")
         nextBtn.Name = "NextButton"
         nextBtn.Size = UDim2.new(0.5, -4, 1, 0)
-        nextBtn.BackgroundColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+        nextBtn.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
         nextBtn.Text = nextText
-        nextBtn.TextColor3 = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
-        nextBtn.Font = theme.FontBold
-        nextBtn.TextSize = theme.FontSizeSmall
+        nextBtn.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        nextBtn.Font = theme.FontBold or Enum.Font.GothamBold
+        nextBtn.TextSize = theme.FontSizeSmall or 10
         nextBtn.AutoButtonColor = false
         nextBtn.Parent = controlsFrame
         
@@ -244,7 +243,7 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         
         local nStroke = Instance.new("UIStroke")
         nStroke.Name = "ButtonStroke"
-        nStroke.Color = (theme.IsLight ~= true and theme.Name ~= "Pure White") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+        nStroke.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
         nStroke.Thickness = 1
         nStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         nStroke.Parent = nextBtn
@@ -275,6 +274,7 @@ function Progression.new(parent, options, theme, cleanup, componentRegistry)
         _numSteps = numSteps,
         _callback = onStepChanged,
         _components = componentRegistry or {},
+        _nestedComponents = {},
         _cleanup = cleanup,
         _conns = {},
     }, Progression)
@@ -325,19 +325,20 @@ function Progression:SetStep(stepIndex)
     local numSteps = self._numSteps
     local progressRel = numSteps > 1 and ((self._currentStep - 1) / (numSteps - 1)) or 0
     if self._lineFill then
-        TweenService:Create(self._lineFill, TweenInfo.new(self._theme.AnimationFast), {
+        TweenService:Create(self._lineFill, TweenInfo.new((self._theme and self._theme.AnimationFast) or 0.15), {
             Size = UDim2.new(progressRel * ((numSteps - 1) / numSteps), 0, 0, 2)
         }):Play()
     end
 
+    local isDark = (self._theme.IsLight ~= true and self._theme.Name ~= "Pure White")
     for i, node in ipairs(self._stepNodes) do
         local isActive = (i == self._currentStep)
         local isCompleted = (i < self._currentStep)
-        local targetColor = isActive and self._accentColor or (isCompleted and Color3.fromRGB(35, 75, 125) or self._theme.SliderTrack)
-        local targetIconColor = (isActive or isCompleted) and Color3.fromRGB(255, 255, 255) or self._theme.TextMuted
-        local targetLabelColor = isActive and self._accentColor or (isCompleted and Color3.fromRGB(180, 205, 235) or self._theme.TextMuted)
+        local targetColor = isActive and self._accentColor or (isCompleted and (isDark and Color3.fromRGB(35, 75, 125) or Color3.fromRGB(180, 210, 245)) or (self._theme.SliderTrack or Color3.fromRGB(220, 224, 232)))
+        local targetIconColor = (isActive or isCompleted) and Color3.fromRGB(255, 255, 255) or (self._theme.TextMuted or Color3.fromRGB(130, 136, 148))
+        local targetLabelColor = isActive and self._accentColor or (isCompleted and (isDark and Color3.fromRGB(180, 205, 235) or Color3.fromRGB(60, 100, 160)) or (self._theme.TextMuted or Color3.fromRGB(130, 136, 148)))
         
-        TweenService:Create(node.Button, TweenInfo.new(self._theme.AnimationFast), {
+        TweenService:Create(node.Button, TweenInfo.new((self._theme and self._theme.AnimationFast) or 0.15), {
             BackgroundColor3 = targetColor
         }):Play()
         if IconService and IconService.Apply then
@@ -346,7 +347,7 @@ function Progression:SetStep(stepIndex)
             node.Icon.ImageColor3 = targetIconColor
         end
         node.Label.TextColor3 = targetLabelColor
-        node.Label.Font = isActive and self._theme.FontBold or self._theme.FontRegular
+        node.Label.Font = isActive and (self._theme.FontBold or Enum.Font.GothamBold) or (self._theme.FontRegular or Enum.Font.GothamMedium)
     end
     task.spawn(self._callback, self._currentStep, self._steps[self._currentStep])
 end
@@ -373,7 +374,9 @@ function Progression:CreateToggle(options)
         pcall(function() toggleCtor = _require("src/components/Toggle") end)
     end
     if toggleCtor then
-        return toggleCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        local t = toggleCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        table.insert(self._nestedComponents, t)
+        return t
     end
     return nil
 end
@@ -384,7 +387,9 @@ function Progression:CreateDropdown(options)
         pcall(function() dropdownCtor = _require("src/components/Dropdown") end)
     end
     if dropdownCtor then
-        return dropdownCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        local d = dropdownCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        table.insert(self._nestedComponents, d)
+        return d
     end
     return nil
 end
@@ -395,7 +400,9 @@ function Progression:CreateSlider(options)
         pcall(function() sliderCtor = _require("src/components/Slider") end)
     end
     if sliderCtor then
-        return sliderCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        local s = sliderCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        table.insert(self._nestedComponents, s)
+        return s
     end
     return nil
 end
@@ -406,7 +413,9 @@ function Progression:CreateButton(options)
         pcall(function() buttonCtor = _require("src/components/Button") end)
     end
     if buttonCtor then
-        return buttonCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        local b = buttonCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        table.insert(self._nestedComponents, b)
+        return b
     end
     return nil
 end
@@ -417,22 +426,11 @@ function Progression:CreateInput(options)
         pcall(function() inputCtor = _require("src/components/Input") end)
     end
     if inputCtor then
-        return inputCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        local inp = inputCtor.new(self._nestedContainer, options, self._theme, self._cleanup)
+        table.insert(self._nestedComponents, inp)
+        return inp
     end
     return nil
-end
-
-function Progression:Destroy()
-    if self._conns then
-        for _, c in ipairs(self._conns) do
-            if c and c.Connected then c:Disconnect() end
-        end
-        self._conns = {}
-    end
-    if self._container then
-        self._container:Destroy()
-        self._container = nil
-    end
 end
 
 return Progression
