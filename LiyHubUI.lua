@@ -104,6 +104,7 @@ function LiyHubUI:CreateWindow(options)
     
     local deps = {
         Theme = theme,
+        ThemeManager = ThemeManager,
         Cleanup = cleanup,
         Layout = Layout,
         Modal = Modal,

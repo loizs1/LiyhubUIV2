@@ -122,7 +122,8 @@ function Slider.new(parent, options, theme, cleanup)
     valueLabel.AnchorPoint = Vector2.new(1, 0.5)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = formatValue(defaultVal, stepVal, suffix, decimals)
-    valueLabel.TextColor3 = (initRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+    local isLightInit = (theme and (theme.IsLight == true or theme.Name == "Pure White"))
+    valueLabel.TextColor3 = isLightInit and ((initRel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((initRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
     valueLabel.Font = theme.FontBold
     valueLabel.TextSize = 12
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -161,7 +162,8 @@ function Slider.new(parent, options, theme, cleanup)
         local finalRel = (quantized - self._min) / (self._max - self._min)
         fill.Size = UDim2.new(finalRel, 0, 1, 0)
         valueLabel.Text = formatValue(quantized, self._step, self._suffix, self._decimals)
-        valueLabel.TextColor3 = (finalRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+        local isLight = self._theme and (self._theme.IsLight == true or self._theme.Name == "Pure White")
+        valueLabel.TextColor3 = isLight and ((finalRel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((finalRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
         task.spawn(self._callback, quantized)
     end
     
@@ -207,7 +209,8 @@ function Slider:SetValue(val)
     local rel = (val - self._min) / (self._max - self._min)
     self._fill.Size = UDim2.new(rel, 0, 1, 0)
     self._valueLabel.Text = formatValue(val, self._step, self._suffix, self._decimals)
-    self._valueLabel.TextColor3 = (rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+    local isLight = self._theme and (self._theme.IsLight == true or self._theme.Name == "Pure White")
+    self._valueLabel.TextColor3 = isLight and ((rel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
     task.spawn(self._callback, val)
 end
 

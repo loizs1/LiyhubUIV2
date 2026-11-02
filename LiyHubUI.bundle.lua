@@ -1942,7 +1942,8 @@ valueLabel.Position = UDim2.new(1, -12, 0.5, 0)
 valueLabel.AnchorPoint = Vector2.new(1, 0.5)
 valueLabel.BackgroundTransparency = 1
 valueLabel.Text = formatValue(defaultVal, stepVal, suffix, decimals)
-valueLabel.TextColor3 = (initRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+local isLightInit = (theme and (theme.IsLight == true or theme.Name == "Pure White"))
+valueLabel.TextColor3 = isLightInit and ((initRel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((initRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
 valueLabel.Font = theme.FontBold
 valueLabel.TextSize = 12
 valueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -1977,7 +1978,8 @@ self._value = quantized
 local finalRel = (quantized - self._min) / (self._max - self._min)
 fill.Size = UDim2.new(finalRel, 0, 1, 0)
 valueLabel.Text = formatValue(quantized, self._step, self._suffix, self._decimals)
-valueLabel.TextColor3 = (finalRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+local isLight = self._theme and (self._theme.IsLight == true or self._theme.Name == "Pure White")
+valueLabel.TextColor3 = isLight and ((finalRel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((finalRel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
 task.spawn(self._callback, quantized)
 end
 fill.Size = UDim2.new(initRel, 0, 1, 0)
@@ -2016,7 +2018,8 @@ self._value = val
 local rel = (val - self._min) / (self._max - self._min)
 self._fill.Size = UDim2.new(rel, 0, 1, 0)
 self._valueLabel.Text = formatValue(val, self._step, self._suffix, self._decimals)
-self._valueLabel.TextColor3 = (rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+local isLight = self._theme and (self._theme.IsLight == true or self._theme.Name == "Pure White")
+self._valueLabel.TextColor3 = isLight and ((rel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
 task.spawn(self._callback, val)
 end
 function Slider:GetValue()
@@ -6528,9 +6531,22 @@ end
 if comp._knob then
 comp._knob.BackgroundColor3 = targetTheme.TextPrimary
 end
-local valLabel = comp._track:FindFirstChild("Value")
+if comp._valueLabel then
+local rel = (comp._value and comp._min and comp._max and (comp._max > comp._min)) and ((comp._value - comp._min) / (comp._max - comp._min)) or 0
+if isDark then
+comp._valueLabel.TextColor3 = (rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+else
+comp._valueLabel.TextColor3 = (rel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+end
+end
+local valLabel = comp._track:FindFirstChild("Value") or comp._track:FindFirstChild("ValueLabel")
 if valLabel then
-valLabel.TextColor3 = targetTheme.TextPrimary
+local rel = (comp._value and comp._min and comp._max and (comp._max > comp._min)) and ((comp._value - comp._min) / (comp._max - comp._min)) or 0
+if isDark then
+valLabel.TextColor3 = (rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+else
+valLabel.TextColor3 = (rel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+end
 end
 return
 end
@@ -6668,6 +6684,26 @@ end
 if comp._contentLabel then
 comp._contentLabel.TextColor3 = targetTheme.TextSecondary
 end
+if comp._toggles then
+for _, t in ipairs(comp._toggles) do
+self:_applyThemeToComponent(t, targetTheme, isDark)
+end
+end
+if comp._sliders then
+for _, s in ipairs(comp._sliders) do
+self:_applyThemeToComponent(s, targetTheme, isDark)
+end
+end
+if comp._dropdowns then
+for _, d in ipairs(comp._dropdowns) do
+self:_applyThemeToComponent(d, targetTheme, isDark)
+end
+end
+if comp._inputs then
+for _, i in ipairs(comp._inputs) do
+self:_applyThemeToComponent(i, targetTheme, isDark)
+end
+end
 if comp._items then
 for _, item in ipairs(comp._items) do
 self:_applyThemeToComponent(item, targetTheme, isDark)
@@ -6676,6 +6712,11 @@ end
 if comp._buttons then
 for _, btn in ipairs(comp._buttons) do
 self:_applyThemeToComponent(btn, targetTheme, isDark)
+end
+end
+if comp._components then
+for _, subComp in ipairs(comp._components) do
+self:_applyThemeToComponent(subComp, targetTheme, isDark)
 end
 end
 end
@@ -6688,10 +6729,15 @@ local s = desc:FindFirstChildOfClass("UIStroke")
 if s then s.Color = targetTheme.Border end
 end
 if desc:IsA("UIStroke") then
-if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" or desc.Name == "DialogStroke" then
+if desc.Name == "BorderStroke" or desc.Name == "SectionStroke" or desc.Name == "ProfileStroke" or desc.Name == "DialogStroke" or desc.Name == "CardStroke" then
 desc.Color = targetTheme.Border
 end
-elseif desc:IsA("TextButton") and (desc.Name:find("Button_") or desc.Name == "ActionButton") then
+elseif desc:IsA("TextButton") then
+if desc.Name:find("Toggle_") then
+desc.BackgroundColor3 = targetTheme.Element
+local st = desc:FindFirstChildOfClass("UIStroke")
+if st then st.Color = targetTheme.Border end
+elseif desc.Name:find("Button_") or desc.Name == "ActionButton" then
 desc.BackgroundColor3 = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
 if desc.Name == "ActionButton" then
 desc.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
@@ -6701,8 +6747,71 @@ if st then
 st.Color = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
 st.Enabled = true
 end
+elseif desc.Name == "KeyButton" then
+desc.BackgroundColor3 = targetTheme.Card
+desc.TextColor3 = targetTheme.TextPrimary
+local kbStroke = desc:FindFirstChildOfClass("UIStroke")
+if kbStroke then kbStroke.Color = targetTheme.Border end
+elseif desc.Name == "Track" then
+desc.BackgroundColor3 = isDark and Color3.fromRGB(20, 22, 30) or Color3.fromRGB(222, 226, 234)
+local ts = desc:FindFirstChildOfClass("UIStroke")
+if ts then ts.Color = isDark and Color3.fromRGB(36, 40, 56) or Color3.fromRGB(205, 210, 220) end
+elseif desc.Name == "SelectBox" then
+desc.BackgroundColor3 = targetTheme.Element
+local sbStroke = desc:FindFirstChildOfClass("UIStroke")
+if sbStroke then sbStroke.Color = targetTheme.Border end
+end
+elseif desc:IsA("Frame") then
+if desc.Name == "SliderGroup" or desc.Name == "InputGroup" or desc.Name == "ToggleGroup" or desc.Name == "Row" then
+if desc.BackgroundTransparency < 1 then
+desc.BackgroundColor3 = targetTheme.Card
+end
+local s = desc:FindFirstChildOfClass("UIStroke")
+if s then s.Color = targetTheme.Border end
+elseif desc.Name:find("Slider_") or desc.Name:find("Input_") or desc.Name:find("Keybind_") or desc.Name:find("ActionRow_") then
+desc.BackgroundColor3 = targetTheme.Element
+local s = desc:FindFirstChildOfClass("UIStroke")
+if s then s.Color = targetTheme.Border end
+elseif desc.Name == "BoxBackground" then
+desc.BackgroundColor3 = targetTheme.Card
+local s = desc:FindFirstChildOfClass("UIStroke")
+if s then s.Color = targetTheme.Border end
+elseif desc.Name == "Fill" then
+desc.BackgroundColor3 = targetTheme.SliderFill
+local g = desc:FindFirstChildOfClass("UIGradient")
+if g then g.Enabled = isDark end
+elseif desc.Name == "Switch" then
+local k = desc:FindFirstChild("Knob")
+local togActive = k and (k.Position.X.Scale > 0.5)
+desc.BackgroundColor3 = togActive and targetTheme.ToggleActive or targetTheme.ToggleInactive
+local ss = desc:FindFirstChildOfClass("UIStroke")
+if ss then ss.Color = togActive and targetTheme.ToggleActive or targetTheme.ToggleBorderInactive end
+elseif desc.Name == "Knob" then
+local togActive = desc.Position.X.Scale > 0.5
+desc.BackgroundColor3 = togActive and targetTheme.ToggleKnob or targetTheme.ToggleKnobInactive
+elseif desc.Name == "ListContainer" then
+desc.BackgroundColor3 = targetTheme.Card
+local lcStroke = desc:FindFirstChildOfClass("UIStroke")
+if lcStroke then lcStroke.Color = targetTheme.Border end
+end
+elseif desc:IsA("TextBox") then
+desc.TextColor3 = targetTheme.TextPrimary
+desc.PlaceholderColor3 = targetTheme.TextMuted
 elseif desc:IsA("TextLabel") then
-if desc.Name == "Label" or desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" or desc.Name == "Value" then
+if desc.Name == "ValueLabel" or desc.Name == "Value" then
+local p = desc.Parent
+if p and p.Name == "Track" then
+local f = p:FindFirstChild("Fill")
+local rel = (f and f.Size.X.Scale) or 0
+if isDark then
+desc.TextColor3 = (rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255)
+else
+desc.TextColor3 = (rel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+end
+else
+desc.TextColor3 = targetTheme.TextPrimary
+end
+elseif desc.Name == "Label" or desc.Name == "Title" or desc.Name == "Name" or desc.Name == "DisplayName" then
 desc.TextColor3 = targetTheme.TextPrimary
 elseif desc.Name == "Description" or desc.Name == "Desc" or desc.Name == "Content" or desc.Name == "Username" or desc.Name == "Subtitle" or desc.Name == "SelectionLabel" then
 desc.TextColor3 = targetTheme.TextSecondary
