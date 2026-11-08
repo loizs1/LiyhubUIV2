@@ -1363,7 +1363,7 @@ function Window:_initUniversalTabs(options)
     local discordUrl = options.Discord or options.DiscordLink or "https://discord.gg/Nr56tQJeJh"
     local bannerImage = options.Banner or options.BannerImage or "rbxassetid://108339444679489"
     local bannerTitle = options.BannerTitle or "LiyHub Announcement"
-    local bannerDesc = options.BannerDesc or "Universal high-performance script framework engineered by Than & aeris. Minimalist pure B&W design, vector typography, and native stealth architecture."
+    local bannerDesc = options.BannerDesc or "Welcome to Liyhub. Professionally engineered by Than & Aeris for maximum performance, system stability, and precision automation."
 
     local univGroupName = options.UniversalGroupName or options.UniversalTitle or "Liyhub"
     local univGroup = self:CreateTabGroup(univGroupName)
@@ -1688,42 +1688,6 @@ function Window:_initUniversalTabs(options)
         Icon = "settings",
     })
     self._settingsTab = settingsTab
-
-    local cfgSec = settingsTab:CreateSection("Configurations")
-    cfgSec:CreateInput({
-        Name = "Profile Name",
-        Placeholder = "Enter config name...",
-        Default = "DefaultConfig",
-        Callback = function(text) end
-    })
-    cfgSec:CreateDropdown({
-        Name = "Select Saved Config",
-        Options = { "Default", "Legit", "Rage", "Farming" },
-        Default = "Default",
-        Callback = function(val) end
-    })
-    cfgSec:CreateButtonGroup({
-        Buttons = {
-            {
-                Name = "Save",
-                Callback = function()
-                    self:Notify({ Title = "Config Saved", Content = "Profile saved successfully.", Duration = 2 })
-                end
-            },
-            {
-                Name = "Load",
-                Callback = function()
-                    self:Notify({ Title = "Config Loaded", Content = "Configuration applied cleanly.", Duration = 2 })
-                end
-            },
-            {
-                Name = "Delete",
-                Callback = function()
-                    self:Notify({ Title = "Config Deleted", Content = "Configuration removed.", Duration = 2 })
-                end
-            }
-        }
-    })
 
     local devSec = settingsTab:CreateSection("Device Layout Presets")
     local layoutModeDropdown = devSec:CreateDropdown({
