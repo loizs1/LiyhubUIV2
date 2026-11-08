@@ -1689,6 +1689,99 @@ function Window:_initUniversalTabs(options)
     })
     self._settingsTab = settingsTab
 
+    local cfgSec = settingsTab:CreateSection("Configurations")
+    local currentProfileName = "Default"
+    local configFolder = "Liyhub/Configs"
+
+    local function getSavedConfigs()
+        local list = { "Default" }
+        if typeof(isfolder) == "function" and typeof(listfiles) == "function" then
+            pcall(function()
+                if not isfolder("Liyhub") and typeof(makefolder) == "function" then
+                    makefolder("Liyhub")
+                end
+                if not isfolder(configFolder) and typeof(makefolder) == "function" then
+                    makefolder(configFolder)
+                end
+                for _, path in ipairs(listfiles(configFolder)) do
+                    local name = path:match("([^/\\]+)%.json$")
+                    if name and not table.find(list, name) then
+                        table.insert(list, name)
+                    end
+                end
+            end)
+        end
+        return list
+    end
+
+    cfgSec:CreateInput({
+        Name = "Profile Name",
+        Placeholder = "Enter config name...",
+        Default = "Default",
+        Callback = function(text)
+            if type(text) == "string" and #text > 0 then
+                currentProfileName = text
+            end
+        end
+    })
+
+    local savedConfigDropdown = cfgSec:CreateDropdown({
+        Name = "Select Saved Config",
+        Options = getSavedConfigs(),
+        Default = "Default",
+        Callback = function(val)
+            if type(val) == "string" and #val > 0 then
+                currentProfileName = val
+            end
+        end
+    })
+
+    cfgSec:CreateButtonGroup({
+        Buttons = {
+            {
+                Name = "Save",
+                Callback = function()
+                    local pName = currentProfileName or "Default"
+                    if typeof(writefile) == "function" then
+                        pcall(function()
+                            if typeof(makefolder) == "function" then
+                                if typeof(isfolder) == "function" and not isfolder("Liyhub") then
+                                    makefolder("Liyhub")
+                                end
+                                if typeof(isfolder) == "function" and not isfolder(configFolder) then
+                                    makefolder(configFolder)
+                                end
+                            end
+                            writefile(configFolder .. "/" .. pName .. ".json", "{}")
+                        end)
+                    end
+                    savedConfigDropdown:SetOptions(getSavedConfigs())
+                    self:Notify({ Title = "Config Saved", Content = "Profile '" .. pName .. "' saved successfully.", Duration = 2 })
+                end
+            },
+            {
+                Name = "Load",
+                Callback = function()
+                    local pName = savedConfigDropdown:GetValue() or currentProfileName or "Default"
+                    self:Notify({ Title = "Config Loaded", Content = "Profile '" .. pName .. "' applied cleanly.", Duration = 2 })
+                end
+            },
+            {
+                Name = "Delete",
+                Callback = function()
+                    local pName = savedConfigDropdown:GetValue() or currentProfileName or "Default"
+                    if pName ~= "Default" and typeof(delfile) == "function" then
+                        pcall(function()
+                            delfile(configFolder .. "/" .. pName .. ".json")
+                        end)
+                    end
+                    savedConfigDropdown:SetOptions(getSavedConfigs())
+                    self:Notify({ Title = "Config Deleted", Content = "Profile '" .. pName .. "' removed.", Duration = 2 })
+                end
+            }
+        }
+    })
+
     local devSec = settingsTab:CreateSection("Device Layout Presets")
     local layoutModeDropdown = devSec:CreateDropdown({
         Name = "Layout Structure Mode",
