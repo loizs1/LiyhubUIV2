@@ -805,6 +805,13 @@ function Window.new(options, dependencies)
         _controlBtnBg = controlBtnBg,
         _controlBtnHover = controlBtnHover,
         _controlIconColor = controlIconColor,
+        _flags = {},
+        _componentsByFlag = {},
+        _registeredComponents = {},
+        _configFolder = "Liyhub/Configs",
+        _autoLoadConfig = false,
+        _autoLoadProfile = "Default",
+        _inMemoryConfigs = {},
     }, Window)
 
     local lastProfClick = 0
@@ -1074,6 +1081,274 @@ function Window.new(options, dependencies)
     self:_initUniversalTabs(options)
     
     return self
+end
+
+function Window:RegisterComponent(comp, options, sectionName, compType)
+    if not comp or type(options) ~= "table" then return comp end
+    local flag = options.Flag or options.flag
+    if not flag or flag == "" then
+        local rawName = options.Name or options.Title or options.Text or (compType .. "_" .. tostring(#self._registeredComponents + 1))
+        flag = rawName
+    end
+    comp._flag = flag
+    comp._compType = compType
+    self._componentsByFlag[flag] = comp
+    table.insert(self._registeredComponents, comp)
+    if comp.GetValue then
+        pcall(function()
+            self._flags[flag] = comp:GetValue()
+        end)
+    end
+    return comp
+end
+
+function Window:SaveConfig(profileName)
+    profileName = profileName or "Default"
+    if profileName == "" then profileName = "Default" end
+
+    local serialized = {}
+    local HttpService = game:GetService("HttpService")
+
+    for flag, comp in pairs(self._componentsByFlag) do
+        if comp and comp.GetValue then
+            local ok, val = pcall(function() return comp:GetValue() end)
+            if ok and val ~= nil then
+                if typeof(val) == "Color3" then
+                    serialized[flag] = { __type = "Color3", r = val.R, g = val.G, b = val.B }
+                elseif typeof(val) == "EnumItem" then
+                    serialized[flag] = { __type = "EnumItem", enum = tostring(val.EnumType), name = val.Name }
+                elseif type(val) == "table" then
+                    serialized[flag] = val
+                else
+                    serialized[flag] = val
+                end
+                self._flags[flag] = val
+            end
+        end
+    end
+
+    local json = "{}"
+    pcall(function()
+        json = HttpService:JSONEncode(serialized)
+    end)
+
+    local folder = self._configFolder or "Liyhub/Configs"
+    if typeof(writefile) == "function" then
+        pcall(function()
+            if typeof(makefolder) == "function" then
+                if typeof(isfolder) == "function" and not isfolder("Liyhub") then
+                    makefolder("Liyhub")
+                end
+                if typeof(isfolder) == "function" and not isfolder(folder) then
+                    makefolder(folder)
+                end
+            end
+            writefile(folder .. "/" .. profileName .. ".json", json)
+        end)
+    end
+
+    self._inMemoryConfigs = self._inMemoryConfigs or {}
+    self._inMemoryConfigs[profileName] = json
+
+    local count = 0
+    for _ in pairs(serialized) do count = count + 1 end
+
+    self:Notify({
+        Title = "Config Saved",
+        Content = string.format("Profile '%s' saved (%d settings).", profileName, count),
+        Duration = 2.5
+    })
+
+    return true, count
+end
+
+function Window:LoadConfig(profileName)
+    profileName = profileName or "Default"
+    local folder = self._configFolder or "Liyhub/Configs"
+    local HttpService = game:GetService("HttpService")
+    local rawJson = nil
+
+    if typeof(readfile) == "function" and typeof(isfile) == "function" then
+        local path = folder .. "/" .. profileName .. ".json"
+        if isfile(path) then
+            pcall(function()
+                rawJson = readfile(path)
+            end)
+        end
+    end
+
+    if not rawJson and self._inMemoryConfigs and self._inMemoryConfigs[profileName] then
+        rawJson = self._inMemoryConfigs[profileName]
+    end
+
+    if not rawJson or rawJson == "" or rawJson == "{}" then
+        self:Notify({
+            Title = "Config Error",
+            Content = string.format("Profile '%s' not found or empty.", profileName),
+            Duration = 2.5
+        })
+        return false, 0
+    end
+
+    local data = nil
+    pcall(function()
+        data = HttpService:JSONDecode(rawJson)
+    end)
+
+    if type(data) ~= "table" then
+        self:Notify({
+            Title = "Config Error",
+            Content = "Invalid configuration data.",
+            Duration = 2.5
+        })
+        return false, 0
+    end
+
+    local loadedCount = 0
+    for flag, savedVal in pairs(data) do
+        local comp = self._componentsByFlag[flag]
+        if not comp then
+            for regFlag, regComp in pairs(self._componentsByFlag) do
+                if regFlag:match("/([^/]+)$") == flag or regFlag == flag:match("/([^/]+)$") then
+                    comp = regComp
+                    break
+                end
+            end
+        end
+
+        if comp and comp.SetValue then
+            local finalVal = savedVal
+            if type(savedVal) == "table" and savedVal.__type == "Color3" then
+                finalVal = Color3.new(savedVal.r or 1, savedVal.g or 1, savedVal.b or 1)
+            elseif type(savedVal) == "table" and savedVal.__type == "EnumItem" then
+                if savedVal.enum == "KeyCode" and Enum.KeyCode[savedVal.name] then
+                    finalVal = Enum.KeyCode[savedVal.name]
+                end
+            elseif comp._compType == "Keybind" and type(savedVal) == "string" then
+                finalVal = Enum.KeyCode[savedVal] or savedVal
+            elseif comp._compType == "ColorPicker" and type(savedVal) == "table" and savedVal.r then
+                finalVal = Color3.new(savedVal.r, savedVal.g, savedVal.b)
+            end
+
+            local setOk = pcall(function()
+                comp:SetValue(finalVal, true)
+            end)
+            if setOk then
+                self._flags[flag] = finalVal
+                loadedCount = loadedCount + 1
+            end
+        end
+    end
+
+    self:Notify({
+        Title = "Config Loaded",
+        Content = string.format("Profile '%s' loaded (%d settings applied).", profileName, loadedCount),
+        Duration = 2.5
+    })
+
+    return true, loadedCount
+end
+
+function Window:DeleteConfig(profileName)
+    profileName = profileName or "Default"
+    if profileName == "Default" then
+        self:Notify({
+            Title = "Cannot Delete",
+            Content = "Default profile cannot be deleted.",
+            Duration = 2
+        })
+        return false
+    end
+
+    local folder = self._configFolder or "Liyhub/Configs"
+    if typeof(delfile) == "function" then
+        pcall(function()
+            delfile(folder .. "/" .. profileName .. ".json")
+        end)
+    end
+
+    if self._inMemoryConfigs then
+        self._inMemoryConfigs[profileName] = nil
+    end
+
+    self:Notify({
+        Title = "Config Deleted",
+        Content = string.format("Profile '%s' removed.", profileName),
+        Duration = 2
+    })
+
+    return true
+end
+
+function Window:GetConfigList()
+    local list = { "Default" }
+    local folder = self._configFolder or "Liyhub/Configs"
+    if typeof(isfolder) == "function" and typeof(listfiles) == "function" then
+        pcall(function()
+            if typeof(makefolder) == "function" then
+                if not isfolder("Liyhub") then makefolder("Liyhub") end
+                if not isfolder(folder) then makefolder(folder) end
+            end
+            for _, path in ipairs(listfiles(folder)) do
+                local name = path:match("([^/\\]+)%.json$")
+                if name and name ~= "_autoload" and name ~= "autoload" and not table.find(list, name) then
+                    table.insert(list, name)
+                end
+            end
+        end)
+    end
+    if self._inMemoryConfigs then
+        for name in pairs(self._inMemoryConfigs) do
+            if name ~= "Default" and not table.find(list, name) then
+                table.insert(list, name)
+            end
+        end
+    end
+    return list
+end
+
+function Window:SetAutoLoadConfig(enabled, profileName)
+    profileName = profileName or "Default"
+    self._autoLoadConfig = (enabled == true)
+    self._autoLoadProfile = profileName
+
+    local HttpService = game:GetService("HttpService")
+    local folder = self._configFolder or "Liyhub/Configs"
+    local payload = HttpService:JSONEncode({
+        enabled = self._autoLoadConfig,
+        profile = self._autoLoadProfile
+    })
+
+    if typeof(writefile) == "function" then
+        pcall(function()
+            if typeof(makefolder) == "function" then
+                if typeof(isfolder) == "function" and not isfolder("Liyhub") then makefolder("Liyhub") end
+                if typeof(isfolder) == "function" and not isfolder(folder) then makefolder(folder) end
+            end
+            writefile(folder .. "/_autoload.json", payload)
+        end)
+    end
+    self._autoloadData = payload
+end
+
+function Window:GetAutoLoadConfig()
+    local folder = self._configFolder or "Liyhub/Configs"
+    local raw = nil
+    if typeof(readfile) == "function" and typeof(isfile) == "function" then
+        local path = folder .. "/_autoload.json"
+        if isfile(path) then
+            pcall(function() raw = readfile(path) end)
+        end
+    end
+    if not raw then raw = self._autoloadData end
+    if raw then
+        local HttpService = game:GetService("HttpService")
+        local ok, data = pcall(function() return HttpService:JSONDecode(raw) end)
+        if ok and type(data) == "table" then
+            return data.enabled == true, data.profile or "Default"
+        end
+    end
+    return false, "Default"
 end
 
 function Window:Minimize()
@@ -1691,28 +1966,6 @@ function Window:_initUniversalTabs(options)
 
     local cfgSec = settingsTab:CreateSection("Configurations")
     local currentProfileName = "Default"
-    local configFolder = "Liyhub/Configs"
-
-    local function getSavedConfigs()
-        local list = { "Default" }
-        if typeof(isfolder) == "function" and typeof(listfiles) == "function" then
-            pcall(function()
-                if not isfolder("Liyhub") and typeof(makefolder) == "function" then
-                    makefolder("Liyhub")
-                end
-                if not isfolder(configFolder) and typeof(makefolder) == "function" then
-                    makefolder(configFolder)
-                end
-                for _, path in ipairs(listfiles(configFolder)) do
-                    local name = path:match("([^/\\]+)%.json$")
-                    if name and not table.find(list, name) then
-                        table.insert(list, name)
-                    end
-                end
-            end)
-        end
-        return list
-    end
 
     cfgSec:CreateInput({
         Name = "Profile Name",
@@ -1727,7 +1980,7 @@ function Window:_initUniversalTabs(options)
 
     local savedConfigDropdown = cfgSec:CreateDropdown({
         Name = "Select Saved Config",
-        Options = getSavedConfigs(),
+        Options = self:GetConfigList(),
         Default = "Default",
         Callback = function(val)
             if type(val) == "string" and #val > 0 then
@@ -1739,48 +1992,54 @@ function Window:_initUniversalTabs(options)
     cfgSec:CreateButtonGroup({
         Buttons = {
             {
-                Name = "Save",
+                Name = "Save Config",
                 Callback = function()
                     local pName = currentProfileName or "Default"
-                    if typeof(writefile) == "function" then
-                        pcall(function()
-                            if typeof(makefolder) == "function" then
-                                if typeof(isfolder) == "function" and not isfolder("Liyhub") then
-                                    makefolder("Liyhub")
-                                end
-                                if typeof(isfolder) == "function" and not isfolder(configFolder) then
-                                    makefolder(configFolder)
-                                end
-                            end
-                            writefile(configFolder .. "/" .. pName .. ".json", "{}")
-                        end)
-                    end
-                    savedConfigDropdown:SetOptions(getSavedConfigs())
-                    self:Notify({ Title = "Config Saved", Content = "Profile '" .. pName .. "' saved successfully.", Duration = 2 })
+                    self:SaveConfig(pName)
+                    savedConfigDropdown:SetOptions(self:GetConfigList())
                 end
             },
             {
-                Name = "Load",
+                Name = "Load Config",
                 Callback = function()
                     local pName = savedConfigDropdown:GetValue() or currentProfileName or "Default"
-                    self:Notify({ Title = "Config Loaded", Content = "Profile '" .. pName .. "' applied cleanly.", Duration = 2 })
+                    self:LoadConfig(pName)
                 end
             },
             {
                 Name = "Delete",
                 Callback = function()
                     local pName = savedConfigDropdown:GetValue() or currentProfileName or "Default"
-                    if pName ~= "Default" and typeof(delfile) == "function" then
-                        pcall(function()
-                            delfile(configFolder .. "/" .. pName .. ".json")
-                        end)
-                    end
-                    savedConfigDropdown:SetOptions(getSavedConfigs())
-                    self:Notify({ Title = "Config Deleted", Content = "Profile '" .. pName .. "' removed.", Duration = 2 })
+                    self:DeleteConfig(pName)
+                    savedConfigDropdown:SetOptions(self:GetConfigList())
                 end
             }
         }
     })
+
+    local autoEnabled, autoProf = self:GetAutoLoadConfig()
+    cfgSec:CreateToggle({
+        Name = "Auto Load Config",
+        Desc = "Automatically restore the selected config on script startup.",
+        Default = autoEnabled,
+        Callback = function(state)
+            local pName = savedConfigDropdown:GetValue() or currentProfileName or "Default"
+            self:SetAutoLoadConfig(state, pName)
+            self:Notify({
+                Title = "Auto Load",
+                Content = state and string.format("Auto-load enabled for profile '%s'.", pName) or "Auto-load disabled.",
+                Duration = 2
+            })
+        end
+    })
+
+    task.defer(function()
+        task.wait(0.6)
+        local isAuto, prof = self:GetAutoLoadConfig()
+        if isAuto and prof then
+            self:LoadConfig(prof)
+        end
+    end)
 
     local devSec = settingsTab:CreateSection("Device Layout Presets")
     local layoutModeDropdown = devSec:CreateDropdown({
@@ -2996,6 +3255,7 @@ function Tab:CreateSection(nameOrOptions)
         _body = sBody,
         _collapsed = false,
         _components = {},
+        _name = sectionName,
     }, Section)
     
     local lastSecToggle = 0
@@ -3023,7 +3283,7 @@ end
 local Row = {}
 Row.__index = Row
 
-function Row.new(parent, theme, cleanup, components)
+function Row.new(parent, theme, cleanup, components, window, sectionName)
     local rowFrame = Instance.new("Frame")
     rowFrame.Name = "Row"
     rowFrame.Size = UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
@@ -3042,6 +3302,8 @@ function Row.new(parent, theme, cleanup, components)
         _theme = theme,
         _cleanup = cleanup,
         _components = components,
+        _window = window,
+        _sectionName = sectionName,
         _items = {},
     }, Row)
 
@@ -3069,6 +3331,9 @@ function Row:AddToggle(options)
     local tog = self._components.Toggle.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._items, tog)
     self:_rebalance()
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(tog, options, self._sectionName, "Toggle")
+    end
     return tog
 end
 
@@ -3076,6 +3341,9 @@ function Row:AddKeybind(options)
     local key = self._components.Keybind.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._items, key)
     self:_rebalance()
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(key, options, self._sectionName, "Keybind")
+    end
     return key
 end
 
@@ -3090,6 +3358,9 @@ function Row:AddSlider(options)
     local sld = self._components.Slider.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._items, sld)
     self:_rebalance()
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(sld, options, self._sectionName, "Slider")
+    end
     return sld
 end
 
@@ -3097,6 +3368,9 @@ function Row:AddDropdown(options)
     local drp = self._components.Dropdown.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._items, drp)
     self:_rebalance()
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(drp, options, self._sectionName, "Dropdown")
+    end
     return drp
 end
 
@@ -3104,6 +3378,9 @@ function Row:AddInput(options)
     local inp = self._components.Input.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._items, inp)
     self:_rebalance()
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(inp, options, self._sectionName, "Input")
+    end
     return inp
 end
 Row.AddTextbox = Row.AddInput
@@ -3112,6 +3389,9 @@ function Row:AddColorPicker(options)
     local cp = self._components.ColorPicker.new(self._container, options, self._theme, self._cleanup)
     table.insert(self._items, cp)
     self:_rebalance()
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(cp, options, self._sectionName, "ColorPicker")
+    end
     return cp
 end
 
@@ -3265,6 +3545,9 @@ function Section:CreateToggle(options)
         self._window._cleanup
     )
     table.insert(self._components, tog)
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(tog, options, self._name, "Toggle")
+    end
     return tog
 end
 
@@ -3277,6 +3560,13 @@ function Section:CreateToggleGroup(options)
         self._window._components.Toggle
     )
     table.insert(self._components, grp)
+    if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Toggles) == "table" then
+        local togs = grp:GetToggles()
+        for idx, tog in ipairs(togs) do
+            local tOpt = options.Toggles[idx]
+            self._window:RegisterComponent(tog, tOpt, self._name, "Toggle")
+        end
+    end
     return grp
 end
 
@@ -3288,6 +3578,9 @@ function Section:CreateSlider(options)
         self._window._cleanup
     )
     table.insert(self._components, sld)
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(sld, options, self._name, "Slider")
+    end
     return sld
 end
 
@@ -3300,6 +3593,13 @@ function Section:CreateSliderGroup(options)
         self._window._components.Slider
     )
     table.insert(self._components, grp)
+    if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Sliders) == "table" then
+        local slds = grp:GetSliders()
+        for idx, sld in ipairs(slds) do
+            local sOpt = options.Sliders[idx]
+            self._window:RegisterComponent(sld, sOpt, self._name, "Slider")
+        end
+    end
     return grp
 end
 
@@ -3311,6 +3611,9 @@ function Section:CreateInput(options)
         self._window._cleanup
     )
     table.insert(self._components, inp)
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(inp, options, self._name, "Input")
+    end
     return inp
 end
 
@@ -3323,6 +3626,13 @@ function Section:CreateInputGroup(options)
         self._window._components.Input
     )
     table.insert(self._components, grp)
+    if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Inputs) == "table" then
+        local inps = grp:GetInputs()
+        for idx, inp in ipairs(inps) do
+            local iOpt = options.Inputs[idx]
+            self._window:RegisterComponent(inp, iOpt, self._name, "Input")
+        end
+    end
     return grp
 end
 
@@ -3334,6 +3644,9 @@ function Section:CreateDropdown(options)
         self._window._cleanup
     )
     table.insert(self._components, drp)
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(drp, options, self._name, "Dropdown")
+    end
     return drp
 end
 
@@ -3352,6 +3665,13 @@ function Section:CreateDropdownGroup(options)
         self._window._components.Dropdown
     )
     table.insert(self._components, grp)
+    if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Dropdowns) == "table" then
+        local drps = grp:GetDropdowns()
+        for idx, drp in ipairs(drps) do
+            local dOpt = options.Dropdowns[idx]
+            self._window:RegisterComponent(drp, dOpt, self._name, "Dropdown")
+        end
+    end
     return grp
 end
 
@@ -3363,6 +3683,9 @@ function Section:CreateKeybind(options)
         self._window._cleanup
     )
     table.insert(self._components, key)
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(key, options, self._name, "Keybind")
+    end
     return key
 end
 
@@ -3419,11 +3742,14 @@ function Section:CreateColorPicker(options)
         self._window._cleanup
     )
     table.insert(self._components, cp)
+    if self._window and self._window.RegisterComponent then
+        self._window:RegisterComponent(cp, options, self._name, "ColorPicker")
+    end
     return cp
 end
 
 function Section:CreateRow()
-    local row = Row.new(self._body, self._window._theme, self._window._cleanup, self._window._components)
+    local row = Row.new(self._body, self._window._theme, self._window._cleanup, self._window._components, self._window, self._name)
     table.insert(self._components, row)
     return row
 end
