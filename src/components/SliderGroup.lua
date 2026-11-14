@@ -13,8 +13,7 @@ function SliderGroup.new(parent, options, theme, cleanup, sliderModule)
     
     local container = Instance.new("Frame")
     container.Name = "SliderGroup"
-    container.Size = UDim2.new(1, 0, 0, 0)
-    container.AutomaticSize = Enum.AutomaticSize.Y
+    container.Size = UDim2.new(1, 0, 0, 68)
     container.BackgroundColor3 = theme.Card
     container.BorderSizePixel = 0
     container.Parent = parent
@@ -71,13 +70,18 @@ function SliderGroup:_rebalanceSizes()
     local count = #self._sliders
     if count == 0 then return end
     if self._isDown then
-        for _, s in ipairs(self._sliders) do
+        local totalH = count * 56 + (count - 1) * 6 + 12
+        self._container.Size = UDim2.new(1, 0, 0, totalH)
+        for idx, s in ipairs(self._sliders) do
+            s._container.LayoutOrder = idx
             s._container.Size = UDim2.new(1, 0, 0, 56)
         end
     else
+        self._container.Size = UDim2.new(1, 0, 0, 68)
         local gapTotal = (count - 1) * 6
         local widthScale = 1 / count
-        for _, s in ipairs(self._sliders) do
+        for idx, s in ipairs(self._sliders) do
+            s._container.LayoutOrder = idx
             s._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 0, 56)
         end
     end

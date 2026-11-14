@@ -1616,7 +1616,8 @@ local count = #self._buttons
 if count == 0 then return end
 local gapTotal = (count - 1) * 6
 local widthScale = 1 / count
-for _, btn in ipairs(self._buttons) do
+for idx, btn in ipairs(self._buttons) do
+btn._container.LayoutOrder = idx
 btn._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
 end
 end
@@ -1838,12 +1839,10 @@ function ToggleGroup.new(parent, options, theme, cleanup, toggleModule)
 options = options or {}
 local toggleCtor = toggleModule or Toggle
 local isDown = options.Direction == "Down"
+local h = theme.SmallElementHeight or 34
 local row = Instance.new("Frame")
 row.Name = "ToggleGroup"
-row.Size = isDown and UDim2.new(1, 0, 0, 0) or UDim2.new(1, 0, 0, theme.SmallElementHeight or 34)
-if isDown then
-row.AutomaticSize = Enum.AutomaticSize.Y
-end
+row.Size = UDim2.new(1, 0, 0, h)
 row.BackgroundTransparency = 1
 row.BorderSizePixel = 0
 row.Parent = parent
@@ -1873,14 +1872,20 @@ end
 function ToggleGroup:_rebalanceSizes()
 local count = #self._toggles
 if count == 0 then return end
+local h = self._theme.SmallElementHeight or 34
 if self._isDown then
-for _, t in ipairs(self._toggles) do
-t._container.Size = UDim2.new(1, 0, 0, self._theme.SmallElementHeight or 34)
+local totalH = count * h + (count - 1) * 6
+self._container.Size = UDim2.new(1, 0, 0, totalH)
+for idx, t in ipairs(self._toggles) do
+t._container.LayoutOrder = idx
+t._container.Size = UDim2.new(1, 0, 0, h)
 end
 else
+self._container.Size = UDim2.new(1, 0, 0, h)
 local gapTotal = (count - 1) * 6
 local widthScale = 1 / count
-for _, t in ipairs(self._toggles) do
+for idx, t in ipairs(self._toggles) do
+t._container.LayoutOrder = idx
 t._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
 end
 end
@@ -2178,8 +2183,7 @@ local sliderCtor = sliderModule or Slider
 local isDown = options.Direction == "Down"
 local container = Instance.new("Frame")
 container.Name = "SliderGroup"
-container.Size = UDim2.new(1, 0, 0, 0)
-container.AutomaticSize = Enum.AutomaticSize.Y
+container.Size = UDim2.new(1, 0, 0, 68)
 container.BackgroundColor3 = theme.Card
 container.BorderSizePixel = 0
 container.Parent = parent
@@ -2227,13 +2231,18 @@ function SliderGroup:_rebalanceSizes()
 local count = #self._sliders
 if count == 0 then return end
 if self._isDown then
-for _, s in ipairs(self._sliders) do
+local totalH = count * 56 + (count - 1) * 6 + 12
+self._container.Size = UDim2.new(1, 0, 0, totalH)
+for idx, s in ipairs(self._sliders) do
+s._container.LayoutOrder = idx
 s._container.Size = UDim2.new(1, 0, 0, 56)
 end
 else
+self._container.Size = UDim2.new(1, 0, 0, 68)
 local gapTotal = (count - 1) * 6
 local widthScale = 1 / count
-for _, s in ipairs(self._sliders) do
+for idx, s in ipairs(self._sliders) do
+s._container.LayoutOrder = idx
 s._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 0, 56)
 end
 end
@@ -2421,10 +2430,10 @@ function InputGroup.new(parent, options, theme, cleanup, inputModule)
 options = options or {}
 local inputCtor = inputModule or Input
 local isDown = options.Direction == "Down"
+local h = theme.SmallElementHeight or 34
 local container = Instance.new("Frame")
 container.Name = "InputGroup"
-container.Size = UDim2.new(1, 0, 0, 0)
-container.AutomaticSize = Enum.AutomaticSize.Y
+container.Size = UDim2.new(1, 0, 0, h + 12)
 container.BackgroundColor3 = theme.Card
 container.BorderSizePixel = 0
 container.Parent = parent
@@ -2473,13 +2482,18 @@ local count = #self._inputs
 if count == 0 then return end
 local h = self._theme.SmallElementHeight or 34
 if self._isDown then
-for _, inp in ipairs(self._inputs) do
+local totalH = count * h + (count - 1) * 6 + 12
+self._container.Size = UDim2.new(1, 0, 0, totalH)
+for idx, inp in ipairs(self._inputs) do
+inp._container.LayoutOrder = idx
 inp._container.Size = UDim2.new(1, 0, 0, h)
 end
 else
+self._container.Size = UDim2.new(1, 0, 0, h + 12)
 local gapTotal = (count - 1) * 6
 local widthScale = 1 / count
-for _, inp in ipairs(self._inputs) do
+for idx, inp in ipairs(self._inputs) do
+inp._container.LayoutOrder = idx
 inp._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 0, h)
 end
 end
@@ -2523,6 +2537,8 @@ local ChevronRectSize = Vector2.new(24, 24)
 local ChevronRectOffset = Vector2.new(625, 25)
 local CheckRectSize = Vector2.new(24, 24)
 local CheckRectOffset = Vector2.new(175, 450)
+local SearchRectSize = Vector2.new(24, 24)
+local SearchRectOffset = Vector2.new(650, 825)
 function Dropdown.new(parent, options, theme, cleanup)
 options = options or {}
 local text = options.Title or options.Name or options.Text or "Dropdown"
@@ -2530,10 +2546,11 @@ local rawOptions = options.Values or options.Options or {}
 local isMulti = options.MultiSelect == true or options.Multi == true
 local defaultVal = options.Default
 local callback = options.Callback or options.OnChange or function() end
+local hasTitle = (options.NoTitle ~= true and options.HideTitle ~= true and text ~= "")
+local closedH = (hasTitle and 20 or 0) + (theme.SmallElementHeight or 32)
 local container = Instance.new("Frame")
 container.Name = "Dropdown_" .. text
-container.Size = UDim2.new(1, 0, 0, 0)
-container.AutomaticSize = Enum.AutomaticSize.Y
+container.Size = UDim2.new(1, 0, 0, closedH)
 container.BackgroundTransparency = 1
 container.BorderSizePixel = 0
 container.ClipsDescendants = false
@@ -2552,6 +2569,8 @@ titleLabel.Font = theme.FontBold
 titleLabel.TextSize = theme.FontSizeSmall or 11
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Active = false
+titleLabel.Visible = hasTitle
+titleLabel.LayoutOrder = 1
 titleLabel.Parent = container
 local selectBox = Instance.new("TextButton")
 selectBox.Name = "SelectBox"
@@ -2562,6 +2581,7 @@ selectBox.Text = ""
 selectBox.BorderSizePixel = 0
 selectBox.Active = true
 selectBox.ZIndex = 5
+selectBox.LayoutOrder = 2
 selectBox.Parent = container
 local sbCorner = Instance.new("UICorner")
 sbCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
@@ -2609,6 +2629,7 @@ listContainer.BorderSizePixel = 0
 listContainer.Visible = false
 listContainer.ClipsDescendants = true
 listContainer.ZIndex = 25
+listContainer.LayoutOrder = 3
 listContainer.Parent = container
 local lcCorner = Instance.new("UICorner")
 lcCorner.CornerRadius = theme.SmallCornerRadius or UDim.new(0, 5)
@@ -2637,6 +2658,7 @@ actionsBar = Instance.new("Frame")
 actionsBar.Name = "ActionsBar"
 actionsBar.Size = UDim2.new(1, 0, 0, 22)
 actionsBar.BackgroundTransparency = 1
+actionsBar.LayoutOrder = 1
 actionsBar.ZIndex = 26
 actionsBar.Parent = listContainer
 local abLayout = Instance.new("UIListLayout")
@@ -2675,6 +2697,52 @@ local clCorner = Instance.new("UICorner")
 clCorner.CornerRadius = UDim.new(0, 4)
 clCorner.Parent = clearBtn
 end
+local searchBar = Instance.new("Frame")
+searchBar.Name = "SearchBar"
+searchBar.Size = UDim2.new(1, 0, 0, 24)
+searchBar.BackgroundColor3 = theme.Element
+searchBar.BorderSizePixel = 0
+searchBar.LayoutOrder = 2
+searchBar.ZIndex = 26
+searchBar.Visible = (#rawOptions >= 3)
+searchBar.Parent = listContainer
+local sbBarCorner = Instance.new("UICorner")
+sbBarCorner.CornerRadius = UDim.new(0, 4)
+sbBarCorner.Parent = searchBar
+local sbBarStroke = Instance.new("UIStroke")
+sbBarStroke.Name = "BorderStroke"
+sbBarStroke.Color = theme.Border
+sbBarStroke.Thickness = 1
+sbBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+sbBarStroke.Parent = searchBar
+local searchIcon = Instance.new("ImageLabel")
+searchIcon.Name = "SearchIcon"
+searchIcon.Size = UDim2.fromOffset(12, 12)
+searchIcon.Position = UDim2.new(0, 6, 0.5, -6)
+searchIcon.BackgroundTransparency = 1
+searchIcon.Image = LucideSheet
+searchIcon.ImageRectSize = SearchRectSize
+searchIcon.ImageRectOffset = SearchRectOffset
+searchIcon.ImageColor3 = theme.TextMuted
+searchIcon.ScaleType = Enum.ScaleType.Fit
+searchIcon.Active = false
+searchIcon.ZIndex = 27
+searchIcon.Parent = searchBar
+local searchBox = Instance.new("TextBox")
+searchBox.Name = "SearchInput"
+searchBox.Size = UDim2.new(1, -26, 1, 0)
+searchBox.Position = UDim2.new(0, 22, 0, 0)
+searchBox.BackgroundTransparency = 1
+searchBox.Text = ""
+searchBox.PlaceholderText = "Search..."
+searchBox.TextColor3 = theme.TextPrimary
+searchBox.PlaceholderColor3 = theme.TextMuted
+searchBox.Font = theme.FontRegular
+searchBox.TextSize = 10
+searchBox.TextXAlignment = Enum.TextXAlignment.Left
+searchBox.ClearTextOnFocus = false
+searchBox.ZIndex = 27
+searchBox.Parent = searchBar
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Name = "Scroll"
 scrollFrame.Size = UDim2.new(1, 0, 0, 100)
@@ -2684,6 +2752,7 @@ scrollFrame.ScrollBarThickness = 3
 scrollFrame.ScrollBarImageColor3 = theme.Scrollbar
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.LayoutOrder = 3
 scrollFrame.ZIndex = 26
 scrollFrame.Parent = listContainer
 local sfList = Instance.new("UIListLayout")
@@ -2699,6 +2768,11 @@ _chevron = chevron,
 _listContainer = listContainer,
 _scrollFrame = scrollFrame,
 _actionsBar = actionsBar,
+_searchBar = searchBar,
+_searchBox = searchBox,
+_searchIcon = searchIcon,
+_searchStroke = sbBarStroke,
+_closedHeight = closedH,
 _theme = theme,
 _options = rawOptions,
 _isMulti = isMulti,
@@ -2766,6 +2840,26 @@ optData.check.ImageColor3 = self._theme.TextPrimary
 optData.check.Visible = isChecked
 end
 end
+function self:_filterOptions(query)
+query = string.lower(query or "")
+local visibleCount = 0
+for _, optData in ipairs(self._optionButtons) do
+local optStr = tostring(optData.value)
+local match = (query == "") or (string.find(string.lower(optStr), query, 1, true) ~= nil)
+optData.button.Visible = match
+if match then
+visibleCount = visibleCount + 1
+end
+end
+if self._open then
+local scrollHeight = math.clamp(visibleCount * 28 + math.max(0, visibleCount - 1) * 2, 28, 140)
+self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
+local extraH = 8 + ((self._actionsBar and self._actionsBar.Visible) and 26 or 0) + ((self._searchBar and self._searchBar.Visible) and 28 or 0)
+local totalHeight = scrollHeight + extraH
+self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
+self._container.Size = UDim2.new(1, 0, 0, self._closedHeight + 4 + totalHeight)
+end
+end
 function self:_rebuildOptions()
 for _, conn in ipairs(self._optionConns) do
 pcall(function() conn:Disconnect() end)
@@ -2775,7 +2869,7 @@ for _, optData in ipairs(self._optionButtons) do
 pcall(function() optData.button:Destroy() end)
 end
 self._optionButtons = {}
-for _, opt in ipairs(self._options) do
+for idx, opt in ipairs(self._options) do
 local optStr = tostring(opt)
 local isChecked = false
 if self._isMulti then
@@ -2791,6 +2885,7 @@ optBtn.AutoButtonColor = false
 optBtn.Text = ""
 optBtn.BorderSizePixel = 0
 optBtn.Active = true
+optBtn.LayoutOrder = idx
 optBtn.ZIndex = 27
 optBtn.Parent = self._scrollFrame
 local obCorner = Instance.new("UICorner")
@@ -2884,6 +2979,10 @@ task.spawn(self._callback, {})
 end)
 end
 end
+local searchConn = searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+self:_filterOptions(searchBox.Text)
+end)
+table.insert(self._optionConns, searchConn)
 self:_updateSummary()
 self:_rebuildOptions()
 local lastHeader = 0
@@ -2901,19 +3000,25 @@ local headerClick = selectBox.Activated:Connect(toggleDropdown)
 self._headerClick = headerClick
 if cleanup then
 cleanup:Add(headerClick)
+cleanup:Add(searchConn)
 cleanup:Add(container)
 end
 return self
 end
 function Dropdown:Open()
 self._open = true
-self:_rebuildOptions()
 self._chevron.Rotation = 180
 self._listContainer.Visible = true
+if self._searchBox then
+self._searchBox.Text = ""
+end
+self:_filterOptions("")
 local itemCount = #self._options
-local scrollHeight = math.clamp(itemCount * 28 + (itemCount - 1) * 2, 28, 140)
+local scrollHeight = math.clamp(itemCount * 28 + math.max(0, itemCount - 1) * 2, 28, 140)
 self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
-local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
+local extraH = 8 + ((self._actionsBar and self._actionsBar.Visible) and 26 or 0) + ((self._searchBar and self._searchBar.Visible) and 28 or 0)
+local totalHeight = scrollHeight + extraH
+self._container.Size = UDim2.new(1, 0, 0, self._closedHeight + 4 + totalHeight)
 TweenService:Create(self._listContainer, TweenInfo.new(self._theme.AnimationFast), {
 Size = UDim2.new(1, 0, 0, totalHeight)
 }):Play()
@@ -2921,6 +3026,11 @@ end
 function Dropdown:Close()
 self._open = false
 self._chevron.Rotation = 0
+if self._searchBox then
+self._searchBox.Text = ""
+end
+self:_filterOptions("")
+self._container.Size = UDim2.new(1, 0, 0, self._closedHeight)
 local t = TweenService:Create(self._listContainer, TweenInfo.new(self._theme.AnimationFast), {
 Size = UDim2.new(1, 0, 0, 0)
 })
@@ -2984,14 +3094,19 @@ end
 if not found then self._selected[k] = nil end
 end
 end
+if self._searchBar then
+self._searchBar.Visible = (#self._options >= 3)
+end
 self:_updateSummary()
 self:_rebuildOptions()
 if self._open then
 local itemCount = #self._options
-local scrollHeight = math.clamp(itemCount * 28 + (itemCount - 1) * 2, 28, 140)
+local scrollHeight = math.clamp(itemCount * 28 + math.max(0, itemCount - 1) * 2, 28, 140)
 self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
-local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
+local extraH = 8 + ((self._actionsBar and self._actionsBar.Visible) and 26 or 0) + ((self._searchBar and self._searchBar.Visible) and 28 or 0)
+local totalHeight = scrollHeight + extraH
 self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
+self._container.Size = UDim2.new(1, 0, 0, self._closedHeight + 4 + totalHeight)
 end
 end
 function Dropdown:SetTheme(newTheme)
@@ -3011,6 +3126,19 @@ if self._listContainer then
 self._listContainer.BackgroundColor3 = newTheme.Header
 local stroke = self._listContainer:FindFirstChild("BorderStroke")
 if stroke then stroke.Color = newTheme.Border end
+end
+if self._searchBar then
+self._searchBar.BackgroundColor3 = newTheme.Element
+if self._searchStroke then
+self._searchStroke.Color = newTheme.Border
+end
+end
+if self._searchIcon then
+self._searchIcon.ImageColor3 = newTheme.TextMuted
+end
+if self._searchBox then
+self._searchBox.TextColor3 = newTheme.TextPrimary
+self._searchBox.PlaceholderColor3 = newTheme.TextMuted
 end
 if self._scrollFrame then
 self._scrollFrame.ScrollBarImageColor3 = newTheme.Scrollbar
@@ -3088,7 +3216,8 @@ local count = #self._dropdowns
 if count == 0 then return end
 local gapTotal = (count - 1) * 8
 local widthScale = 1 / count
-for _, d in ipairs(self._dropdowns) do
+for idx, d in ipairs(self._dropdowns) do
+d._container.LayoutOrder = idx
 d._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
 end
 end
@@ -3595,6 +3724,7 @@ titleLabel.TextColor3 = theme.TextPrimary
 titleLabel.Font = theme.FontBold
 titleLabel.TextSize = theme.FontSizeRegular
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.LayoutOrder = 1
 titleLabel.Parent = container
 local contentLabel = Instance.new("TextLabel")
 contentLabel.Name = "Content"
@@ -3607,6 +3737,7 @@ contentLabel.Font = theme.FontRegular
 contentLabel.TextSize = theme.FontSizeSmall
 contentLabel.TextXAlignment = Enum.TextXAlignment.Left
 contentLabel.TextWrapped = true
+contentLabel.LayoutOrder = 2
 contentLabel.Parent = container
 local self = setmetatable({
 _container = container,
@@ -6708,8 +6839,7 @@ assert(type(name) == "string", "TabGroup name must be a string")
 local groupOrder = #self._tabGroups + 1
 local groupContainer = Instance.new("Frame")
 groupContainer.Name = "TabGroup_" .. name
-groupContainer.Size = UDim2.new(1, 0, 0, 0)
-groupContainer.AutomaticSize = Enum.AutomaticSize.Y
+groupContainer.Size = UDim2.new(1, 0, 0, 22)
 groupContainer.BackgroundTransparency = 1
 groupContainer.LayoutOrder = groupOrder
 groupContainer.Parent = self._tabGroupsScroll
@@ -6748,7 +6878,6 @@ gArrow.Parent = gHeader
 local tabsFrame = Instance.new("Frame")
 tabsFrame.Name = "Tabs"
 tabsFrame.Size = UDim2.new(1, 0, 0, 0)
-tabsFrame.AutomaticSize = Enum.AutomaticSize.Y
 tabsFrame.BackgroundTransparency = 1
 tabsFrame.LayoutOrder = 2
 tabsFrame.Parent = groupContainer
@@ -6756,16 +6885,6 @@ local tList = Instance.new("UIListLayout")
 tList.SortOrder = Enum.SortOrder.LayoutOrder
 tList.Padding = UDim.new(0, 3)
 tList.Parent = tabsFrame
-local function updateTabsHeight()
-local h = tList.AbsoluteContentSize.Y
-tabsFrame.Size = UDim2.new(1, 0, 0, h)
-end
-local tListConn = tList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateTabsHeight)
-local function updateGroupHeight()
-local h = gList.AbsoluteContentSize.Y
-groupContainer.Size = UDim2.new(1, 0, 0, h)
-end
-local gListConn = gList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateGroupHeight)
 local tabGroupObj = setmetatable({
 _window = self,
 _container = groupContainer,
@@ -6775,6 +6894,16 @@ _arrow = gArrow,
 _collapsed = false,
 _tabs = {},
 }, TabGroup)
+local function updateTabsHeight()
+local h = tList.AbsoluteContentSize.Y
+tabsFrame.Size = UDim2.new(1, 0, 0, h)
+if not tabGroupObj._collapsed then
+groupContainer.Size = UDim2.new(1, 0, 0, 22 + (h > 0 and (3 + h) or 0))
+else
+groupContainer.Size = UDim2.new(1, 0, 0, 22)
+end
+end
+local tListConn = tList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateTabsHeight)
 local lastGroupToggle = 0
 local function toggleGroup()
 local now = os.clock()
@@ -6785,13 +6914,12 @@ tabsFrame.Visible = not tabGroupObj._collapsed
 TweenService:Create(gArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 Rotation = tabGroupObj._collapsed and 0 or 180
 }):Play()
-updateGroupHeight()
+updateTabsHeight()
 end
 local toggleClick = gHeader.Activated:Connect(toggleGroup)
 if self._cleanup then
 self._cleanup:Add(toggleClick)
 self._cleanup:Add(tListConn)
-self._cleanup:Add(gListConn)
 self._cleanup:Add(groupContainer)
 end
 table.insert(self._tabGroups, tabGroupObj)
@@ -7490,6 +7618,7 @@ tabBtn.BackgroundTransparency = 1
 tabBtn.AutoButtonColor = false
 tabBtn.Text = ""
 tabBtn.BorderSizePixel = 0
+tabBtn.LayoutOrder = #self._tabs + 1
 tabBtn.Parent = self._tabsFrame
 local corner = Instance.new("UICorner")
 corner.CornerRadius = self._window._theme.SmallCornerRadius
@@ -7646,8 +7775,7 @@ local sectionOptions = type(nameOrOptions) == "table" and nameOrOptions or {}
 local sectionParent = self._layoutEngine:GetSectionParent(sectionOptions)
 local sectionCard = Instance.new("Frame")
 sectionCard.Name = "Section_" .. sectionName
-sectionCard.Size = UDim2.new(1, 0, 0, 0)
-sectionCard.AutomaticSize = Enum.AutomaticSize.Y
+sectionCard.Size = UDim2.new(1, 0, 0, 40)
 sectionCard.BackgroundColor3 = self._window._theme.Card
 sectionCard.BorderSizePixel = 0
 sectionCard.Parent = sectionParent
@@ -7681,6 +7809,7 @@ sHeader.Size = UDim2.new(1, 0, 0, 22)
 sHeader.BackgroundTransparency = 1
 sHeader.AutoButtonColor = false
 sHeader.Text = ""
+sHeader.LayoutOrder = 1
 sHeader.Parent = sectionCard
 local secOffset = 0
 local secIcon = sectionOptions.Icon or sectionOptions.Image
@@ -7725,25 +7854,13 @@ sArrow.Parent = sHeader
 local sBody = Instance.new("Frame")
 sBody.Name = "Body"
 sBody.Size = UDim2.new(1, 0, 0, 0)
-sBody.AutomaticSize = Enum.AutomaticSize.Y
 sBody.BackgroundTransparency = 1
+sBody.LayoutOrder = 2
 sBody.Parent = sectionCard
 local bList = Instance.new("UIListLayout")
 bList.SortOrder = Enum.SortOrder.LayoutOrder
 bList.Padding = UDim.new(0, 6)
 bList.Parent = sBody
-local function updateBodyHeight()
-local h = bList.AbsoluteContentSize.Y
-sBody.Size = UDim2.new(1, 0, 0, h)
-end
-local bListConn = bList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyHeight)
-local function updateSectionHeight()
-local padTop = sPadding.PaddingTop.Offset
-local padBottom = sPadding.PaddingBottom.Offset
-local contentH = sList.AbsoluteContentSize.Y
-sectionCard.Size = UDim2.new(1, 0, 0, contentH + padTop + padBottom)
-end
-local sListConn = sList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
 local sectionObj = setmetatable({
 _tab = self,
 _window = self._window,
@@ -7755,8 +7872,19 @@ _icon = sImg,
 _body = sBody,
 _collapsed = false,
 _components = {},
+_itemCount = 0,
 _name = sectionName,
 }, Section)
+local function updateBodyHeight()
+local h = bList.AbsoluteContentSize.Y
+sBody.Size = UDim2.new(1, 0, 0, h)
+if not sectionObj._collapsed then
+sectionCard.Size = UDim2.new(1, 0, 0, 22 + (h > 0 and (8 + h) or 0) + 18)
+else
+sectionCard.Size = UDim2.new(1, 0, 0, 40)
+end
+end
+local bListConn = bList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyHeight)
 local lastSecToggle = 0
 local function toggleSec()
 local now = os.clock()
@@ -7767,13 +7895,12 @@ sBody.Visible = not sectionObj._collapsed
 TweenService:Create(sArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 Rotation = sectionObj._collapsed and 0 or 180
 }):Play()
-updateSectionHeight()
+updateBodyHeight()
 end
 local toggleConn = sHeader.Activated:Connect(toggleSec)
 if self._window._cleanup then
 self._window._cleanup:Add(toggleConn)
 self._window._cleanup:Add(bListConn)
-self._window._cleanup:Add(sListConn)
 self._window._cleanup:Add(sectionCard)
 end
 table.insert(self._sections, sectionObj)
@@ -7812,9 +7939,10 @@ local count = #self._items
 if count == 0 then return end
 local gapTotal = (count - 1) * 6
 local widthScale = 1 / count
-for _, item in ipairs(self._items) do
+for idx, item in ipairs(self._items) do
 local target = item._container or item
 if target and target:IsA("GuiObject") then
+target.LayoutOrder = idx
 target.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
 end
 end
@@ -8003,6 +8131,14 @@ self._container:Destroy()
 self._container = nil
 end
 end
+function Section:_registerItem(comp)
+self._itemCount = (self._itemCount or 0) + 1
+if comp and comp._container then
+comp._container.LayoutOrder = self._itemCount
+end
+table.insert(self._components, comp)
+return comp
+end
 function Section:CreateButton(options)
 local btn = self._window._components.Button.new(
 self._body,
@@ -8010,8 +8146,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, btn)
-return btn
+return self:_registerItem(btn)
 end
 function Section:CreateButtonGroup(options)
 local grp = self._window._components.ButtonGroup.new(
@@ -8021,8 +8156,7 @@ self._window._theme,
 self._window._cleanup,
 self._window._components.Button
 )
-table.insert(self._components, grp)
-return grp
+return self:_registerItem(grp)
 end
 function Section:CreateToggle(options)
 local tog = self._window._components.Toggle.new(
@@ -8031,7 +8165,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, tog)
+self:_registerItem(tog)
 if self._window and self._window.RegisterComponent then
 self._window:RegisterComponent(tog, options, self._name, "Toggle")
 end
@@ -8045,7 +8179,7 @@ self._window._theme,
 self._window._cleanup,
 self._window._components.Toggle
 )
-table.insert(self._components, grp)
+self:_registerItem(grp)
 if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Toggles) == "table" then
 local togs = grp:GetToggles()
 for idx, tog in ipairs(togs) do
@@ -8062,7 +8196,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, sld)
+self:_registerItem(sld)
 if self._window and self._window.RegisterComponent then
 self._window:RegisterComponent(sld, options, self._name, "Slider")
 end
@@ -8076,7 +8210,7 @@ self._window._theme,
 self._window._cleanup,
 self._window._components.Slider
 )
-table.insert(self._components, grp)
+self:_registerItem(grp)
 if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Sliders) == "table" then
 local slds = grp:GetSliders()
 for idx, sld in ipairs(slds) do
@@ -8093,7 +8227,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, inp)
+self:_registerItem(inp)
 if self._window and self._window.RegisterComponent then
 self._window:RegisterComponent(inp, options, self._name, "Input")
 end
@@ -8107,7 +8241,7 @@ self._window._theme,
 self._window._cleanup,
 self._window._components.Input
 )
-table.insert(self._components, grp)
+self:_registerItem(grp)
 if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Inputs) == "table" then
 local inps = grp:GetInputs()
 for idx, inp in ipairs(inps) do
@@ -8124,7 +8258,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, drp)
+self:_registerItem(drp)
 if self._window and self._window.RegisterComponent then
 self._window:RegisterComponent(drp, options, self._name, "Dropdown")
 end
@@ -8143,7 +8277,7 @@ self._window._theme,
 self._window._cleanup,
 self._window._components.Dropdown
 )
-table.insert(self._components, grp)
+self:_registerItem(grp)
 if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Dropdowns) == "table" then
 local drps = grp:GetDropdowns()
 for idx, drp in ipairs(drps) do
@@ -8160,7 +8294,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, key)
+self:_registerItem(key)
 if self._window and self._window.RegisterComponent then
 self._window:RegisterComponent(key, options, self._name, "Keybind")
 end
@@ -8173,8 +8307,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, par)
-return par
+return self:_registerItem(par)
 end
 function Section:CreateDivider(options)
 local div = self._window._components.Divider.new(
@@ -8183,8 +8316,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, div)
-return div
+return self:_registerItem(div)
 end
 function Section:CreateBanner(options)
 local ban = self._window._components.Banner.new(
@@ -8193,8 +8325,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, ban)
-return ban
+return self:_registerItem(ban)
 end
 function Section:CreateProgression(options)
 local prg = self._window._components.Progression.new(
@@ -8204,8 +8335,7 @@ self._window._theme,
 self._window._cleanup,
 self._window._components
 )
-table.insert(self._components, prg)
-return prg
+return self:_registerItem(prg)
 end
 function Section:CreateColorPicker(options)
 local cp = self._window._components.ColorPicker.new(
@@ -8214,7 +8344,7 @@ options,
 self._window._theme,
 self._window._cleanup
 )
-table.insert(self._components, cp)
+self:_registerItem(cp)
 if self._window and self._window.RegisterComponent then
 self._window:RegisterComponent(cp, options, self._name, "ColorPicker")
 end
@@ -8222,13 +8352,11 @@ return cp
 end
 function Section:CreateRow()
 local row = Row.new(self._body, self._window._theme, self._window._cleanup, self._window._components, self._window, self._name)
-table.insert(self._components, row)
-return row
+return self:_registerItem(row)
 end
 function Section:CreateLabel(optionsOrText)
 local lbl = Label.new(self._body, optionsOrText, self._window._theme, self._window._cleanup, self)
-table.insert(self._components, lbl)
-return lbl
+return self:_registerItem(lbl)
 end
 TabGroup.AddTab = TabGroup.CreateTab
 Tab.AddSection = Tab.CreateSection

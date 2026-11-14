@@ -49,7 +49,8 @@ function DropdownGroup:_rebalanceSizes()
     if count == 0 then return end
     local gapTotal = (count - 1) * 8
     local widthScale = 1 / count
-    for _, d in ipairs(self._dropdowns) do
+    for idx, d in ipairs(self._dropdowns) do
+        d._container.LayoutOrder = idx
         d._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
     end
 end

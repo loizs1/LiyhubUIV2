@@ -49,7 +49,8 @@ function ButtonGroup:_rebalanceSizes()
     if count == 0 then return end
     local gapTotal = (count - 1) * 6
     local widthScale = 1 / count
-    for _, btn in ipairs(self._buttons) do
+    for idx, btn in ipairs(self._buttons) do
+        btn._container.LayoutOrder = idx
         btn._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
     end
 end

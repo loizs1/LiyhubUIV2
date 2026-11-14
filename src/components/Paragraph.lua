@@ -39,6 +39,7 @@ function Paragraph.new(parent, options, theme, cleanup)
     titleLabel.Font = theme.FontBold
     titleLabel.TextSize = theme.FontSizeRegular
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.LayoutOrder = 1
     titleLabel.Parent = container
     
     local contentLabel = Instance.new("TextLabel")
@@ -52,6 +53,7 @@ function Paragraph.new(parent, options, theme, cleanup)
     contentLabel.TextSize = theme.FontSizeSmall
     contentLabel.TextXAlignment = Enum.TextXAlignment.Left
     contentLabel.TextWrapped = true
+    contentLabel.LayoutOrder = 2
     contentLabel.Parent = container
     
     local self = setmetatable({

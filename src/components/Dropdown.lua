@@ -8,6 +8,8 @@ local ChevronRectSize = Vector2.new(24, 24)
 local ChevronRectOffset = Vector2.new(625, 25)
 local CheckRectSize = Vector2.new(24, 24)
 local CheckRectOffset = Vector2.new(175, 450)
+local SearchRectSize = Vector2.new(24, 24)
+local SearchRectOffset = Vector2.new(650, 825)
 
 function Dropdown.new(parent, options, theme, cleanup)
     options = options or {}
@@ -16,11 +18,12 @@ function Dropdown.new(parent, options, theme, cleanup)
     local isMulti = options.MultiSelect == true or options.Multi == true
     local defaultVal = options.Default
     local callback = options.Callback or options.OnChange or function() end
+    local hasTitle = (options.NoTitle ~= true and options.HideTitle ~= true and text ~= "")
+    local closedH = (hasTitle and 20 or 0) + (theme.SmallElementHeight or 32)
     
     local container = Instance.new("Frame")
     container.Name = "Dropdown_" .. text
-    container.Size = UDim2.new(1, 0, 0, 0)
-    container.AutomaticSize = Enum.AutomaticSize.Y
+    container.Size = UDim2.new(1, 0, 0, closedH)
     container.BackgroundTransparency = 1
     container.BorderSizePixel = 0
     container.ClipsDescendants = false
@@ -41,6 +44,8 @@ function Dropdown.new(parent, options, theme, cleanup)
     titleLabel.TextSize = theme.FontSizeSmall or 11
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Active = false
+    titleLabel.Visible = hasTitle
+    titleLabel.LayoutOrder = 1
     titleLabel.Parent = container
     
     local selectBox = Instance.new("TextButton")
@@ -52,6 +57,7 @@ function Dropdown.new(parent, options, theme, cleanup)
     selectBox.BorderSizePixel = 0
     selectBox.Active = true
     selectBox.ZIndex = 5
+    selectBox.LayoutOrder = 2
     selectBox.Parent = container
     
     local sbCorner = Instance.new("UICorner")
@@ -104,6 +110,7 @@ function Dropdown.new(parent, options, theme, cleanup)
     listContainer.Visible = false
     listContainer.ClipsDescendants = true
     listContainer.ZIndex = 25
+    listContainer.LayoutOrder = 3
     listContainer.Parent = container
     
     local lcCorner = Instance.new("UICorner")
@@ -137,6 +144,7 @@ function Dropdown.new(parent, options, theme, cleanup)
         actionsBar.Name = "ActionsBar"
         actionsBar.Size = UDim2.new(1, 0, 0, 22)
         actionsBar.BackgroundTransparency = 1
+        actionsBar.LayoutOrder = 1
         actionsBar.ZIndex = 26
         actionsBar.Parent = listContainer
         
@@ -179,6 +187,57 @@ function Dropdown.new(parent, options, theme, cleanup)
         clCorner.Parent = clearBtn
     end
     
+    local searchBar = Instance.new("Frame")
+    searchBar.Name = "SearchBar"
+    searchBar.Size = UDim2.new(1, 0, 0, 24)
+    searchBar.BackgroundColor3 = theme.Element
+    searchBar.BorderSizePixel = 0
+    searchBar.LayoutOrder = 2
+    searchBar.ZIndex = 26
+    searchBar.Visible = (#rawOptions >= 3)
+    searchBar.Parent = listContainer
+    
+    local sbBarCorner = Instance.new("UICorner")
+    sbBarCorner.CornerRadius = UDim.new(0, 4)
+    sbBarCorner.Parent = searchBar
+    
+    local sbBarStroke = Instance.new("UIStroke")
+    sbBarStroke.Name = "BorderStroke"
+    sbBarStroke.Color = theme.Border
+    sbBarStroke.Thickness = 1
+    sbBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    sbBarStroke.Parent = searchBar
+    
+    local searchIcon = Instance.new("ImageLabel")
+    searchIcon.Name = "SearchIcon"
+    searchIcon.Size = UDim2.fromOffset(12, 12)
+    searchIcon.Position = UDim2.new(0, 6, 0.5, -6)
+    searchIcon.BackgroundTransparency = 1
+    searchIcon.Image = LucideSheet
+    searchIcon.ImageRectSize = SearchRectSize
+    searchIcon.ImageRectOffset = SearchRectOffset
+    searchIcon.ImageColor3 = theme.TextMuted
+    searchIcon.ScaleType = Enum.ScaleType.Fit
+    searchIcon.Active = false
+    searchIcon.ZIndex = 27
+    searchIcon.Parent = searchBar
+    
+    local searchBox = Instance.new("TextBox")
+    searchBox.Name = "SearchInput"
+    searchBox.Size = UDim2.new(1, -26, 1, 0)
+    searchBox.Position = UDim2.new(0, 22, 0, 0)
+    searchBox.BackgroundTransparency = 1
+    searchBox.Text = ""
+    searchBox.PlaceholderText = "Search..."
+    searchBox.TextColor3 = theme.TextPrimary
+    searchBox.PlaceholderColor3 = theme.TextMuted
+    searchBox.Font = theme.FontRegular
+    searchBox.TextSize = 10
+    searchBox.TextXAlignment = Enum.TextXAlignment.Left
+    searchBox.ClearTextOnFocus = false
+    searchBox.ZIndex = 27
+    searchBox.Parent = searchBar
+    
     local scrollFrame = Instance.new("ScrollingFrame")
     scrollFrame.Name = "Scroll"
     scrollFrame.Size = UDim2.new(1, 0, 0, 100)
@@ -188,6 +247,7 @@ function Dropdown.new(parent, options, theme, cleanup)
     scrollFrame.ScrollBarImageColor3 = theme.Scrollbar
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    scrollFrame.LayoutOrder = 3
     scrollFrame.ZIndex = 26
     scrollFrame.Parent = listContainer
     
@@ -205,6 +265,11 @@ function Dropdown.new(parent, options, theme, cleanup)
         _listContainer = listContainer,
         _scrollFrame = scrollFrame,
         _actionsBar = actionsBar,
+        _searchBar = searchBar,
+        _searchBox = searchBox,
+        _searchIcon = searchIcon,
+        _searchStroke = sbBarStroke,
+        _closedHeight = closedH,
         _theme = theme,
         _options = rawOptions,
         _isMulti = isMulti,
@@ -276,6 +341,27 @@ function Dropdown.new(parent, options, theme, cleanup)
         end
     end
 
+    function self:_filterOptions(query)
+        query = string.lower(query or "")
+        local visibleCount = 0
+        for _, optData in ipairs(self._optionButtons) do
+            local optStr = tostring(optData.value)
+            local match = (query == "") or (string.find(string.lower(optStr), query, 1, true) ~= nil)
+            optData.button.Visible = match
+            if match then
+                visibleCount = visibleCount + 1
+            end
+        end
+        if self._open then
+            local scrollHeight = math.clamp(visibleCount * 28 + math.max(0, visibleCount - 1) * 2, 28, 140)
+            self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
+            local extraH = 8 + ((self._actionsBar and self._actionsBar.Visible) and 26 or 0) + ((self._searchBar and self._searchBar.Visible) and 28 or 0)
+            local totalHeight = scrollHeight + extraH
+            self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
+            self._container.Size = UDim2.new(1, 0, 0, self._closedHeight + 4 + totalHeight)
+        end
+    end
+
     function self:_rebuildOptions()
         for _, conn in ipairs(self._optionConns) do
             pcall(function() conn:Disconnect() end)
@@ -286,7 +372,7 @@ function Dropdown.new(parent, options, theme, cleanup)
         end
         self._optionButtons = {}
         
-        for _, opt in ipairs(self._options) do
+        for idx, opt in ipairs(self._options) do
             local optStr = tostring(opt)
             local isChecked = false
             if self._isMulti then
@@ -303,6 +389,7 @@ function Dropdown.new(parent, options, theme, cleanup)
             optBtn.Text = ""
             optBtn.BorderSizePixel = 0
             optBtn.Active = true
+            optBtn.LayoutOrder = idx
             optBtn.ZIndex = 27
             optBtn.Parent = self._scrollFrame
             
@@ -404,6 +491,11 @@ function Dropdown.new(parent, options, theme, cleanup)
         end
     end
     
+    local searchConn = searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        self:_filterOptions(searchBox.Text)
+    end)
+    table.insert(self._optionConns, searchConn)
+    
     self:_updateSummary()
     self:_rebuildOptions()
     
@@ -423,6 +515,7 @@ function Dropdown.new(parent, options, theme, cleanup)
     
     if cleanup then
         cleanup:Add(headerClick)
+        cleanup:Add(searchConn)
         cleanup:Add(container)
     end
     
@@ -431,13 +524,18 @@ end
 
 function Dropdown:Open()
     self._open = true
-    self:_rebuildOptions()
     self._chevron.Rotation = 180
     self._listContainer.Visible = true
+    if self._searchBox then
+        self._searchBox.Text = ""
+    end
+    self:_filterOptions("")
     local itemCount = #self._options
-    local scrollHeight = math.clamp(itemCount * 28 + (itemCount - 1) * 2, 28, 140)
+    local scrollHeight = math.clamp(itemCount * 28 + math.max(0, itemCount - 1) * 2, 28, 140)
     self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
-    local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
+    local extraH = 8 + ((self._actionsBar and self._actionsBar.Visible) and 26 or 0) + ((self._searchBar and self._searchBar.Visible) and 28 or 0)
+    local totalHeight = scrollHeight + extraH
+    self._container.Size = UDim2.new(1, 0, 0, self._closedHeight + 4 + totalHeight)
     
     TweenService:Create(self._listContainer, TweenInfo.new(self._theme.AnimationFast), {
         Size = UDim2.new(1, 0, 0, totalHeight)
@@ -447,6 +545,11 @@ end
 function Dropdown:Close()
     self._open = false
     self._chevron.Rotation = 0
+    if self._searchBox then
+        self._searchBox.Text = ""
+    end
+    self:_filterOptions("")
+    self._container.Size = UDim2.new(1, 0, 0, self._closedHeight)
     local t = TweenService:Create(self._listContainer, TweenInfo.new(self._theme.AnimationFast), {
         Size = UDim2.new(1, 0, 0, 0)
     })
@@ -514,14 +617,19 @@ function Dropdown:SetOptions(newOptions)
             if not found then self._selected[k] = nil end
         end
     end
+    if self._searchBar then
+        self._searchBar.Visible = (#self._options >= 3)
+    end
     self:_updateSummary()
     self:_rebuildOptions()
     if self._open then
         local itemCount = #self._options
-        local scrollHeight = math.clamp(itemCount * 28 + (itemCount - 1) * 2, 28, 140)
+        local scrollHeight = math.clamp(itemCount * 28 + math.max(0, itemCount - 1) * 2, 28, 140)
         self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
-        local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
+        local extraH = 8 + ((self._actionsBar and self._actionsBar.Visible) and 26 or 0) + ((self._searchBar and self._searchBar.Visible) and 28 or 0)
+        local totalHeight = scrollHeight + extraH
         self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
+        self._container.Size = UDim2.new(1, 0, 0, self._closedHeight + 4 + totalHeight)
     end
 end
 
@@ -542,6 +650,19 @@ function Dropdown:SetTheme(newTheme)
         self._listContainer.BackgroundColor3 = newTheme.Header
         local stroke = self._listContainer:FindFirstChild("BorderStroke")
         if stroke then stroke.Color = newTheme.Border end
+    end
+    if self._searchBar then
+        self._searchBar.BackgroundColor3 = newTheme.Element
+        if self._searchStroke then
+            self._searchStroke.Color = newTheme.Border
+        end
+    end
+    if self._searchIcon then
+        self._searchIcon.ImageColor3 = newTheme.TextMuted
+    end
+    if self._searchBox then
+        self._searchBox.TextColor3 = newTheme.TextPrimary
+        self._searchBox.PlaceholderColor3 = newTheme.TextMuted
     end
     if self._scrollFrame then
         self._scrollFrame.ScrollBarImageColor3 = newTheme.Scrollbar

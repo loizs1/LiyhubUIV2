@@ -2168,8 +2168,7 @@ function Window:CreateTabGroup(name)
     local groupOrder = #self._tabGroups + 1
     local groupContainer = Instance.new("Frame")
     groupContainer.Name = "TabGroup_" .. name
-    groupContainer.Size = UDim2.new(1, 0, 0, 0)
-    groupContainer.AutomaticSize = Enum.AutomaticSize.Y
+    groupContainer.Size = UDim2.new(1, 0, 0, 22)
     groupContainer.BackgroundTransparency = 1
     groupContainer.LayoutOrder = groupOrder
     groupContainer.Parent = self._tabGroupsScroll
@@ -2213,7 +2212,6 @@ function Window:CreateTabGroup(name)
     local tabsFrame = Instance.new("Frame")
     tabsFrame.Name = "Tabs"
     tabsFrame.Size = UDim2.new(1, 0, 0, 0)
-    tabsFrame.AutomaticSize = Enum.AutomaticSize.Y
     tabsFrame.BackgroundTransparency = 1
     tabsFrame.LayoutOrder = 2
     tabsFrame.Parent = groupContainer
@@ -2222,18 +2220,6 @@ function Window:CreateTabGroup(name)
     tList.SortOrder = Enum.SortOrder.LayoutOrder
     tList.Padding = UDim.new(0, 3)
     tList.Parent = tabsFrame
-    
-    local function updateTabsHeight()
-        local h = tList.AbsoluteContentSize.Y
-        tabsFrame.Size = UDim2.new(1, 0, 0, h)
-    end
-    local tListConn = tList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateTabsHeight)
-    
-    local function updateGroupHeight()
-        local h = gList.AbsoluteContentSize.Y
-        groupContainer.Size = UDim2.new(1, 0, 0, h)
-    end
-    local gListConn = gList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateGroupHeight)
     
     local tabGroupObj = setmetatable({
         _window = self,
@@ -2245,6 +2231,17 @@ function Window:CreateTabGroup(name)
         _tabs = {},
     }, TabGroup)
     
+    local function updateTabsHeight()
+        local h = tList.AbsoluteContentSize.Y
+        tabsFrame.Size = UDim2.new(1, 0, 0, h)
+        if not tabGroupObj._collapsed then
+            groupContainer.Size = UDim2.new(1, 0, 0, 22 + (h > 0 and (3 + h) or 0))
+        else
+            groupContainer.Size = UDim2.new(1, 0, 0, 22)
+        end
+    end
+    local tListConn = tList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateTabsHeight)
+    
     local lastGroupToggle = 0
     local function toggleGroup()
         local now = os.clock()
@@ -2255,14 +2252,13 @@ function Window:CreateTabGroup(name)
         TweenService:Create(gArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Rotation = tabGroupObj._collapsed and 0 or 180
         }):Play()
-        updateGroupHeight()
+        updateTabsHeight()
     end
     local toggleClick = gHeader.Activated:Connect(toggleGroup)
     
     if self._cleanup then
         self._cleanup:Add(toggleClick)
         self._cleanup:Add(tListConn)
-        self._cleanup:Add(gListConn)
         self._cleanup:Add(groupContainer)
     end
     
@@ -3009,6 +3005,7 @@ function TabGroup:CreateTab(options)
     tabBtn.AutoButtonColor = false
     tabBtn.Text = ""
     tabBtn.BorderSizePixel = 0
+    tabBtn.LayoutOrder = #self._tabs + 1
     tabBtn.Parent = self._tabsFrame
     
     local corner = Instance.new("UICorner")
@@ -3185,8 +3182,7 @@ function Tab:CreateSection(nameOrOptions)
     
     local sectionCard = Instance.new("Frame")
     sectionCard.Name = "Section_" .. sectionName
-    sectionCard.Size = UDim2.new(1, 0, 0, 0)
-    sectionCard.AutomaticSize = Enum.AutomaticSize.Y
+    sectionCard.Size = UDim2.new(1, 0, 0, 40)
     sectionCard.BackgroundColor3 = self._window._theme.Card
     sectionCard.BorderSizePixel = 0
     sectionCard.Parent = sectionParent
@@ -3225,6 +3221,7 @@ function Tab:CreateSection(nameOrOptions)
     sHeader.BackgroundTransparency = 1
     sHeader.AutoButtonColor = false
     sHeader.Text = ""
+    sHeader.LayoutOrder = 1
     sHeader.Parent = sectionCard
     
     local secOffset = 0
@@ -3273,28 +3270,14 @@ function Tab:CreateSection(nameOrOptions)
     local sBody = Instance.new("Frame")
     sBody.Name = "Body"
     sBody.Size = UDim2.new(1, 0, 0, 0)
-    sBody.AutomaticSize = Enum.AutomaticSize.Y
     sBody.BackgroundTransparency = 1
+    sBody.LayoutOrder = 2
     sBody.Parent = sectionCard
     
     local bList = Instance.new("UIListLayout")
     bList.SortOrder = Enum.SortOrder.LayoutOrder
     bList.Padding = UDim.new(0, 6)
     bList.Parent = sBody
-    
-    local function updateBodyHeight()
-        local h = bList.AbsoluteContentSize.Y
-        sBody.Size = UDim2.new(1, 0, 0, h)
-    end
-    local bListConn = bList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyHeight)
-    
-    local function updateSectionHeight()
-        local padTop = sPadding.PaddingTop.Offset
-        local padBottom = sPadding.PaddingBottom.Offset
-        local contentH = sList.AbsoluteContentSize.Y
-        sectionCard.Size = UDim2.new(1, 0, 0, contentH + padTop + padBottom)
-    end
-    local sListConn = sList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
     
     local sectionObj = setmetatable({
         _tab = self,
@@ -3307,8 +3290,20 @@ function Tab:CreateSection(nameOrOptions)
         _body = sBody,
         _collapsed = false,
         _components = {},
+        _itemCount = 0,
         _name = sectionName,
     }, Section)
+    
+    local function updateBodyHeight()
+        local h = bList.AbsoluteContentSize.Y
+        sBody.Size = UDim2.new(1, 0, 0, h)
+        if not sectionObj._collapsed then
+            sectionCard.Size = UDim2.new(1, 0, 0, 22 + (h > 0 and (8 + h) or 0) + 18)
+        else
+            sectionCard.Size = UDim2.new(1, 0, 0, 40)
+        end
+    end
+    local bListConn = bList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyHeight)
     
     local lastSecToggle = 0
     local function toggleSec()
@@ -3320,14 +3315,13 @@ function Tab:CreateSection(nameOrOptions)
         TweenService:Create(sArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Rotation = sectionObj._collapsed and 0 or 180
         }):Play()
-        updateSectionHeight()
+        updateBodyHeight()
     end
     local toggleConn = sHeader.Activated:Connect(toggleSec)
     
     if self._window._cleanup then
         self._window._cleanup:Add(toggleConn)
         self._window._cleanup:Add(bListConn)
-        self._window._cleanup:Add(sListConn)
         self._window._cleanup:Add(sectionCard)
     end
     
@@ -3374,9 +3368,10 @@ function Row:_rebalance()
     if count == 0 then return end
     local gapTotal = (count - 1) * 6
     local widthScale = 1 / count
-    for _, item in ipairs(self._items) do
+    for idx, item in ipairs(self._items) do
         local target = item._container or item
         if target and target:IsA("GuiObject") then
+            target.LayoutOrder = idx
             target.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 1, 0)
         end
     end
@@ -3595,6 +3590,15 @@ function Label:Destroy()
     end
 end
 
+function Section:_registerItem(comp)
+    self._itemCount = (self._itemCount or 0) + 1
+    if comp and comp._container then
+        comp._container.LayoutOrder = self._itemCount
+    end
+    table.insert(self._components, comp)
+    return comp
+end
+
 function Section:CreateButton(options)
     local btn = self._window._components.Button.new(
         self._body,
@@ -3602,8 +3606,7 @@ function Section:CreateButton(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, btn)
-    return btn
+    return self:_registerItem(btn)
 end
 
 function Section:CreateButtonGroup(options)
@@ -3614,8 +3617,7 @@ function Section:CreateButtonGroup(options)
         self._window._cleanup,
         self._window._components.Button
     )
-    table.insert(self._components, grp)
-    return grp
+    return self:_registerItem(grp)
 end
 
 function Section:CreateToggle(options)
@@ -3625,7 +3627,7 @@ function Section:CreateToggle(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, tog)
+    self:_registerItem(tog)
     if self._window and self._window.RegisterComponent then
         self._window:RegisterComponent(tog, options, self._name, "Toggle")
     end
@@ -3640,7 +3642,7 @@ function Section:CreateToggleGroup(options)
         self._window._cleanup,
         self._window._components.Toggle
     )
-    table.insert(self._components, grp)
+    self:_registerItem(grp)
     if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Toggles) == "table" then
         local togs = grp:GetToggles()
         for idx, tog in ipairs(togs) do
@@ -3658,7 +3660,7 @@ function Section:CreateSlider(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, sld)
+    self:_registerItem(sld)
     if self._window and self._window.RegisterComponent then
         self._window:RegisterComponent(sld, options, self._name, "Slider")
     end
@@ -3673,7 +3675,7 @@ function Section:CreateSliderGroup(options)
         self._window._cleanup,
         self._window._components.Slider
     )
-    table.insert(self._components, grp)
+    self:_registerItem(grp)
     if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Sliders) == "table" then
         local slds = grp:GetSliders()
         for idx, sld in ipairs(slds) do
@@ -3691,7 +3693,7 @@ function Section:CreateInput(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, inp)
+    self:_registerItem(inp)
     if self._window and self._window.RegisterComponent then
         self._window:RegisterComponent(inp, options, self._name, "Input")
     end
@@ -3706,7 +3708,7 @@ function Section:CreateInputGroup(options)
         self._window._cleanup,
         self._window._components.Input
     )
-    table.insert(self._components, grp)
+    self:_registerItem(grp)
     if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Inputs) == "table" then
         local inps = grp:GetInputs()
         for idx, inp in ipairs(inps) do
@@ -3724,7 +3726,7 @@ function Section:CreateDropdown(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, drp)
+    self:_registerItem(drp)
     if self._window and self._window.RegisterComponent then
         self._window:RegisterComponent(drp, options, self._name, "Dropdown")
     end
@@ -3745,7 +3747,7 @@ function Section:CreateDropdownGroup(options)
         self._window._cleanup,
         self._window._components.Dropdown
     )
-    table.insert(self._components, grp)
+    self:_registerItem(grp)
     if self._window and self._window.RegisterComponent and type(options) == "table" and type(options.Dropdowns) == "table" then
         local drps = grp:GetDropdowns()
         for idx, drp in ipairs(drps) do
@@ -3763,7 +3765,7 @@ function Section:CreateKeybind(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, key)
+    self:_registerItem(key)
     if self._window and self._window.RegisterComponent then
         self._window:RegisterComponent(key, options, self._name, "Keybind")
     end
@@ -3777,8 +3779,7 @@ function Section:CreateParagraph(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, par)
-    return par
+    return self:_registerItem(par)
 end
 
 function Section:CreateDivider(options)
@@ -3788,8 +3789,7 @@ function Section:CreateDivider(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, div)
-    return div
+    return self:_registerItem(div)
 end
 
 function Section:CreateBanner(options)
@@ -3799,8 +3799,7 @@ function Section:CreateBanner(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, ban)
-    return ban
+    return self:_registerItem(ban)
 end
 
 function Section:CreateProgression(options)
@@ -3811,8 +3810,7 @@ function Section:CreateProgression(options)
         self._window._cleanup,
         self._window._components
     )
-    table.insert(self._components, prg)
-    return prg
+    return self:_registerItem(prg)
 end
 
 function Section:CreateColorPicker(options)
@@ -3822,7 +3820,7 @@ function Section:CreateColorPicker(options)
         self._window._theme,
         self._window._cleanup
     )
-    table.insert(self._components, cp)
+    self:_registerItem(cp)
     if self._window and self._window.RegisterComponent then
         self._window:RegisterComponent(cp, options, self._name, "ColorPicker")
     end
@@ -3831,14 +3829,12 @@ end
 
 function Section:CreateRow()
     local row = Row.new(self._body, self._window._theme, self._window._cleanup, self._window._components, self._window, self._name)
-    table.insert(self._components, row)
-    return row
+    return self:_registerItem(row)
 end
 
 function Section:CreateLabel(optionsOrText)
     local lbl = Label.new(self._body, optionsOrText, self._window._theme, self._window._cleanup, self)
-    table.insert(self._components, lbl)
-    return lbl
+    return self:_registerItem(lbl)
 end
 
 TabGroup.AddTab = TabGroup.CreateTab

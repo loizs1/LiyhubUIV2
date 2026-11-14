@@ -10,11 +10,11 @@ function InputGroup.new(parent, options, theme, cleanup, inputModule)
     options = options or {}
     local inputCtor = inputModule or Input
     local isDown = options.Direction == "Down"
+    local h = theme.SmallElementHeight or 34
     
     local container = Instance.new("Frame")
     container.Name = "InputGroup"
-    container.Size = UDim2.new(1, 0, 0, 0)
-    container.AutomaticSize = Enum.AutomaticSize.Y
+    container.Size = UDim2.new(1, 0, 0, h + 12)
     container.BackgroundColor3 = theme.Card
     container.BorderSizePixel = 0
     container.Parent = parent
@@ -72,13 +72,18 @@ function InputGroup:_rebalanceSizes()
     if count == 0 then return end
     local h = self._theme.SmallElementHeight or 34
     if self._isDown then
-        for _, inp in ipairs(self._inputs) do
+        local totalH = count * h + (count - 1) * 6 + 12
+        self._container.Size = UDim2.new(1, 0, 0, totalH)
+        for idx, inp in ipairs(self._inputs) do
+            inp._container.LayoutOrder = idx
             inp._container.Size = UDim2.new(1, 0, 0, h)
         end
     else
+        self._container.Size = UDim2.new(1, 0, 0, h + 12)
         local gapTotal = (count - 1) * 6
         local widthScale = 1 / count
-        for _, inp in ipairs(self._inputs) do
+        for idx, inp in ipairs(self._inputs) do
+            inp._container.LayoutOrder = idx
             inp._container.Size = UDim2.new(widthScale, -math.floor(gapTotal / count), 0, h)
         end
     end
