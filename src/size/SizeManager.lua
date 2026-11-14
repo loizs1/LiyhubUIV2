@@ -79,7 +79,7 @@ function SizeManager.DetectDevice()
     end
     
     if isTouch and not isKeyboard then
-        if vp.X < 740 or vp.Y < 480 then
+        if vp.X < 900 or vp.Y < 550 or (vp.X / math.max(vp.Y, 1) >= 1.6 and vp.Y <= 650) then
             return "Android"
         else
             return "Tablet"

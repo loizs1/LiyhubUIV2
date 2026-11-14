@@ -321,7 +321,7 @@ if not isTouch then
 return "PC"
 end
 if isTouch and not isKeyboard then
-if vp.X < 740 or vp.Y < 480 then
+if vp.X < 900 or vp.Y < 550 or (vp.X / math.max(vp.Y, 1) >= 1.6 and vp.Y <= 650) then
 return "Android"
 else
 return "Tablet"
@@ -6391,11 +6391,13 @@ end
 end
 function Window:CreateTabGroup(name)
 assert(type(name) == "string", "TabGroup name must be a string")
+local groupOrder = #self._tabGroups + 1
 local groupContainer = Instance.new("Frame")
 groupContainer.Name = "TabGroup_" .. name
 groupContainer.Size = UDim2.new(1, 0, 0, 0)
 groupContainer.AutomaticSize = Enum.AutomaticSize.Y
 groupContainer.BackgroundTransparency = 1
+groupContainer.LayoutOrder = groupOrder
 groupContainer.Parent = self._tabGroupsScroll
 local gList = Instance.new("UIListLayout")
 gList.SortOrder = Enum.SortOrder.LayoutOrder
@@ -6407,6 +6409,7 @@ gHeader.Size = UDim2.new(1, 0, 0, 22)
 gHeader.BackgroundTransparency = 1
 gHeader.AutoButtonColor = false
 gHeader.Text = ""
+gHeader.LayoutOrder = 1
 gHeader.Parent = groupContainer
 local gTitle = Instance.new("TextLabel")
 gTitle.Name = "Title"
@@ -6433,11 +6436,22 @@ tabsFrame.Name = "Tabs"
 tabsFrame.Size = UDim2.new(1, 0, 0, 0)
 tabsFrame.AutomaticSize = Enum.AutomaticSize.Y
 tabsFrame.BackgroundTransparency = 1
+tabsFrame.LayoutOrder = 2
 tabsFrame.Parent = groupContainer
 local tList = Instance.new("UIListLayout")
 tList.SortOrder = Enum.SortOrder.LayoutOrder
 tList.Padding = UDim.new(0, 3)
 tList.Parent = tabsFrame
+local function updateTabsHeight()
+local h = tList.AbsoluteContentSize.Y
+tabsFrame.Size = UDim2.new(1, 0, 0, h)
+end
+local tListConn = tList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateTabsHeight)
+local function updateGroupHeight()
+local h = gList.AbsoluteContentSize.Y
+groupContainer.Size = UDim2.new(1, 0, 0, h)
+end
+local gListConn = gList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateGroupHeight)
 local tabGroupObj = setmetatable({
 _window = self,
 _container = groupContainer,
@@ -6447,9 +6461,6 @@ _arrow = gArrow,
 _collapsed = false,
 _tabs = {},
 }, TabGroup)
-if self._tabGroups then
-table.insert(self._tabGroups, tabGroupObj)
-end
 local lastGroupToggle = 0
 local function toggleGroup()
 local now = os.clock()
@@ -6460,10 +6471,13 @@ tabsFrame.Visible = not tabGroupObj._collapsed
 TweenService:Create(gArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 Rotation = tabGroupObj._collapsed and 0 or 180
 }):Play()
+updateGroupHeight()
 end
 local toggleClick = gHeader.Activated:Connect(toggleGroup)
 if self._cleanup then
 self._cleanup:Add(toggleClick)
+self._cleanup:Add(tListConn)
+self._cleanup:Add(gListConn)
 self._cleanup:Add(groupContainer)
 end
 table.insert(self._tabGroups, tabGroupObj)
@@ -7383,6 +7397,18 @@ local bList = Instance.new("UIListLayout")
 bList.SortOrder = Enum.SortOrder.LayoutOrder
 bList.Padding = UDim.new(0, 6)
 bList.Parent = sBody
+local function updateBodyHeight()
+local h = bList.AbsoluteContentSize.Y
+sBody.Size = UDim2.new(1, 0, 0, h)
+end
+local bListConn = bList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyHeight)
+local function updateSectionHeight()
+local padTop = sPadding.PaddingTop.Offset
+local padBottom = sPadding.PaddingBottom.Offset
+local contentH = sList.AbsoluteContentSize.Y
+sectionCard.Size = UDim2.new(1, 0, 0, contentH + padTop + padBottom)
+end
+local sListConn = sList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
 local sectionObj = setmetatable({
 _tab = self,
 _window = self._window,
@@ -7406,10 +7432,13 @@ sBody.Visible = not sectionObj._collapsed
 TweenService:Create(sArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 Rotation = sectionObj._collapsed and 0 or 180
 }):Play()
+updateSectionHeight()
 end
 local toggleConn = sHeader.Activated:Connect(toggleSec)
 if self._window._cleanup then
 self._window._cleanup:Add(toggleConn)
+self._window._cleanup:Add(bListConn)
+self._window._cleanup:Add(sListConn)
 self._window._cleanup:Add(sectionCard)
 end
 table.insert(self._sections, sectionObj)
