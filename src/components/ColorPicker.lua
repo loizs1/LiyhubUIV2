@@ -105,6 +105,7 @@ function ColorPicker.new(parent, options, theme, cleanup)
 
     local self = setmetatable({
         _container = container,
+        _titleLabel = titleLabel,
         _chip = colorChip,
         _tray = tray,
         _color = currentColor,
@@ -303,6 +304,29 @@ end
 
 function ColorPicker:GetValue()
     return self._color
+end
+
+function ColorPicker:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Element
+        local st = self._container:FindFirstChild("BorderStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    if self._titleLabel then
+        self._titleLabel.TextColor3 = newTheme.TextPrimary
+    end
+    if self._channelWidgets then
+        for _, cw in pairs(self._channelWidgets) do
+            if cw.ValLbl then
+                cw.ValLbl.TextColor3 = newTheme.TextMuted
+            end
+            local track = cw.Fill and cw.Fill.Parent
+            if track and track:IsA("GuiObject") then
+                track.BackgroundColor3 = newTheme.SliderTrack or Color3.fromRGB(34, 34, 42)
+            end
+        end
+    end
 end
 
 function ColorPicker:Destroy()

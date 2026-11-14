@@ -546,7 +546,7 @@ end
 _modules["src/core/Layout"] = function()
 local Layout = {}
 Layout.__index = Layout
-function Layout.new(container, options)
+function Layout.new(container, options, theme)
 options = options or {}
 local initialTwoColumns = options.TwoColumns
 if initialTwoColumns == nil then
@@ -554,6 +554,7 @@ initialTwoColumns = true
 end
 local self = setmetatable({
 _container = container,
+_theme = theme,
 _twoColumns = initialTwoColumns,
 _dualContainer = nil,
 _leftColumn = nil,
@@ -567,6 +568,7 @@ self:_initialize()
 return self
 end
 function Layout:_initialize()
+local sbColor = (self._theme and self._theme.Scrollbar) or Color3.fromRGB(50, 50, 60)
 local dualContainer = Instance.new("Frame")
 dualContainer.Name = "DualColumnContainer"
 dualContainer.BackgroundTransparency = 1
@@ -580,7 +582,7 @@ leftCol.BorderSizePixel = 0
 leftCol.Size = UDim2.new(0.5, -6, 1, 0)
 leftCol.Position = UDim2.new(0, 0, 0, 0)
 leftCol.ScrollBarThickness = 3
-leftCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+leftCol.ScrollBarImageColor3 = sbColor
 leftCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
 leftCol.CanvasSize = UDim2.new(0, 0, 0, 0)
 leftCol.Parent = dualContainer
@@ -601,7 +603,7 @@ rightCol.BorderSizePixel = 0
 rightCol.Size = UDim2.new(0.5, -6, 1, 0)
 rightCol.Position = UDim2.new(0.5, 6, 0, 0)
 rightCol.ScrollBarThickness = 3
-rightCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+rightCol.ScrollBarImageColor3 = sbColor
 rightCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
 rightCol.CanvasSize = UDim2.new(0, 0, 0, 0)
 rightCol.Parent = dualContainer
@@ -621,7 +623,7 @@ singleCol.BackgroundTransparency = 1
 singleCol.BorderSizePixel = 0
 singleCol.Size = UDim2.new(1, 0, 1, 0)
 singleCol.ScrollBarThickness = 3
-singleCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+singleCol.ScrollBarImageColor3 = sbColor
 singleCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
 singleCol.CanvasSize = UDim2.new(0, 0, 0, 0)
 singleCol.Visible = not self._twoColumns
@@ -730,6 +732,13 @@ if self._singleColumn then
 self._singleColumn.CanvasPosition = Vector2.new(0, 0)
 end
 end
+end
+function Layout:SetTheme(newTheme)
+self._theme = newTheme
+local sbColor = (newTheme and newTheme.Scrollbar) or Color3.fromRGB(50, 50, 60)
+if self._leftColumn then self._leftColumn.ScrollBarImageColor3 = sbColor end
+if self._rightColumn then self._rightColumn.ScrollBarImageColor3 = sbColor end
+if self._singleColumn then self._singleColumn.ScrollBarImageColor3 = sbColor end
 end
 function Layout:IsTwoColumns()
 return self._twoColumns
@@ -1517,6 +1526,39 @@ if self._label then
 self._label.TextColor3 = self._disabled and self._theme.TextDisabled or (self._theme.IsLight and Color3.fromRGB(18, 20, 24) or Color3.fromRGB(255, 255, 255))
 end
 end
+function Button:SetTheme(newTheme, isDark)
+self._theme = newTheme
+if isDark == nil then
+isDark = (newTheme.IsLight ~= true and newTheme.Name ~= "Pure White")
+end
+local defaultBg = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+local defaultTextCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+local defaultBorderCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+if self._actionBtn then
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.Border end
+end
+local title = self._container and self._container:FindFirstChild("Title")
+if title then title.TextColor3 = newTheme.TextPrimary end
+local desc = self._container and self._container:FindFirstChild("Description")
+if desc then desc.TextColor3 = newTheme.TextMuted end
+self._actionBtn.BackgroundColor3 = defaultBg
+self._actionBtn.TextColor3 = defaultTextCol
+if self._actionStroke then self._actionStroke.Color = defaultBorderCol end
+else
+if self._container then
+self._container.BackgroundColor3 = defaultBg
+end
+if self._stroke then
+self._stroke.Color = defaultBorderCol
+end
+if self._label then
+self._label.TextColor3 = defaultTextCol
+end
+end
+end
 function Button:Destroy()
 if self._conns then
 for _, c in ipairs(self._conns) do
@@ -1584,6 +1626,14 @@ local btn = self._buttonCtor.new(self._container, options, self._theme, self._cl
 table.insert(self._buttons, btn)
 self:_rebalanceSizes()
 return btn
+end
+function ButtonGroup:SetTheme(newTheme, isDark)
+self._theme = newTheme
+for _, btn in ipairs(self._buttons or {}) do
+if btn.SetTheme then
+btn:SetTheme(newTheme, isDark)
+end
+end
 end
 function ButtonGroup:Destroy()
 if self._container then
@@ -1681,6 +1731,7 @@ knobCorner.Parent = knob
 local self = setmetatable({
 _container = container,
 _label = label,
+_descLabel = descLabel,
 _switch = switch,
 _switchStroke = switchStroke,
 _knob = knob,
@@ -1691,10 +1742,10 @@ _disabled = false,
 _clickConn = nil,
 }, Toggle)
 local function updateVisual(animate)
-local animTime = animate and theme.AnimationFast or 0
-local targetSwitchColor = self._state and theme.ToggleActive or theme.ToggleInactive
-local targetStrokeColor = self._state and theme.ToggleActive or theme.ToggleBorderInactive
-local targetKnobColor = self._state and theme.ToggleKnob or theme.ToggleKnobInactive
+local animTime = animate and (self._theme.AnimationFast or 0.15) or 0
+local targetSwitchColor = self._state and self._theme.ToggleActive or self._theme.ToggleInactive
+local targetStrokeColor = self._state and self._theme.ToggleActive or self._theme.ToggleBorderInactive
+local targetKnobColor = self._state and self._theme.ToggleKnob or self._theme.ToggleKnobInactive
 local targetKnobPos = self._state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
 if animTime > 0 then
 TweenService:Create(switch, TweenInfo.new(animTime), { BackgroundColor3 = targetSwitchColor }):Play()
@@ -1710,6 +1761,7 @@ knob.BackgroundColor3 = targetKnobColor
 knob.Position = targetKnobPos
 end
 end
+self._updateVisual = updateVisual
 local lastToggle = 0
 local function toggleState()
 local now = os.clock()
@@ -1745,6 +1797,23 @@ task.spawn(self._callback, self._state)
 end
 function Toggle:GetValue()
 return self._state
+end
+function Toggle:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.Border end
+end
+if self._label then
+self._label.TextColor3 = newTheme.TextPrimary
+end
+if self._descLabel then
+self._descLabel.TextColor3 = newTheme.TextMuted
+end
+if self._updateVisual then
+self._updateVisual(false)
+end
 end
 function Toggle:Destroy()
 if self._clickConn and self._clickConn.Connected then
@@ -1825,6 +1894,14 @@ end
 function ToggleGroup:GetToggles()
 return self._toggles
 end
+function ToggleGroup:SetTheme(newTheme, isDark)
+self._theme = newTheme
+for _, t in ipairs(self._toggles or {}) do
+if t.SetTheme then
+t:SetTheme(newTheme, isDark)
+end
+end
+end
 function ToggleGroup:Destroy()
 if self._container then
 self._container:Destroy()
@@ -1902,7 +1979,7 @@ local track = Instance.new("TextButton")
 track.Name = "Track"
 track.Size = UDim2.new(1, -20, 0, 24)
 track.Position = UDim2.new(0, 10, 0, 25)
-track.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+track.BackgroundColor3 = theme.SliderTrack or Color3.fromRGB(20, 22, 30)
 track.AutoButtonColor = false
 track.Text = ""
 track.BorderSizePixel = 0
@@ -1913,26 +1990,31 @@ trackCorner.CornerRadius = UDim.new(0, 6)
 trackCorner.Parent = track
 local trackStroke = Instance.new("UIStroke")
 trackStroke.Name = "TrackStroke"
-trackStroke.Color = Color3.fromRGB(36, 40, 56)
+trackStroke.Color = theme.Border or Color3.fromRGB(36, 40, 56)
 trackStroke.Thickness = 1
 trackStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 trackStroke.Parent = track
 local fill = Instance.new("Frame")
 fill.Name = "Fill"
 fill.Size = UDim2.new(0, 0, 1, 0)
-fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+fill.BackgroundColor3 = theme.SliderFill or Color3.fromRGB(255, 255, 255)
 fill.BorderSizePixel = 0
 fill.ZIndex = 2
 fill.Parent = track
 local fillCorner = Instance.new("UICorner")
 fillCorner.CornerRadius = UDim.new(0, 6)
 fillCorner.Parent = fill
-local fillGrad = Instance.new("UIGradient")
-fillGrad.Name = "FillGradient"
-fillGrad.Color = customGradient or ColorSequence.new({
+local isLightInit = (theme and (theme.IsLight == true or theme.Name == "Pure White"))
+local defaultGradient = isLightInit and ColorSequence.new({
+ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 44, 52)),
+ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 22, 26)),
+}) or ColorSequence.new({
 ColorSequenceKeypoint.new(0, Color3.fromRGB(215, 220, 235)),
 ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
 })
+local fillGrad = Instance.new("UIGradient")
+fillGrad.Name = "FillGradient"
+fillGrad.Color = customGradient or defaultGradient
 fillGrad.Parent = fill
 local initRel = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
 local valueLabel = Instance.new("TextLabel")
@@ -1954,7 +2036,10 @@ _container = container,
 _label = label,
 _valueLabel = valueLabel,
 _track = track,
+_trackStroke = trackStroke,
 _fill = fill,
+_fillGrad = fillGrad,
+_customGradient = customGradient,
 _theme = theme,
 _min = minVal,
 _max = maxVal,
@@ -2024,6 +2109,41 @@ task.spawn(self._callback, val)
 end
 function Slider:GetValue()
 return self._value
+end
+function Slider:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.Border end
+end
+if self._label then
+self._label.TextColor3 = newTheme.TextPrimary
+end
+if self._track then
+self._track.BackgroundColor3 = newTheme.SliderTrack or Color3.fromRGB(20, 22, 30)
+end
+if self._trackStroke then
+self._trackStroke.Color = newTheme.Border
+end
+if self._fill then
+self._fill.BackgroundColor3 = newTheme.SliderFill or Color3.fromRGB(255, 255, 255)
+end
+if self._fillGrad and not self._customGradient then
+local isLight = (newTheme and (newTheme.IsLight == true or newTheme.Name == "Pure White"))
+self._fillGrad.Color = isLight and ColorSequence.new({
+ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 44, 52)),
+ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 22, 26)),
+}) or ColorSequence.new({
+ColorSequenceKeypoint.new(0, Color3.fromRGB(215, 220, 235)),
+ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
+})
+end
+if self._valueLabel then
+local rel = (self._value - self._min) / (self._max - self._min)
+local isLight = self._theme and (self._theme.IsLight == true or self._theme.Name == "Pure White")
+self._valueLabel.TextColor3 = isLight and ((rel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
+end
 end
 function Slider:Destroy()
 if self._trackDown then
@@ -2127,6 +2247,19 @@ end
 function SliderGroup:GetSliders()
 return self._sliders
 end
+function SliderGroup:SetTheme(newTheme, isDark)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Card
+local st = self._container:FindFirstChildOfClass("UIStroke")
+if st then st.Color = newTheme.Border end
+end
+for _, s in ipairs(self._sliders or {}) do
+if s.SetTheme then
+s:SetTheme(newTheme, isDark)
+end
+end
+end
 function SliderGroup:Destroy()
 if self._container then
 self._container:Destroy()
@@ -2206,14 +2339,14 @@ _focusLostConn = nil,
 }, Input)
 local focusInConn = textBox.Focused:Connect(function()
 if self._disabled then return end
-TweenService:Create(boxBg, TweenInfo.new(theme.AnimationFast), {
-BackgroundColor3 = theme.ElementActive
+TweenService:Create(boxBg, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+BackgroundColor3 = self._theme.ElementActive
 }):Play()
 end)
 local focusLostConn = textBox.FocusLost:Connect(function(enterPressed)
 if self._disabled then return end
-TweenService:Create(boxBg, TweenInfo.new(theme.AnimationFast), {
-BackgroundColor3 = theme.Card
+TweenService:Create(boxBg, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+BackgroundColor3 = self._theme.Card
 }):Play()
 self._value = textBox.Text
 task.spawn(self._callback, self._value)
@@ -2242,6 +2375,24 @@ end
 end
 function Input:SetPlaceholder(text)
 self._textBox.PlaceholderText = tostring(text)
+end
+function Input:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.Border end
+end
+if self._label then
+self._label.TextColor3 = newTheme.TextPrimary
+end
+if self._boxBg then
+self._boxBg.BackgroundColor3 = newTheme.Card
+end
+if self._textBox then
+self._textBox.TextColor3 = newTheme.TextPrimary
+self._textBox.PlaceholderColor3 = newTheme.TextMuted
+end
 end
 function Input:Destroy()
 if self._focusInConn and self._focusInConn.Connected then
@@ -2341,6 +2492,19 @@ return inp
 end
 function InputGroup:GetInputs()
 return self._inputs
+end
+function InputGroup:SetTheme(newTheme, isDark)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Card
+local st = self._container:FindFirstChildOfClass("UIStroke")
+if st then st.Color = newTheme.Border end
+end
+for _, inp in ipairs(self._inputs or {}) do
+if inp.SetTheme then
+inp:SetTheme(newTheme, isDark)
+end
+end
 end
 function InputGroup:Destroy()
 if self._container then
@@ -2528,6 +2692,7 @@ sfList.Padding = UDim.new(0, 2)
 sfList.Parent = scrollFrame
 local self = setmetatable({
 _container = container,
+_titleLabel = titleLabel,
 _selectBox = selectBox,
 _selectionLabel = selectionLabel,
 _chevron = chevron,
@@ -2597,6 +2762,7 @@ end
 optData.button.BackgroundColor3 = isChecked and self._theme.ElementActive or self._theme.Element
 optData.label.TextColor3 = isChecked and self._theme.TextPrimary or self._theme.TextSecondary
 optData.label.Font = isChecked and self._theme.FontBold or self._theme.FontRegular
+optData.check.ImageColor3 = self._theme.TextPrimary
 optData.check.Visible = isChecked
 end
 end
@@ -2652,7 +2818,7 @@ checkIcon.BackgroundTransparency = 1
 checkIcon.Image = LucideSheet
 checkIcon.ImageRectSize = CheckRectSize
 checkIcon.ImageRectOffset = CheckRectOffset
-checkIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+checkIcon.ImageColor3 = self._theme.TextPrimary
 checkIcon.ScaleType = Enum.ScaleType.Fit
 checkIcon.Visible = isChecked
 checkIcon.Active = false
@@ -2828,6 +2994,42 @@ local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
 self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
 end
 end
+function Dropdown:SetTheme(newTheme)
+self._theme = newTheme
+if self._titleLabel then
+self._titleLabel.TextColor3 = newTheme.TextPrimary
+end
+if self._selectBox then
+self._selectBox.BackgroundColor3 = newTheme.Element
+local stroke = self._selectBox:FindFirstChild("BorderStroke")
+if stroke then stroke.Color = newTheme.Border end
+end
+if self._chevron then
+self._chevron.ImageColor3 = newTheme.TextMuted
+end
+if self._listContainer then
+self._listContainer.BackgroundColor3 = newTheme.Header
+local stroke = self._listContainer:FindFirstChild("BorderStroke")
+if stroke then stroke.Color = newTheme.Border end
+end
+if self._scrollFrame then
+self._scrollFrame.ScrollBarImageColor3 = newTheme.Scrollbar
+end
+if self._actionsBar then
+local sa = self._actionsBar:FindFirstChild("SelectAll")
+if sa then
+sa.BackgroundColor3 = newTheme.Element
+sa.TextColor3 = newTheme.TextPrimary
+end
+local cl = self._actionsBar:FindFirstChild("Clear")
+if cl then
+cl.BackgroundColor3 = newTheme.Element
+cl.TextColor3 = newTheme.TextMuted
+end
+end
+self:_updateSummary()
+self:_syncVisuals()
+end
 function Dropdown:Destroy()
 for _, conn in ipairs(self._optionConns or {}) do
 pcall(function() conn:Disconnect() end)
@@ -2895,6 +3097,14 @@ local d = self._dropdownCtor.new(self._container, options, self._theme, self._cl
 table.insert(self._dropdowns, d)
 self:_rebalanceSizes()
 return d
+end
+function DropdownGroup:SetTheme(newTheme, isDark)
+self._theme = newTheme
+for _, d in ipairs(self._dropdowns or {}) do
+if d.SetTheme then
+d:SetTheme(newTheme, isDark)
+end
+end
 end
 function DropdownGroup:Destroy()
 if self._container then
@@ -2964,8 +3174,8 @@ local keyClickConn = keyButton.Activated:Connect(function()
 if self._disabled then return end
 self._listening = true
 self._keyButton.Text = "..."
-TweenService:Create(self._keyButton, TweenInfo.new(theme.AnimationFast), {
-BackgroundColor3 = theme.ElementActive
+TweenService:Create(self._keyButton, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+BackgroundColor3 = self._theme.ElementActive
 }):Play()
 end)
 self._keyClickConn = keyClickConn
@@ -2978,8 +3188,8 @@ self:SetValue(input.KeyCode, true)
 else
 self:SetValue(self._key, false)
 end
-TweenService:Create(self._keyButton, TweenInfo.new(theme.AnimationFast), {
-BackgroundColor3 = theme.Card
+TweenService:Create(self._keyButton, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+BackgroundColor3 = self._theme.Card
 }):Play()
 end
 else
@@ -3010,6 +3220,23 @@ end
 end
 function Keybind:SetText(text)
 self._label.Text = tostring(text)
+end
+function Keybind:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.Border end
+end
+if self._label then
+self._label.TextColor3 = newTheme.TextPrimary
+end
+if self._keyButton then
+self._keyButton.BackgroundColor3 = newTheme.Card
+self._keyButton.TextColor3 = newTheme.TextPrimary
+local st = self._keyButton:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.Border end
+end
 end
 function Keybind:Destroy()
 if self._keyClickConn then
@@ -3120,6 +3347,7 @@ pLayout.Padding = UDim.new(0, 5)
 pLayout.Parent = presetsRow
 local self = setmetatable({
 _container = container,
+_titleLabel = titleLabel,
 _chip = colorChip,
 _tray = tray,
 _color = currentColor,
@@ -3293,6 +3521,28 @@ end
 function ColorPicker:GetValue()
 return self._color
 end
+function ColorPicker:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.Border end
+end
+if self._titleLabel then
+self._titleLabel.TextColor3 = newTheme.TextPrimary
+end
+if self._channelWidgets then
+for _, cw in pairs(self._channelWidgets) do
+if cw.ValLbl then
+cw.ValLbl.TextColor3 = newTheme.TextMuted
+end
+local track = cw.Fill and cw.Fill.Parent
+if track and track:IsA("GuiObject") then
+track.BackgroundColor3 = newTheme.SliderTrack or Color3.fromRGB(34, 34, 42)
+end
+end
+end
+end
 function ColorPicker:Destroy()
 for _, c in ipairs(self._conns) do
 if c and c.Connected then c:Disconnect() end
@@ -3375,6 +3625,20 @@ end
 function Paragraph:SetContent(content)
 self._contentLabel.Text = tostring(content)
 end
+function Paragraph:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChildOfClass("UIStroke")
+if st then st.Color = newTheme.Border end
+end
+if self._titleLabel then
+self._titleLabel.TextColor3 = newTheme.TextPrimary
+end
+if self._contentLabel then
+self._contentLabel.TextColor3 = newTheme.TextSecondary
+end
+end
 function Paragraph:Destroy()
 if self._container then
 self._container:Destroy()
@@ -3401,6 +3665,12 @@ if cleanup then
 cleanup:Add(container)
 end
 return self
+end
+function Divider:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.SidebarItem or newTheme.Border
+end
 end
 function Divider:Destroy()
 if self._container then
@@ -3668,6 +3938,50 @@ self._imageLabel.Image = resolveAsset(assetId)
 end
 function Banner:SetText(text)
 self._descLabel.Text = text
+end
+function Banner:SetTheme(newTheme, isDark)
+self._theme = newTheme
+if isDark == nil then
+isDark = (newTheme.IsLight ~= true and newTheme.Name ~= "Pure White")
+end
+if self._container then
+self._container.BackgroundColor3 = newTheme.Card
+local stroke = self._container:FindFirstChildOfClass("UIStroke")
+if stroke then stroke.Color = newTheme.Border end
+end
+if self._titleLabel then
+self._titleLabel.TextColor3 = newTheme.TextPrimary
+end
+if self._arrow then
+self._arrow.ImageColor3 = newTheme.TextMuted
+end
+if self._contentBox then
+local imgFrame = self._contentBox:FindFirstChild("ImageFrame")
+if imgFrame then
+imgFrame.BackgroundColor3 = newTheme.Header
+end
+local textContainer = self._contentBox:FindFirstChild("TextContainer")
+if textContainer then
+local desc = textContainer:FindFirstChild("Description")
+if desc then
+desc.TextColor3 = newTheme.TextSecondary
+end
+end
+local btnRow = self._contentBox:FindFirstChild("ButtonRow")
+if btnRow then
+for _, btn in ipairs(btnRow:GetChildren()) do
+if btn:IsA("TextButton") then
+local btnBg = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+local btnTextCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+local btnStrokeCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+btn.BackgroundColor3 = btnBg
+btn.TextColor3 = btnTextCol
+local bStroke = btn:FindFirstChildOfClass("UIStroke")
+if bStroke then bStroke.Color = btnStrokeCol end
+end
+end
+end
+end
 end
 function Banner:Destroy()
 if self._toggleConn and self._toggleConn.Connected then
@@ -6627,6 +6941,9 @@ tab:_activate()
 else
 tab:_deactivate()
 end
+if tab._layoutEngine and tab._layoutEngine.SetTheme then
+tab._layoutEngine:SetTheme(targetTheme)
+end
 if tab._contentContainer then
 tab._contentContainer.BackgroundColor3 = targetTheme.Background
 end
@@ -6742,6 +7059,20 @@ if desc then
 desc.TextColor3 = targetTheme.TextSecondary
 end
 end
+local btnRow = contentBox:FindFirstChild("ButtonRow")
+if btnRow then
+for _, btn in ipairs(btnRow:GetChildren()) do
+if btn:IsA("TextButton") then
+local btnBg = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+local btnTextCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+local btnStrokeCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+btn.BackgroundColor3 = btnBg
+btn.TextColor3 = btnTextCol
+local bStroke = btn:FindFirstChildOfClass("UIStroke")
+if bStroke then bStroke.Color = btnStrokeCol end
+end
+end
+end
 end
 end
 function Window:_applyThemeToSection(section, targetTheme, isDark)
@@ -6772,6 +7103,10 @@ end
 function Window:_applyThemeToComponent(comp, targetTheme, isDark)
 if not comp or type(comp) ~= "table" then return end
 comp._theme = targetTheme
+if comp.SetTheme then
+pcall(function() comp:SetTheme(targetTheme, isDark) end)
+return
+end
 if comp._container and comp._container.Name == "Banner" then
 self:_applyThemeToBanner(comp, targetTheme, isDark)
 return
@@ -7190,10 +7525,10 @@ iconLabel.ScaleType = Enum.ScaleType.Fit
 iconLabel.Parent = tabBtn
 local iconService = self._window._iconService
 if iconService and iconService.Apply then
-iconService.Apply(iconLabel, iconId, Color3.fromRGB(130, 140, 160))
+iconService.Apply(iconLabel, iconId, self._window._theme.TextMuted)
 else
 iconLabel.Image = tostring(iconId)
-iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
+iconLabel.ImageColor3 = self._window._theme.TextMuted
 end
 labelOffset = 34
 end
@@ -7216,7 +7551,7 @@ contentContainer.Visible = false
 contentContainer.Parent = self._window._contentArea
 local layoutEngine = self._window._layoutCtor.new(contentContainer, {
 TwoColumns = twoColumns,
-})
+}, self._window._theme)
 local tabObj = setmetatable({
 _window = self._window,
 _tabGroup = self,
@@ -7545,6 +7880,16 @@ self._window:RegisterComponent(cp, options, self._sectionName, "ColorPicker")
 end
 return cp
 end
+function Row:SetTheme(newTheme, isDark)
+self._theme = newTheme
+for _, item in ipairs(self._items or {}) do
+if item.SetTheme then
+item:SetTheme(newTheme, isDark)
+elseif self._window and self._window._applyThemeToComponent then
+self._window:_applyThemeToComponent(item, newTheme, isDark)
+end
+end
+end
 function Row:Destroy()
 if self._container then
 self._container:Destroy()
@@ -7638,6 +7983,20 @@ function Label:AddInput(opt)
 return self._section and self._section:CreateInput(opt)
 end
 Label.AddTextbox = Label.AddInput
+function Label:SetTheme(newTheme)
+self._theme = newTheme
+if self._container then
+self._container.BackgroundColor3 = newTheme.Element
+local st = self._container:FindFirstChild("BorderStroke")
+if st then st.Color = newTheme.BorderSubtle or newTheme.Border end
+end
+if self._mainLbl then
+self._mainLbl.TextColor3 = newTheme.TextPrimary
+end
+if self._descLbl then
+self._descLbl.TextColor3 = newTheme.TextMuted
+end
+end
 function Label:Destroy()
 if self._container then
 self._container:Destroy()

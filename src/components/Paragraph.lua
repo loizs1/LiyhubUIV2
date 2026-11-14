@@ -76,6 +76,21 @@ function Paragraph:SetContent(content)
     self._contentLabel.Text = tostring(content)
 end
 
+function Paragraph:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Element
+        local st = self._container:FindFirstChildOfClass("UIStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    if self._titleLabel then
+        self._titleLabel.TextColor3 = newTheme.TextPrimary
+    end
+    if self._contentLabel then
+        self._contentLabel.TextColor3 = newTheme.TextSecondary
+    end
+end
+
 function Paragraph:Destroy()
     if self._container then
         self._container:Destroy()

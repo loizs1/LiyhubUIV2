@@ -62,6 +62,15 @@ function ButtonGroup:AddButton(options)
     return btn
 end
 
+function ButtonGroup:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    for _, btn in ipairs(self._buttons or {}) do
+        if btn.SetTheme then
+            btn:SetTheme(newTheme, isDark)
+        end
+    end
+end
+
 function ButtonGroup:Destroy()
     if self._container then
         self._container:Destroy()

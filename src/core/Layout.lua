@@ -1,7 +1,7 @@
 local Layout = {}
 Layout.__index = Layout
 
-function Layout.new(container, options)
+function Layout.new(container, options, theme)
     options = options or {}
     local initialTwoColumns = options.TwoColumns
     if initialTwoColumns == nil then
@@ -10,6 +10,7 @@ function Layout.new(container, options)
     
     local self = setmetatable({
         _container = container,
+        _theme = theme,
         _twoColumns = initialTwoColumns,
         _dualContainer = nil,
         _leftColumn = nil,
@@ -25,6 +26,7 @@ function Layout.new(container, options)
 end
 
 function Layout:_initialize()
+    local sbColor = (self._theme and self._theme.Scrollbar) or Color3.fromRGB(50, 50, 60)
     local dualContainer = Instance.new("Frame")
     dualContainer.Name = "DualColumnContainer"
     dualContainer.BackgroundTransparency = 1
@@ -39,7 +41,7 @@ function Layout:_initialize()
     leftCol.Size = UDim2.new(0.5, -6, 1, 0)
     leftCol.Position = UDim2.new(0, 0, 0, 0)
     leftCol.ScrollBarThickness = 3
-    leftCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+    leftCol.ScrollBarImageColor3 = sbColor
     leftCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
     leftCol.CanvasSize = UDim2.new(0, 0, 0, 0)
     leftCol.Parent = dualContainer
@@ -63,7 +65,7 @@ function Layout:_initialize()
     rightCol.Size = UDim2.new(0.5, -6, 1, 0)
     rightCol.Position = UDim2.new(0.5, 6, 0, 0)
     rightCol.ScrollBarThickness = 3
-    rightCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+    rightCol.ScrollBarImageColor3 = sbColor
     rightCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
     rightCol.CanvasSize = UDim2.new(0, 0, 0, 0)
     rightCol.Parent = dualContainer
@@ -86,7 +88,7 @@ function Layout:_initialize()
     singleCol.BorderSizePixel = 0
     singleCol.Size = UDim2.new(1, 0, 1, 0)
     singleCol.ScrollBarThickness = 3
-    singleCol.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+    singleCol.ScrollBarImageColor3 = sbColor
     singleCol.AutomaticCanvasSize = Enum.AutomaticSize.Y
     singleCol.CanvasSize = UDim2.new(0, 0, 0, 0)
     singleCol.Visible = not self._twoColumns
@@ -209,6 +211,14 @@ function Layout:SetTwoColumns(enabled)
             self._singleColumn.CanvasPosition = Vector2.new(0, 0)
         end
     end
+end
+
+function Layout:SetTheme(newTheme)
+    self._theme = newTheme
+    local sbColor = (newTheme and newTheme.Scrollbar) or Color3.fromRGB(50, 50, 60)
+    if self._leftColumn then self._leftColumn.ScrollBarImageColor3 = sbColor end
+    if self._rightColumn then self._rightColumn.ScrollBarImageColor3 = sbColor end
+    if self._singleColumn then self._singleColumn.ScrollBarImageColor3 = sbColor end
 end
 
 function Layout:IsTwoColumns()

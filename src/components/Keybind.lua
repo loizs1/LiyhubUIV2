@@ -67,8 +67,8 @@ function Keybind.new(parent, options, theme, cleanup)
         if self._disabled then return end
         self._listening = true
         self._keyButton.Text = "..."
-        TweenService:Create(self._keyButton, TweenInfo.new(theme.AnimationFast), {
-            BackgroundColor3 = theme.ElementActive
+        TweenService:Create(self._keyButton, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+            BackgroundColor3 = self._theme.ElementActive
         }):Play()
     end)
     self._keyClickConn = keyClickConn
@@ -82,8 +82,8 @@ function Keybind.new(parent, options, theme, cleanup)
                 else
                     self:SetValue(self._key, false)
                 end
-                TweenService:Create(self._keyButton, TweenInfo.new(theme.AnimationFast), {
-                    BackgroundColor3 = theme.Card
+                TweenService:Create(self._keyButton, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+                    BackgroundColor3 = self._theme.Card
                 }):Play()
             end
         else
@@ -119,6 +119,24 @@ end
 
 function Keybind:SetText(text)
     self._label.Text = tostring(text)
+end
+
+function Keybind:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Element
+        local st = self._container:FindFirstChild("BorderStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    if self._label then
+        self._label.TextColor3 = newTheme.TextPrimary
+    end
+    if self._keyButton then
+        self._keyButton.BackgroundColor3 = newTheme.Card
+        self._keyButton.TextColor3 = newTheme.TextPrimary
+        local st = self._keyButton:FindFirstChild("BorderStroke")
+        if st then st.Color = newTheme.Border end
+    end
 end
 
 function Keybind:Destroy()

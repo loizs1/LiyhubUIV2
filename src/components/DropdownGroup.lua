@@ -61,6 +61,15 @@ function DropdownGroup:AddDropdown(options)
     return d
 end
 
+function DropdownGroup:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    for _, d in ipairs(self._dropdowns or {}) do
+        if d.SetTheme then
+            d:SetTheme(newTheme, isDark)
+        end
+    end
+end
+
 function DropdownGroup:Destroy()
     if self._container then
         self._container:Destroy()

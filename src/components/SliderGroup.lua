@@ -94,6 +94,20 @@ function SliderGroup:GetSliders()
     return self._sliders
 end
 
+function SliderGroup:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Card
+        local st = self._container:FindFirstChildOfClass("UIStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    for _, s in ipairs(self._sliders or {}) do
+        if s.SetTheme then
+            s:SetTheme(newTheme, isDark)
+        end
+    end
+end
+
 function SliderGroup:Destroy()
     if self._container then
         self._container:Destroy()

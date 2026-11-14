@@ -252,6 +252,41 @@ function Button:SetDisabled(state)
     end
 end
 
+function Button:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    if isDark == nil then
+        isDark = (newTheme.IsLight ~= true and newTheme.Name ~= "Pure White")
+    end
+    local defaultBg = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+    local defaultTextCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+    local defaultBorderCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+
+    if self._actionBtn then
+        if self._container then
+            self._container.BackgroundColor3 = newTheme.Element
+            local st = self._container:FindFirstChild("BorderStroke")
+            if st then st.Color = newTheme.Border end
+        end
+        local title = self._container and self._container:FindFirstChild("Title")
+        if title then title.TextColor3 = newTheme.TextPrimary end
+        local desc = self._container and self._container:FindFirstChild("Description")
+        if desc then desc.TextColor3 = newTheme.TextMuted end
+        self._actionBtn.BackgroundColor3 = defaultBg
+        self._actionBtn.TextColor3 = defaultTextCol
+        if self._actionStroke then self._actionStroke.Color = defaultBorderCol end
+    else
+        if self._container then
+            self._container.BackgroundColor3 = defaultBg
+        end
+        if self._stroke then
+            self._stroke.Color = defaultBorderCol
+        end
+        if self._label then
+            self._label.TextColor3 = defaultTextCol
+        end
+    end
+end
+
 function Button:Destroy()
     if self._conns then
         for _, c in ipairs(self._conns) do

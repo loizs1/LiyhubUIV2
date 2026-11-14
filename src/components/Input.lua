@@ -78,15 +78,15 @@ function Input.new(parent, options, theme, cleanup)
     
     local focusInConn = textBox.Focused:Connect(function()
         if self._disabled then return end
-        TweenService:Create(boxBg, TweenInfo.new(theme.AnimationFast), {
-            BackgroundColor3 = theme.ElementActive
+        TweenService:Create(boxBg, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+            BackgroundColor3 = self._theme.ElementActive
         }):Play()
     end)
     
     local focusLostConn = textBox.FocusLost:Connect(function(enterPressed)
         if self._disabled then return end
-        TweenService:Create(boxBg, TweenInfo.new(theme.AnimationFast), {
-            BackgroundColor3 = theme.Card
+        TweenService:Create(boxBg, TweenInfo.new(self._theme.AnimationFast or 0.15), {
+            BackgroundColor3 = self._theme.Card
         }):Play()
         
         self._value = textBox.Text
@@ -122,6 +122,25 @@ end
 
 function Input:SetPlaceholder(text)
     self._textBox.PlaceholderText = tostring(text)
+end
+
+function Input:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Element
+        local st = self._container:FindFirstChild("BorderStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    if self._label then
+        self._label.TextColor3 = newTheme.TextPrimary
+    end
+    if self._boxBg then
+        self._boxBg.BackgroundColor3 = newTheme.Card
+    end
+    if self._textBox then
+        self._textBox.TextColor3 = newTheme.TextPrimary
+        self._textBox.PlaceholderColor3 = newTheme.TextMuted
+    end
 end
 
 function Input:Destroy()

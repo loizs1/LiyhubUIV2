@@ -198,6 +198,7 @@ function Dropdown.new(parent, options, theme, cleanup)
     
     local self = setmetatable({
         _container = container,
+        _titleLabel = titleLabel,
         _selectBox = selectBox,
         _selectionLabel = selectionLabel,
         _chevron = chevron,
@@ -270,6 +271,7 @@ function Dropdown.new(parent, options, theme, cleanup)
             optData.button.BackgroundColor3 = isChecked and self._theme.ElementActive or self._theme.Element
             optData.label.TextColor3 = isChecked and self._theme.TextPrimary or self._theme.TextSecondary
             optData.label.Font = isChecked and self._theme.FontBold or self._theme.FontRegular
+            optData.check.ImageColor3 = self._theme.TextPrimary
             optData.check.Visible = isChecked
         end
     end
@@ -331,7 +333,7 @@ function Dropdown.new(parent, options, theme, cleanup)
             checkIcon.Image = LucideSheet
             checkIcon.ImageRectSize = CheckRectSize
             checkIcon.ImageRectOffset = CheckRectOffset
-            checkIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            checkIcon.ImageColor3 = self._theme.TextPrimary
             checkIcon.ScaleType = Enum.ScaleType.Fit
             checkIcon.Visible = isChecked
             checkIcon.Active = false
@@ -521,6 +523,43 @@ function Dropdown:SetOptions(newOptions)
         local totalHeight = scrollHeight + 8 + (self._actionsBar and 26 or 0)
         self._listContainer.Size = UDim2.new(1, 0, 0, totalHeight)
     end
+end
+
+function Dropdown:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._titleLabel then
+        self._titleLabel.TextColor3 = newTheme.TextPrimary
+    end
+    if self._selectBox then
+        self._selectBox.BackgroundColor3 = newTheme.Element
+        local stroke = self._selectBox:FindFirstChild("BorderStroke")
+        if stroke then stroke.Color = newTheme.Border end
+    end
+    if self._chevron then
+        self._chevron.ImageColor3 = newTheme.TextMuted
+    end
+    if self._listContainer then
+        self._listContainer.BackgroundColor3 = newTheme.Header
+        local stroke = self._listContainer:FindFirstChild("BorderStroke")
+        if stroke then stroke.Color = newTheme.Border end
+    end
+    if self._scrollFrame then
+        self._scrollFrame.ScrollBarImageColor3 = newTheme.Scrollbar
+    end
+    if self._actionsBar then
+        local sa = self._actionsBar:FindFirstChild("SelectAll")
+        if sa then
+            sa.BackgroundColor3 = newTheme.Element
+            sa.TextColor3 = newTheme.TextPrimary
+        end
+        local cl = self._actionsBar:FindFirstChild("Clear")
+        if cl then
+            cl.BackgroundColor3 = newTheme.Element
+            cl.TextColor3 = newTheme.TextMuted
+        end
+    end
+    self:_updateSummary()
+    self:_syncVisuals()
 end
 
 function Dropdown:Destroy()

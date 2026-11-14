@@ -99,6 +99,7 @@ function Toggle.new(parent, options, theme, cleanup)
     local self = setmetatable({
         _container = container,
         _label = label,
+        _descLabel = descLabel,
         _switch = switch,
         _switchStroke = switchStroke,
         _knob = knob,
@@ -110,10 +111,10 @@ function Toggle.new(parent, options, theme, cleanup)
     }, Toggle)
     
     local function updateVisual(animate)
-        local animTime = animate and theme.AnimationFast or 0
-        local targetSwitchColor = self._state and theme.ToggleActive or theme.ToggleInactive
-        local targetStrokeColor = self._state and theme.ToggleActive or theme.ToggleBorderInactive
-        local targetKnobColor = self._state and theme.ToggleKnob or theme.ToggleKnobInactive
+        local animTime = animate and (self._theme.AnimationFast or 0.15) or 0
+        local targetSwitchColor = self._state and self._theme.ToggleActive or self._theme.ToggleInactive
+        local targetStrokeColor = self._state and self._theme.ToggleActive or self._theme.ToggleBorderInactive
+        local targetKnobColor = self._state and self._theme.ToggleKnob or self._theme.ToggleKnobInactive
         local targetKnobPos = self._state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
         
         if animTime > 0 then
@@ -130,6 +131,7 @@ function Toggle.new(parent, options, theme, cleanup)
             knob.Position = targetKnobPos
         end
     end
+    self._updateVisual = updateVisual
     
     local lastToggle = 0
     local function toggleState()
@@ -172,6 +174,24 @@ end
 
 function Toggle:GetValue()
     return self._state
+end
+
+function Toggle:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Element
+        local st = self._container:FindFirstChild("BorderStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    if self._label then
+        self._label.TextColor3 = newTheme.TextPrimary
+    end
+    if self._descLabel then
+        self._descLabel.TextColor3 = newTheme.TextMuted
+    end
+    if self._updateVisual then
+        self._updateVisual(false)
+    end
 end
 
 function Toggle:Destroy()

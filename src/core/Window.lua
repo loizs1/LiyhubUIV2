@@ -2432,6 +2432,9 @@ function Window:SetTheme(themeNameOrTable, skipBroadcast)
         else
             tab:_deactivate()
         end
+        if tab._layoutEngine and tab._layoutEngine.SetTheme then
+            tab._layoutEngine:SetTheme(targetTheme)
+        end
         if tab._contentContainer then
             tab._contentContainer.BackgroundColor3 = targetTheme.Background
         end
@@ -2550,6 +2553,20 @@ function Window:_applyThemeToBanner(banner, targetTheme, isDark)
                 desc.TextColor3 = targetTheme.TextSecondary
             end
         end
+        local btnRow = contentBox:FindFirstChild("ButtonRow")
+        if btnRow then
+            for _, btn in ipairs(btnRow:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    local btnBg = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+                    local btnTextCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+                    local btnStrokeCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+                    btn.BackgroundColor3 = btnBg
+                    btn.TextColor3 = btnTextCol
+                    local bStroke = btn:FindFirstChildOfClass("UIStroke")
+                    if bStroke then bStroke.Color = btnStrokeCol end
+                end
+            end
+        end
     end
 end
 
@@ -2582,6 +2599,11 @@ end
 function Window:_applyThemeToComponent(comp, targetTheme, isDark)
     if not comp or type(comp) ~= "table" then return end
     comp._theme = targetTheme
+    
+    if comp.SetTheme then
+        pcall(function() comp:SetTheme(targetTheme, isDark) end)
+        return
+    end
     
     if comp._container and comp._container.Name == "Banner" then
         self:_applyThemeToBanner(comp, targetTheme, isDark)
@@ -3027,10 +3049,10 @@ function TabGroup:CreateTab(options)
         iconLabel.Parent = tabBtn
         local iconService = self._window._iconService
         if iconService and iconService.Apply then
-            iconService.Apply(iconLabel, iconId, Color3.fromRGB(130, 140, 160))
+            iconService.Apply(iconLabel, iconId, self._window._theme.TextMuted)
         else
             iconLabel.Image = tostring(iconId)
-            iconLabel.ImageColor3 = Color3.fromRGB(130, 140, 160)
+            iconLabel.ImageColor3 = self._window._theme.TextMuted
         end
         labelOffset = 34
     end
@@ -3056,7 +3078,7 @@ function TabGroup:CreateTab(options)
     
     local layoutEngine = self._window._layoutCtor.new(contentContainer, {
         TwoColumns = twoColumns,
-    })
+    }, self._window._theme)
     
     local tabObj = setmetatable({
         _window = self._window,
@@ -3428,6 +3450,17 @@ function Row:AddColorPicker(options)
     return cp
 end
 
+function Row:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    for _, item in ipairs(self._items or {}) do
+        if item.SetTheme then
+            item:SetTheme(newTheme, isDark)
+        elseif self._window and self._window._applyThemeToComponent then
+            self._window:_applyThemeToComponent(item, newTheme, isDark)
+        end
+    end
+end
+
 function Row:Destroy()
     if self._container then
         self._container:Destroy()
@@ -3539,6 +3572,21 @@ function Label:AddInput(opt)
     return self._section and self._section:CreateInput(opt)
 end
 Label.AddTextbox = Label.AddInput
+
+function Label:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Element
+        local st = self._container:FindFirstChild("BorderStroke")
+        if st then st.Color = newTheme.BorderSubtle or newTheme.Border end
+    end
+    if self._mainLbl then
+        self._mainLbl.TextColor3 = newTheme.TextPrimary
+    end
+    if self._descLbl then
+        self._descLbl.TextColor3 = newTheme.TextMuted
+    end
+end
 
 function Label:Destroy()
     if self._container then

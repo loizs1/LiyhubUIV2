@@ -75,7 +75,7 @@ function Slider.new(parent, options, theme, cleanup)
     track.Name = "Track"
     track.Size = UDim2.new(1, -20, 0, 24)
     track.Position = UDim2.new(0, 10, 0, 25)
-    track.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+    track.BackgroundColor3 = theme.SliderTrack or Color3.fromRGB(20, 22, 30)
     track.AutoButtonColor = false
     track.Text = ""
     track.BorderSizePixel = 0
@@ -88,7 +88,7 @@ function Slider.new(parent, options, theme, cleanup)
     
     local trackStroke = Instance.new("UIStroke")
     trackStroke.Name = "TrackStroke"
-    trackStroke.Color = Color3.fromRGB(36, 40, 56)
+    trackStroke.Color = theme.Border or Color3.fromRGB(36, 40, 56)
     trackStroke.Thickness = 1
     trackStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     trackStroke.Parent = track
@@ -96,7 +96,7 @@ function Slider.new(parent, options, theme, cleanup)
     local fill = Instance.new("Frame")
     fill.Name = "Fill"
     fill.Size = UDim2.new(0, 0, 1, 0)
-    fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    fill.BackgroundColor3 = theme.SliderFill or Color3.fromRGB(255, 255, 255)
     fill.BorderSizePixel = 0
     fill.ZIndex = 2
     fill.Parent = track
@@ -105,12 +105,17 @@ function Slider.new(parent, options, theme, cleanup)
     fillCorner.CornerRadius = UDim.new(0, 6)
     fillCorner.Parent = fill
     
-    local fillGrad = Instance.new("UIGradient")
-    fillGrad.Name = "FillGradient"
-    fillGrad.Color = customGradient or ColorSequence.new({
+    local isLightInit = (theme and (theme.IsLight == true or theme.Name == "Pure White"))
+    local defaultGradient = isLightInit and ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 44, 52)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 22, 26)),
+    }) or ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(215, 220, 235)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
     })
+    local fillGrad = Instance.new("UIGradient")
+    fillGrad.Name = "FillGradient"
+    fillGrad.Color = customGradient or defaultGradient
     fillGrad.Parent = fill
     
     local initRel = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
@@ -135,7 +140,10 @@ function Slider.new(parent, options, theme, cleanup)
         _label = label,
         _valueLabel = valueLabel,
         _track = track,
+        _trackStroke = trackStroke,
         _fill = fill,
+        _fillGrad = fillGrad,
+        _customGradient = customGradient,
         _theme = theme,
         _min = minVal,
         _max = maxVal,
@@ -216,6 +224,42 @@ end
 
 function Slider:GetValue()
     return self._value
+end
+
+function Slider:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Element
+        local st = self._container:FindFirstChild("BorderStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    if self._label then
+        self._label.TextColor3 = newTheme.TextPrimary
+    end
+    if self._track then
+        self._track.BackgroundColor3 = newTheme.SliderTrack or Color3.fromRGB(20, 22, 30)
+    end
+    if self._trackStroke then
+        self._trackStroke.Color = newTheme.Border
+    end
+    if self._fill then
+        self._fill.BackgroundColor3 = newTheme.SliderFill or Color3.fromRGB(255, 255, 255)
+    end
+    if self._fillGrad and not self._customGradient then
+        local isLight = (newTheme and (newTheme.IsLight == true or newTheme.Name == "Pure White"))
+        self._fillGrad.Color = isLight and ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 44, 52)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 22, 26)),
+        }) or ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(215, 220, 235)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
+        })
+    end
+    if self._valueLabel then
+        local rel = (self._value - self._min) / (self._max - self._min)
+        local isLight = self._theme and (self._theme.IsLight == true or self._theme.Name == "Pure White")
+        self._valueLabel.TextColor3 = isLight and ((rel > 0.72) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)) or ((rel > 0.72) and Color3.fromRGB(16, 17, 24) or Color3.fromRGB(240, 245, 255))
+    end
 end
 
 function Slider:Destroy()

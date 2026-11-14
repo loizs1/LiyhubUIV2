@@ -21,6 +21,13 @@ function Divider.new(parent, options, theme, cleanup)
     return self
 end
 
+function Divider:SetTheme(newTheme)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.SidebarItem or newTheme.Border
+    end
+end
+
 function Divider:Destroy()
     if self._container then
         self._container:Destroy()

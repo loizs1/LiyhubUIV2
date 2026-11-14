@@ -95,6 +95,20 @@ function InputGroup:GetInputs()
     return self._inputs
 end
 
+function InputGroup:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Card
+        local st = self._container:FindFirstChildOfClass("UIStroke")
+        if st then st.Color = newTheme.Border end
+    end
+    for _, inp in ipairs(self._inputs or {}) do
+        if inp.SetTheme then
+            inp:SetTheme(newTheme, isDark)
+        end
+    end
+end
+
 function InputGroup:Destroy()
     if self._container then
         self._container:Destroy()

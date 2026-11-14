@@ -294,6 +294,51 @@ function Banner:SetText(text)
     self._descLabel.Text = text
 end
 
+function Banner:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    if isDark == nil then
+        isDark = (newTheme.IsLight ~= true and newTheme.Name ~= "Pure White")
+    end
+    if self._container then
+        self._container.BackgroundColor3 = newTheme.Card
+        local stroke = self._container:FindFirstChildOfClass("UIStroke")
+        if stroke then stroke.Color = newTheme.Border end
+    end
+    if self._titleLabel then
+        self._titleLabel.TextColor3 = newTheme.TextPrimary
+    end
+    if self._arrow then
+        self._arrow.ImageColor3 = newTheme.TextMuted
+    end
+    if self._contentBox then
+        local imgFrame = self._contentBox:FindFirstChild("ImageFrame")
+        if imgFrame then
+            imgFrame.BackgroundColor3 = newTheme.Header
+        end
+        local textContainer = self._contentBox:FindFirstChild("TextContainer")
+        if textContainer then
+            local desc = textContainer:FindFirstChild("Description")
+            if desc then
+                desc.TextColor3 = newTheme.TextSecondary
+            end
+        end
+        local btnRow = self._contentBox:FindFirstChild("ButtonRow")
+        if btnRow then
+            for _, btn in ipairs(btnRow:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    local btnBg = isDark and Color3.fromRGB(22, 22, 27) or Color3.fromRGB(236, 238, 243)
+                    local btnTextCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+                    local btnStrokeCol = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(18, 20, 24)
+                    btn.BackgroundColor3 = btnBg
+                    btn.TextColor3 = btnTextCol
+                    local bStroke = btn:FindFirstChildOfClass("UIStroke")
+                    if bStroke then bStroke.Color = btnStrokeCol end
+                end
+            end
+        end
+    end
+end
+
 function Banner:Destroy()
     if self._toggleConn and self._toggleConn.Connected then
         self._toggleConn:Disconnect()

@@ -76,6 +76,15 @@ function ToggleGroup:GetToggles()
     return self._toggles
 end
 
+function ToggleGroup:SetTheme(newTheme, isDark)
+    self._theme = newTheme
+    for _, t in ipairs(self._toggles or {}) do
+        if t.SetTheme then
+            t:SetTheme(newTheme, isDark)
+        end
+    end
+end
+
 function ToggleGroup:Destroy()
     if self._container then
         self._container:Destroy()
