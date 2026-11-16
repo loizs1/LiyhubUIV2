@@ -2780,6 +2780,7 @@ _isMulti = isMulti,
 _selected = isMulti and {} or nil,
 _callback = callback,
 _open = false,
+_lastSearchText = "",
 _optionButtons = {},
 _optionConns = {},
 _cleanup = cleanup,
@@ -2842,7 +2843,7 @@ optData.check.Visible = isChecked
 end
 end
 function self:_filterOptions(query)
-query = string.lower(query or "")
+query = string.lower((tostring(query or ""):gsub("^%s*(.-)%s*$", "%1")))
 local visibleCount = 0
 for _, optData in ipairs(self._optionButtons) do
 local optStr = tostring(optData.value)
@@ -2953,6 +2954,9 @@ check = checkIcon,
 value = opt,
 })
 end
+if self._open and self._searchBox and self._searchBox.Text ~= "" then
+self:_filterOptions(self._searchBox.Text)
+end
 end
 if actionsBar then
 local saBtn = actionsBar:FindFirstChild("SelectAll")
@@ -2980,16 +2984,18 @@ task.spawn(self._callback, {})
 end)
 end
 end
-local _lastSearchText = ""
-local searchConn = RunService.Heartbeat:Connect(function()
-if not self._open then return end
-local cur = searchBox.Text
-if cur ~= _lastSearchText then
-_lastSearchText = cur
+local function handleSearchChange()
+local cur = searchBox.Text or ""
+if cur ~= self._lastSearchText then
+self._lastSearchText = cur
 self:_filterOptions(cur)
 end
+end
+self._searchPropConn = searchBox:GetPropertyChangedSignal("Text"):Connect(handleSearchChange)
+self._searchConn = RunService.Heartbeat:Connect(function()
+if not self._open then return end
+handleSearchChange()
 end)
-table.insert(self._optionConns, searchConn)
 self:_updateSummary()
 self:_rebuildOptions()
 local lastHeader = 0
@@ -3007,7 +3013,8 @@ local headerClick = selectBox.Activated:Connect(toggleDropdown)
 self._headerClick = headerClick
 if cleanup then
 cleanup:Add(headerClick)
-cleanup:Add(searchConn)
+cleanup:Add(self._searchPropConn)
+cleanup:Add(self._searchConn)
 cleanup:Add(container)
 end
 return self
@@ -3016,6 +3023,7 @@ function Dropdown:Open()
 self._open = true
 self._chevron.Rotation = 180
 self._listContainer.Visible = true
+self._lastSearchText = ""
 if self._searchBox then
 self._searchBox.Text = ""
 end
@@ -3026,6 +3034,7 @@ self._scrollFrame.Size = UDim2.new(1, 0, 0, scrollHeight)
 local extraH = 8 + ((self._actionsBar and self._actionsBar.Visible) and 26 or 0) + ((self._searchBar and self._searchBar.Visible) and 28 or 0)
 local totalHeight = scrollHeight + extraH
 self._container.Size = UDim2.new(1, 0, 0, self._closedHeight + 4 + totalHeight)
+self._listContainer.Size = UDim2.new(1, 0, 0, 0)
 TweenService:Create(self._listContainer, TweenInfo.new(self._theme.AnimationFast), {
 Size = UDim2.new(1, 0, 0, totalHeight)
 }):Play()
@@ -3033,6 +3042,7 @@ end
 function Dropdown:Close()
 self._open = false
 self._chevron.Rotation = 0
+self._lastSearchText = ""
 if self._searchBox then
 self._searchBox.Text = ""
 end
@@ -3170,8 +3180,17 @@ for _, conn in ipairs(self._optionConns or {}) do
 pcall(function() conn:Disconnect() end)
 end
 self._optionConns = {}
+if self._searchPropConn then
+pcall(function() self._searchPropConn:Disconnect() end)
+self._searchPropConn = nil
+end
+if self._searchConn then
+pcall(function() self._searchConn:Disconnect() end)
+self._searchConn = nil
+end
 if self._headerClick then
 pcall(function() self._headerClick:Disconnect() end)
+self._headerClick = nil
 end
 if self._container then
 self._container:Destroy()
