@@ -2530,6 +2530,7 @@ return InputGroup
 end
 _modules["src/components/Dropdown"] = function()
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local Dropdown = {}
 Dropdown.__index = Dropdown
 local LucideSheet = "rbxassetid://136111683851629"
@@ -2979,8 +2980,14 @@ task.spawn(self._callback, {})
 end)
 end
 end
-local searchConn = searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-self:_filterOptions(searchBox.Text)
+local _lastSearchText = ""
+local searchConn = RunService.Heartbeat:Connect(function()
+if not self._open then return end
+local cur = searchBox.Text
+if cur ~= _lastSearchText then
+_lastSearchText = cur
+self:_filterOptions(cur)
+end
 end)
 table.insert(self._optionConns, searchConn)
 self:_updateSummary()
